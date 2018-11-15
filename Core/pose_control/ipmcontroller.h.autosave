@@ -1,0 +1,62 @@
+#ifndef IPMCONTROLLER_H
+#define IPMCONTROLLER_H
+
+#include <MathLib/Vector3d.h>
+
+class Character;
+
+class IPMController
+{
+protected:
+    Character* character;
+
+    ///Members initialized at the start of the character's step
+    bool _is_recovery_step;
+
+    ///Members used for communication
+    bool ipm_active = false;
+
+
+    //we'll keep track of the vector that represents each step taken. The vector will be represented in the 'relative' world coordinate frame
+    Vector3d lastStepTaken;
+    //this is the position of the foot at the previous state
+    Point3d lastFootPos;
+
+    //I'll store the COM displacement on the previouses steps so I can estimate the deviation from
+    //the correct movement direction
+    Vector3d com_displacement_last_step;
+    Vector3d com_displacement_previous_to_last_step;
+
+    //some members for IPM
+    double legLength;
+    double ankleBaseHeight;
+    double stepHeight;
+    double coronalStepWidth;
+
+    //we need to keep track of the position of the swing foot at the beginning of the step
+    Point3d swingFootStartPos;
+
+
+public:
+    IPMController(character* c);
+
+    /**
+     * @brief this function is used to initialize some parameters
+     * this function should be called at the start of ever new character step
+     */
+    void init_new_step(bool is_recovery_step);
+
+    /**
+     * @brief this method check if the IPM is needed and launch the computation of th swing foot position
+     */
+    void init_simulation_step(double phi, Vector3d v);
+protected:
+
+    /**
+     * @brief this funtion will return a simple bolean telling us if the IPM result will be used or if they will be overriden
+     * @return true if the IPM should be used
+     */
+    bool ipm_needed(double phi, Vector3d v);
+};
+
+#endif // IPMCONTROLLER_H

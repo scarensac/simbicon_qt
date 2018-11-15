@@ -1,0 +1,369 @@
+#include "stancefootcontactcontroller.h"
+
+#include "Core/Character.h"
+#include "Physics/ODEWorld.h"
+#include "Physics/rb/ArticulatedRigidBody.h"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+StanceFootContactController::StanceFootContactController(Character *c)
+{
+    need_sag_control = false;
+
+    character=c;
+
+    _stance_ankle_torque=Vector3d(0,0,0);
+
+    init_estimation_world();
+}
+
+StanceFootContactController::~StanceFootContactController()
+{
+
+}
+
+bool StanceFootContactController::foot_contact_control(double phi, const Vector3d &precision_factor, Vector3d &sup_torque_sign){
+
+
+    //reset the value
+    if (phi<0.000001){
+        _stance_ankle_torque=Vector3d(0,0,0);
+    }
+
+    RigidBody* bdy=m_stance_foot;
+    Quaternion q= Quaternion::getRotationQuaternion( bdy->getOrientation().getRotationAngle(SimGlobals::up),SimGlobals::up);
+    //trnasition to local values
+    _stance_ankle_torque=q.inverseRotate(_stance_ankle_torque);
+
+    //*
+    //this is the first version is check the ratios left/right and front back
+    //though the problem is that there isz instability (some of the points go from 200N to 0 in one timestep
+    //this function should not do anything if we are not in a phase of foot contact
+    //coronal control
+    double torque_sag = 0;
+    double torque_cor = 0;
+    sup_torque_sign=Vector3d(0,0,0);
+
+    double gain_cor = 30*precision_factor.z;//300;
+    double gain_sag = 25*precision_factor.x;//250;
+
+     const Vector3d* force_stance_foot=character->force_stance_foot();
+//    const Vector3d* force_stance_foot=m_f_foot;
+
+
+    double val_left = std::abs(force_stance_foot[0].y) + std::abs(force_stance_foot[2].y);
+    double val_right = std::abs(force_stance_foot[1].y) + std::abs(force_stance_foot[3].y);
+
+    bool need_action = false;
+    bool smth_modified = false;
+    double cor_total = val_left + val_right;
+    double ratio = val_left / cor_total;
+    int torque_sign = 1;
+    double limit = 0.10;
+    double overload_factor=1.2;
+
+    if (ratio < limit){
+        need_action = true;
+    }
+    else{
+        ratio = val_right / cor_total;
+
+        if (ratio < limit){
+            need_action = true;
+            torque_sign = -1;
+        }
+    }
+
+    if (need_action){
+        std::ostringstream oss;
+        oss<<"use left/right control "<<torque_sign;
+        std::cout<<oss.str();
+        _stance_ankle_torque.z += torque_sign*(limit*overload_factor - ratio) * gain_cor;
+        torque_cor = _stance_ankle_torque.z;
+        smth_modified=true;
+        sup_torque_sign.z=torque_sign;
+    }
+
+    if (phi < 0.000001){
+        need_sag_control = false;
+    }
+
+
+    double val_front = std::abs(force_stance_foot[2].y) + std::abs(force_stance_foot[3].y);
+    double val_back = 1;
+    double sag_total = 1;
+
+    if (!need_sag_control){
+        if (val_front > 0.0001){
+            need_sag_control = true;
+        }
+    }
+
+    if (need_sag_control){
+        val_back = std::abs(force_stance_foot[0].y) + std::abs(force_stance_foot[1].y);
+        need_action = false;
+        sag_total = val_back + val_front;
+        ratio = val_front / sag_total;
+        torque_sign = -1;
+
+
+        if (ratio < limit){
+            need_action = true;
+        }
+        else{
+            ratio = val_back / sag_total;
+
+            if (ratio < limit){
+                need_action = true;
+                torque_sign = 1;
+            }
+        }
+
+        if (need_action){
+
+            std::ostringstream oss;
+            oss<<"use front back control "<<torque_sign;
+            std::cout<<oss.str();
+            _stance_ankle_torque.x += torque_sign*(limit*overload_factor - ratio) * gain_sag;
+            torque_sag = _stance_ankle_torque.x;
+            smth_modified=true;
+            sup_torque_sign.x=torque_sign;
+        }
+    }
+
+    //transition to world values
+    _stance_ankle_torque=q.rotate(_stance_ankle_torque);
+
+    return smth_modified;
+    //*/
+
+    /*
+        static std::vector<double> ratios_cor;
+        static std::vector<double> ratios_sag;
+        static std::vector<double> ratios_cor2;
+        static std::vector<double> ratios_sag2;
+
+        static std::vector<double> vect1;
+        static std::vector<double> vect2;
+        static std::vector<double> vect3;
+        static std::vector<double> vect4;
+        static std::vector<double> vect_phi;
+        static int nbr_step = 0;
+        int limit_step = 30;
+        if (getPhase() < 0.000001){
+            ++nbr_step;
+            if (nbr_step == limit_step+1){
+                std::ofstream file("contact_ratio_step1.txt");
+                if (file.is_open()) {
+                    file << "phi,coronal,sagittal,phi,torque_cor,torque_sag,";
+                    file << "phi,back_left,back_right,phi,front_left,front_right," << std::endl;
+                    for (int i = 0; i < (int)vect_phi.size(); ++i){
+                        file << vect_phi[i] << "," << ratios_cor[i] << "," << ratios_sag[i]<<",";
+                        file << vect_phi[i] << "," << ratios_cor2[i] << "," << ratios_sag2[i] << ",";
+                        file << vect_phi[i] << "," << vect1[i] << ","<< vect2[i] << ",";
+                        file << vect_phi[i] << "," << vect3[i] << "," << vect4[i] << std::endl;
+                    }
+                }
+                else{
+                    exit(limit_step+1);
+                }
+            }
+
+            if (nbr_step == limit_step+2){
+                std::ofstream file("contact_ratio_step2.txt");
+                if (file.is_open()) {
+                    file << "phi,coronal,sagittal,phi,torque_cor,torque_sag,";
+                    file << "phi,back_left,back_right,phi,front_left,front_right," << std::endl;
+                    for (int i = 0; i < (int)vect_phi.size(); ++i){
+                        file << vect_phi[i] << "," << ratios_cor[i] << "," << ratios_sag[i]<<",";
+                        file << vect_phi[i] << "," << ratios_cor2[i] << "," << ratios_sag2[i] << ",";
+                        file << vect_phi[i] << "," << vect1[i] << "," << vect2[i] << ",";
+                        file << vect_phi[i] << "," << vect3[i] << "," << vect4[i] << std::endl;
+                    }
+                }
+                else{
+                    exit(limit_step+2);
+                }
+            }
+            vect_phi.clear();
+            ratios_cor.clear();
+            ratios_sag.clear();
+            ratios_cor2.clear();
+            ratios_sag2.clear();
+        }
+
+        if (nbr_step >= limit_step){
+            if (nbr_step >= limit_step+2){
+                return;
+                //exit(0);
+            }
+            vect_phi.push_back(phi);
+            //*
+            ratios_cor.push_back(val_left/cor_total);
+            ratios_sag.push_back(val_back/sag_total);
+            ratios_cor2.push_back(torque_cor);
+            ratios_sag2.push_back(torque_sag);
+            //*/
+    /*
+            vect1.push_back(force_stance_foot[0].y);
+            vect2.push_back(force_stance_foot[1].y);
+            vect3.push_back(force_stance_foot[2].y);
+            vect4.push_back(force_stance_foot[3].y);
+
+        }
+        //*/
+}
+
+void StanceFootContactController::init_estimation_world()
+{
+    m_world_stance_foot= new ODEWorld();
+
+    //first we create the ground
+    std::vector<RigidBody*> vect_rbs;
+    ODEWorld * real_world=dynamic_cast<ODEWorld*>(SimGlobals::getRBEngine());
+    vect_rbs.push_back(real_world->getRBByName("ground"));
+    m_world_stance_foot->loadRBsFromList(vect_rbs);
+
+
+    //and we add the lowerleg and the foot
+    ArticulatedRigidBody* stance_foot_arb=dynamic_cast<ArticulatedRigidBody*>(character->stance_foot());
+    ArticulatedRigidBody* stance_lowerleg_arb=stance_foot_arb->parent_joint()->parent();
+    std::vector<ArticulatedRigidBody*> vect_arbs;
+    vect_arbs.push_back(stance_lowerleg_arb);
+    vect_arbs.push_back(stance_foot_arb);
+    m_world_stance_foot->loadARBsFromList(vect_arbs);
+
+    //now for an easier use I'll keep pointer on the objext of the new world
+    //I use the fact that they have the ame name as in the old world.
+    //though their name won't mean anything later
+    m_stance_foot=m_world_stance_foot->getARBByName(stance_foot_arb->name());
+    m_stance_lowerleg=m_world_stance_foot->getARBByName(stance_lowerleg_arb->name());
+}
+
+void StanceFootContactController::foot_contact_control_v2(double phi, Vector3d torque_ankle)
+{
+    if (phi < 0.000001){
+        _stance_ankle_torque = Vector3d(0,0,0);
+    }
+
+    return;
+
+    //reset the value
+    // _stance_ankle_torque=Vector3d(0,0,0);
+
+
+    //if (phi<0.3){
+    //    return;
+    //}
+
+
+    //first we need to copy the current state into the virtual world
+    ArticulatedRigidBody* stance_foot_arb=dynamic_cast<ArticulatedRigidBody*>(character->stance_foot());
+    ArticulatedRigidBody* stance_lowerleg_arb=stance_foot_arb->parent_joint()->parent();
+
+    bool need_work=true;
+    int count =0;
+    Vector3d precision_factor=Vector3d(1.0,1.0,1.0);
+    Vector3d sup_torques_signs;
+    std::vector<Vector3d> old_sup_torques_signs;
+
+    /*
+    std::ofstream myfile;
+    myfile.open("force_on_foot.csv",std::ios::app);
+    myfile <<phi<<","<<character->force_stance_foot()[0].y<<","<<
+             character->force_stance_foot()[1].y<<","<<
+             character->force_stance_foot()[2].y<<","<<
+             character->force_stance_foot()[3].y<<","<<
+             ""<<","<<
+             phi<<","<<
+             m_f_foot[0].y<<","<<
+             m_f_foot[1].y<<","<<
+             m_f_foot[2].y<<","<<
+             m_f_foot[3].y<<std::endl;
+
+    myfile.close();
+    //*/
+
+    while(need_work){
+        need_work=false;
+
+        m_stance_foot->cpy_state(stance_foot_arb);
+        m_stance_lowerleg->cpy_state(stance_lowerleg_arb);
+
+        //now we need to apply a force that would be equivalent to the character
+        //our force need to have the value of (char weight- stance lowerleg and stance foot)-boyancy
+        //computing all that may be a bit heavy (we sall try alter)
+        //first i'll juste consider the total weight of the character
+        //so we apply that force on the lowerleg at the position of the center of mass
+        Vector3d com=character->getCOM();
+        Point3d p_com=Point3d(com);
+        Vector3d l_com=m_stance_lowerleg->getLocalCoordinates(p_com);
+        Vector3d f_weigth=Vector3d(0,SimGlobals::gravity,0)*character->getAF()->mass();
+        m_world_stance_foot->applyForceTo(m_stance_lowerleg,f_weigth,l_com);
+        //m_stance_lowerleg->setMass(character->getAF()->mass());
+
+        //apply the torque on the ankle
+        m_stance_foot->parent_joint()->torque(torque_ankle+_stance_ankle_torque);
+
+        //and advance the world
+        m_world_stance_foot->advanceInTime(SimGlobals::dt);
+
+
+        //now we check if the forces on the foot are equilibrated
+        character->organize_foot_contact_forces(m_world_stance_foot->getContactForces(),m_stance_foot,m_f_foot);
+
+
+        //this check if we need to apply a supplementary torque, compute the torque and return a bolean telling us
+        //that we need to retry the simulation
+        need_work = foot_contact_control(phi,precision_factor,sup_torques_signs);
+
+        if (need_work){
+            count++;
+            old_sup_torques_signs.push_back(sup_torques_signs);
+
+            if (old_sup_torques_signs.size()>5){
+                //check x
+                bool did_smth=false;
+                std::vector<Vector3d>::iterator it_back=old_sup_torques_signs.end();
+                if (old_sup_torques_signs.back().x!=0.0){
+                    if (((it_back-1)->x!=(it_back-2)->x)&&
+                            ((it_back-2)->x!=(it_back-3)->x)&&
+                            ((it_back-3)->x!=(it_back-4)->x)){
+                        precision_factor.x/=2;
+                        did_smth=true;
+                        std::ostringstream oss;
+                        oss<<"new precision x "<<precision_factor.x;
+                        std::cout<<oss.str();
+                    }
+                }
+                if (old_sup_torques_signs.back().z!=0.0){
+
+                    if (((it_back-1)->z!=(it_back-2)->z)&&
+                            ((it_back-2)->z!=(it_back-3)->z)&&
+                            ((it_back-3)->z!=(it_back-4)->z)){
+                        precision_factor.z/=2;
+                        did_smth=true;
+                        std::ostringstream oss;
+                        oss<<"new precision z "<<precision_factor.z;
+                        std::cout<<oss.str();
+                    }
+                }
+                if (did_smth){
+                    old_sup_torques_signs.clear();
+                }
+
+                //check z
+
+            }
+        }
+
+    }
+    if (count>2){
+        std::ostringstream oss;
+        oss<<"need loops "<<count;
+        std::cout<<oss.str();
+    }
+}
+

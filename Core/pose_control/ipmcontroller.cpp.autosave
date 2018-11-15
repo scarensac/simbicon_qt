@@ -1,0 +1,66 @@
+#include "ipmcontroller.h"
+
+#include "core/Character.h"
+#include "Physics/rb/ArticulatedRigidBody.h"
+
+IPMController::IPMController(character* c)
+{
+    character=c;
+
+    _is_recovery_step=false;
+}
+
+void IPMController::init_new_step(bool is_recovery_step)
+{
+    _is_recovery_step=is_recovery_step;
+
+    ipm_active= false;
+}
+
+void IPMController::init_simulation_step(double phi, Vector3d v)
+{
+    if (ipm_needed(phi,v)){
+        if (!ipm_active){
+            ArticulatedRigidBody* swing_foot=character->swing_foot();
+            swingFootStartPos = swing_foot->getWorldCoordinates(swing_foot->parent_joint()->child_joint_position());
+            ipm_active = true;
+        }
+
+
+        setDesiredSwingFootLocation();
+    }
+    else{
+        ipm_active = false;
+    }
+
+    //set some of these settings
+    //the commented ones are used to modify the trajectories (but srly i don't care right now)
+    //setUpperBodyPose(ubSagittalLean, ubCoronalLean, ubTwist);
+    //setKneeBend(kneeBend);
+    //setDuckWalkDegree((lowLCon->stance == LEFT_STANCE) ? (-duckWalk) : (duckWalk));
+    //setDesiredHeading(desiredHeading);
+    //this one may be usefull but I'll use constant speed for now
+    //setVelocities(velDSagittal, velDCoronal);
+
+    //adjust for panic mode or unplanned terrain...
+    adjustStepHeight();
+
+}
+
+
+
+
+
+
+
+
+bool IPMController::ipm_needed(double phi, Vector3d v){
+    if (_is_recovery_step){ return true; }
+
+    if (phi < 0.2){ return false; }
+
+    if (v.y < 0){ return true; }
+
+    return false;
+}
+

@@ -1,0 +1,69 @@
+#ifndef STANCEFOOTCONTACTCONTROLLER_H
+#define STANCEFOOTCONTACTCONTROLLER_H
+
+#include <MathLib/Vector3d.h>
+
+
+class Character;
+class ODEWorld;
+class ArticulatedRigidBody;
+
+class StanceFootContactController
+{
+protected:
+    Character* character;    
+
+    /// Members for results
+    Vector3d _stance_ankle_torque;
+
+    /// Members for the forward simulation (for the rafinement loop)
+    ODEWorld* m_world_stance_foot;
+    ArticulatedRigidBody* m_stance_foot;
+    ArticulatedRigidBody* m_stance_lowerleg;
+    Vector3d m_f_foot[4];
+
+public:
+    StanceFootContactController(Character* c);
+    virtual ~StanceFootContactController();
+
+    /**
+    this method us used to control the interaction beetween the stance foot and the ground
+    it has 2 functionalities.
+    first it store a curve updating how the interactions beetween the foot and the ground should be
+    second it make sure that the contact of the foot with the ground is real.
+    */
+    bool foot_contact_control(double phi, const Vector3d& precision_factor, Vector3d& sup_torque_sign);
+    void foot_contact_control_simple_call(double phi){
+        Vector3d precision_factor=Vector3d(1,1,1);
+        Vector3d sup_torques_signs;
+        foot_contact_control(phi,precision_factor,sup_torques_signs);
+    }
+
+    /**
+    This version will use a rafinement loop to find the necessary torque to ensure correct foot contact
+    */
+    void foot_contact_control_v2(double phi, Vector3d torque_ankle);
+
+    /**
+     * @brief copy the elements that will be  needded for the estimation from the real world to the class world
+     */
+    void init_estimation_world();
+
+    /**
+     * @brief getter for the result
+     */
+    Vector3d stance_ankle_torque(){return _stance_ankle_torque;}
+
+private:
+    //all those members are specials
+    //they are old static variables in functions but I could not find what was the problem with them
+    //so I put them here so I'm ensured they are reinitialized between each evaluations ...
+    //StanceFootContactController::foot_contact_control
+    bool need_sag_control;
+
+
+
+
+};
+
+#endif // STANCEFOOTCONTACTCONTROLLER_H

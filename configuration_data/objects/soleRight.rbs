@@ -1,0 +1,38 @@
+RigidBody
+	name rSole
+	mass 1
+	moi 0.007 0.008 0.002	
+#	mesh ../configuration_data/models/robotv2/rfoot.obj
+	colour 0 0 1 1
+	position 500 500 0.4
+	
+	
+	#original
+#	CDP_Box -0.025 -0.033 -0.09 0.025 0.005 0.055 
+	CDP_Box -0.022 -0.050 -0.087 0.022 0.034 0.052 
+	
+	#advanced
+#	CDP_Box -0.025 -0.033 -0.09 -0.009 0.005 -0.042 
+#	CDP_Box -0.008 -0.033 -0.09 0.008 0.005 -0.042 
+#	CDP_Box 0.009 -0.033 -0.09 0.025 0.005 -0.042 
+	
+#	CDP_Box -0.025 -0.033 -0.0415 -0.009 0.005 0.0065 
+#	CDP_Box -0.008 -0.033 -0.0415 0.008 0.005 0.0065 
+#	CDP_Box 0.009 -0.033 -0.0415 0.025 0.005 0.0065
+	
+#	CDP_Box -0.025 -0.033 0.007 -0.009 0.005 0.055 
+#	CDP_Box -0.008 -0.033 0.007 0.008 0.005 0.055 
+#	CDP_Box 0.009 -0.033 0.007 0.025 0.005 0.055 
+
+#	CDP_Sphere 0.025 -0.025 -0.08 0.01
+#	CDP_Sphere -0.025 -0.025 -0.08 0.01
+#	CDP_Sphere 0.02 -0.025 0.045 0.01
+#	CDP_Sphere -0.02 -0.025 0.045 0.01		
+
+	frictionCoefficient 0.8
+	restitutionCoefficient 0.35	
+	
+	ODEGroundParameters 0.0005 0.5
+#	ODEGroundParameters 0.0005 0.2
+
+/End
