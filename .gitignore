@@ -8,6 +8,9 @@
 [Rr]elease/
 eval_estimate/
 
+#user files
+*.user
+
 #other ignores
 *.pdb
 Makefile
