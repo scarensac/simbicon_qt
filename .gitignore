@@ -7,3 +7,8 @@
 [Dd]ebug/
 [Rr]elease/
 eval_estimate/
+
+#other ignores
+*.pdb
+Makefile
+Makefile.*
