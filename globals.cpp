@@ -94,7 +94,7 @@ bool Globals::use_fluid_heading=true;
 int Globals::motion_cycle_type=0;
 
 
-bool Globals::simulateFluid = false;
+bool Globals::simulateFluid = true;
 bool Globals::zeroFluidVelocities = false;
 bool Globals::simulateOnlyFluid = false;
 bool Globals::fluidFollowCharacter = false;

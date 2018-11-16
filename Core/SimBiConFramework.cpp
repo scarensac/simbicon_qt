@@ -149,7 +149,6 @@ SimBiConFramework::SimBiConFramework(char* input, char* conFile){
 
 
 SimBiConFramework::~SimBiConFramework(void){
-    resulting_impact.clear();
     delete con;
 }
 
@@ -412,28 +411,8 @@ void SimBiConFramework::preprocess_simulation_step(double dt)
 #include <iostream>
 void SimBiConFramework::simulation_step(double dt)
 {
-    ODEWorld* world = dynamic_cast<ODEWorld*>(pw);
-
-
-    //we simulate the effect of the liquid
-    resulting_impact.clear();
-    world->compute_water_impact(con->get_character(),SimGlobals::water_level, resulting_impact);
-
-
     //compute and apply the necessayr torques
     con->simulation_step(dt,resulting_impact);
-
-
-    if (Globals::simulateFluid){
-        world->sendDataToParticleFluidEngine();
-        world->advanceInTimeParticleFluidEngine(dt);
-        world->readDataFromParticleFluidEngine();
-    }
-
-    //launch the physic simulation
-    world->sendDataToEngine();
-    world->advanceInTime(dt);
-    world->readDataFromEngine();
 }
 
 void SimBiConFramework::postprocess_simulation_step(double dt)

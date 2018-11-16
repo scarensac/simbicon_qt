@@ -149,7 +149,7 @@ void shaderBegin(const float* col, float particleRadius, float renderMaxVelocity
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
     glUniform1f(m_shader.getUniform("viewport_width"), (float)viewport[2]);
-    glUniform1f(m_shader.getUniform("radius"), (float)particleRadius);
+    glUniform1f(m_shader.getUniform("radius"), (float)particleRadius/8);
     glUniform1f(m_shader.getUniform("max_velocity"), (GLfloat) renderMaxVelocity);
     glUniform3fv(m_shader.getUniform("color"), 1, col);
 

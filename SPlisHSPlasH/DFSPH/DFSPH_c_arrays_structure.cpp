@@ -18,8 +18,8 @@
 using namespace SPH;
 using namespace std;
 
-//const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char/";
-const std::string fluid_files_folder = "./configuration_data/fluid_data/test_ball_object/";
+const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char/";
+//const std::string fluid_files_folder = "./configuration_data/fluid_data/test_ball_object/";
 //const std::string fluid_files_folder = "./configuration_data/fluid_data/test_box_object/";
 //const std::string fluid_files_folder = "./";
 
@@ -257,7 +257,7 @@ void UnifiedParticleSet::clear() {
 }
 
 void UnifiedParticleSet::computeParticlesMass(DFSPHCData* data){
-    if (is_dynamic_object){
+    if (!velocity_impacted_by_fluid_solver){
         compute_UnifiedParticleSet_particles_mass_cuda(*data,*this);
     }
 }
@@ -938,7 +938,6 @@ void DFSPHCData::read_solids_from_file(bool load_velocities) {
 
 	std::cout << "loading solids end" << std::endl;
 
-    computeRigidBodiesParticlesMass();
 }
 
 
@@ -1037,7 +1036,8 @@ void DFSPHCData::update_solids_from_file() {
 
 void DFSPHCData::update_solids(std::vector<DynamicBody> vect_new_info) {
     if (vect_new_info.size() != numDynamicBodies) {
-        std::cout << "number of existing rigid bodies do not fit the input data" << std::endl;
+        std::cout << "number of existing rigid bodies do not fit the input data (actual number, input number):" <<
+                  numDynamicBodies<<"  ,  "<<vect_new_info.size()<<std::endl;
         exit(1256);
     }
 
@@ -1083,9 +1083,11 @@ SPH::Vector3d DFSPHCData::getSimulationCenter(){
 
 
 void DFSPHCData::computeRigidBodiesParticlesMass(){
-    //return;
+    //do the comutation for the dynamic bodies
     for (int i=0;i<numDynamicBodies;++i){
         vector_dynamic_bodies_data[i].computeParticlesMass(this);
-        write_solids_to_file();
     }
+
+    //and for the boundaries
+    boundaries_data->computeParticlesMass(this);
 }

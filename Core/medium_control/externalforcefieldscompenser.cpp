@@ -22,7 +22,7 @@ ExternalForceFieldsCompenser::~ExternalForceFieldsCompenser()
 
 
 
-void ExternalForceFieldsCompenser::compute_compensation(std::map<uint, WaterImpact> &resulting_impact){
+void ExternalForceFieldsCompenser::compute_compensation(WaterImpact &resulting_impact){
     //reset values
     for (int i=0;i<_torques.size();++i){
         _torques[i]=Vector3d(0,0,0);
@@ -54,6 +54,9 @@ void ExternalForceFieldsCompenser::compute_compensation(std::map<uint, WaterImpa
             //compute the gravity compensation
             Vector3d F1 = Vector3d(0, character->getJoint(i)->child()->getMass()*9.8, 0);
 
+            throw("the boyancy compensation need to be repaired first");
+            ///TODO redo that computation with the new model
+            /*
             //compute the boyancy compensation
             if (resulting_impact.find(character->getJoint(i)->idx())!=resulting_impact.end()){
                 ForceStruct  boyancy = resulting_impact[character->getJoint(i)->idx()].boyancy;
@@ -64,6 +67,8 @@ void ExternalForceFieldsCompenser::compute_compensation(std::map<uint, WaterImpa
                     F1 -= boyancy.F;
                 }
             }
+            //*/
+
             pt1 = character->getJoint(i)->child()->getLocalCoordinates(pt1);
 
             //compute the equiv torque
@@ -127,7 +132,7 @@ void ExternalForceFieldsCompenser::compute_joint_torques_equivalent_to_force(Joi
 }
 
 
-void ExternalForceFieldsCompenser::compute_compensation_v2(std::map<uint, WaterImpact> &resulting_impact)
+void ExternalForceFieldsCompenser::compute_compensation_v2(WaterImpact &resulting_impact)
 {
 
     //*
@@ -206,6 +211,10 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(std::map<uint, WaterI
                 //compute the gravity compensation
                 F1 = Vector3d(0, arb->getMass()*9.8, 0);
 
+
+                throw("the boyancy compensation need to be repaired first");
+                ///TODO redo that computation with the new model
+                /*
                 //compute the boyancy compensation
                 if (resulting_impact.find(j->idx())!=resulting_impact.end()){
                     ForceStruct  boyancy = resulting_impact[j->idx()].boyancy;
@@ -215,6 +224,7 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(std::map<uint, WaterI
                         F1 -= boyancy.F;
                     }
                 }
+                //*/
 
                 //add the compensation due to the subtree
                 pt1 = (pt1*F1.length() + previous_pt*previous_force.length())/(F1.length()+previous_force.length());
@@ -314,6 +324,10 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(std::map<uint, WaterI
             //compute the gravity compensation
             Vector3d F1 = Vector3d(0, arb->getMass()*9.8, 0);
 
+
+            throw("the boyancy compensation need to be repaired first");
+            ///TODO redo that computation with the new model
+            /*
             //compute the boyancy compensation
             //we keep j as the hip since we want the water impact on the upper leg
             //to be compensated by the knee
@@ -325,6 +339,7 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(std::map<uint, WaterI
                     F1 -= boyancy.F;
                 }
             }
+            //*/
 
             //add the compensation due to the rest of the body
             pt1 = (pt1*F1.length() + pt*F.length())/(F1.length()+F.length());
@@ -361,6 +376,10 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(std::map<uint, WaterI
             //compute the gravity compensation
             Vector3d F1 = Vector3d(0, arb->getMass()*9.8, 0);
 
+
+            throw("the boyancy compensation need to be repaired first");
+            ///TODO redo that computation with the new model
+            /*
             //compute the boyancy compensation
             //we keep j as the hip since we want the water impact on the upper leg
             //to be compensated by the knee
@@ -372,6 +391,7 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(std::map<uint, WaterI
                     F1 -= boyancy.F;
                 }
             }
+            //*/
 
             //add the compensation due to the rest of the body
             pt1 = (pt1*F1.length() + pt*F.length())/(F1.length()+F.length());

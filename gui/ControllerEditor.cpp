@@ -652,24 +652,34 @@ void ControllerEditor::processTask(){
             //*/
 
             try{
+                ODEWorld* ode_world = dynamic_cast<ODEWorld*>(world);
                 if (Globals::simulateFluid){
-                    //if we only do the fluid it mean the rb are paused
-                     Interface::handleDynamicBodiesPause(true);
 
                     if (Globals::fluidFollowCharacter){
                         Interface::moveFluidSimulation(conF->getCharacter()->getCOM());
                     }
 
                     if (Globals::simulateOnlyFluid){
-                        ODEWorld* ode_world = dynamic_cast<ODEWorld*>(world);
+                        //if we only do the fluid it mean the rb are paused
+                        Interface::handleDynamicBodiesPause(true);
                         ode_world->advanceInTimeParticleFluidEngine(SimGlobals::dt);
 
+                        //and since the sim of rb is paused the controler step is done :)
                         continue;
-                    }
+                    }else{
+                        //otherwise they are simulated
+                         Interface::handleDynamicBodiesPause(false);
+
+                         ode_world->sendDataToParticleFluidEngine();
+                         ode_world->advanceInTimeParticleFluidEngine(SimGlobals::dt);
+                         ode_world->readDataFromParticleFluidEngine();
+                     }
                 }else{
-                   //otherwise they are simulated
-                    Interface::handleDynamicBodiesPause(false);
+                    //we simulate the effect of the liquid
+                    ode_world->compute_water_impact(conF->getCharacter(),SimGlobals::water_level, conF->resulting_impact);
                 }
+
+
 
 
                 std::chrono::time_point<std::chrono::high_resolution_clock>start = std::chrono::high_resolution_clock::now();
@@ -679,6 +689,12 @@ void ControllerEditor::processTask(){
 
                 //we can now advance the simulation
                 conF->simulation_step(SimGlobals::dt);
+
+                //run the simulation of physics bodies
+                ode_world->sendDataToEngine();
+                ode_world->advanceInTime(SimGlobals::dt);
+                ode_world->readDataFromEngine();
+
 
                 //post process the simulation
                 conF->postprocess_simulation_step(SimGlobals::dt);
@@ -1498,10 +1514,14 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
             }
 
             double eval_buff_drag = 0;
+            throw("this need to be repaired because the water impact structure has been modified");
+            ///TODO adapt that loop for the new struture
+            /*
             for (auto it = conF->resulting_impact.begin(); it != conF->resulting_impact.end(); ++it){
                 WaterImpact impact = it->second;
                 eval_buff_drag += impact.drag_torque.length();
             }
+            //*/
             sum_eval_liquid_drag  += eval_buff_drag ;
         }
         //*/

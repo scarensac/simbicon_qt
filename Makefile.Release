@@ -11,13 +11,13 @@ MAKEFILE      = Makefile.Release
 
 CC            = cl
 CXX           = cl
-DEFINES       = -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DdDOUBLE -DCCD_DOUBLE -DBOOST_PARAMETER_MAX_ARITY=15 -DBOOST_FILESYSTEM_VERSION=3 -DBOOST_UBLAS -DSHARK_VERSION_MAJOR=3 -DSHARK_VERSION_MINOR=0 -DSHARK_VERSION_PATCH=0 -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB -DNDEBUG
+DEFINES       = -DUNICODE -D_UNICODE -DWIN32 -DWIN64 -DFLUID_COMPIL -DdDOUBLE -DCCD_DOUBLE -DBOOST_PARAMETER_MAX_ARITY=15 -DBOOST_FILESYSTEM_VERSION=3 -DBOOST_UBLAS -DSHARK_VERSION_MAJOR=3 -DSHARK_VERSION_MINOR=0 -DSHARK_VERSION_PATCH=0 -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB -DNDEBUG
 CFLAGS        = -nologo -Zc:wchar_t -FS -Zc:strictStrings -O2  -MT -W3 -w44456 -w44457 -w44458 $(DEFINES)
 CXXFLAGS      = -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -O2  -MT -W3 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -wd4577 -wd4467 -EHsc $(DEFINES)
-INCPATH       = -I. -I. -Iinclude -Iode_0_15_1\include -Iexternal_libs\boost_1_64_0 -Iexternal_libs\shark\include -IC:\Qt\5.10.1\msvc2015_64_static\include -IC:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets -IC:\Qt\5.10.1\msvc2015_64_static\include\QtGui -IC:\Qt\5.10.1\msvc2015_64_static\include\QtCore -Irelease\moc -Irelease\ui -IC:\Qt\5.10.1\msvc2015_64_static\mkspecs\win32-msvc 
+INCPATH       = -I. -I. -Iinclude -Iode_0_15_1\include -Iexternal_libs\boost_1_64_0 -Iexternal_libs\shark\include -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include" -Iexternal_libs\cub-1.7.4\cub -IC:\Qt\5.10.1\msvc2015_64_static\include -IC:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets -IC:\Qt\5.10.1\msvc2015_64_static\include\QtGui -IC:\Qt\5.10.1\msvc2015_64_static\include\QtCore -Irelease\moc -Irelease\ui -IC:\Qt\5.10.1\msvc2015_64_static\mkspecs\win32-msvc 
 LINKER        = link
 LFLAGS        = /NOLOGO /DYNAMICBASE /NXCOMPAT /INCREMENTAL:NO /SUBSYSTEM:WINDOWS "/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'"
-LIBS          = /LIBPATH:C:\Qt\5.10.1\msvc2015_64_static\lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtmain.lib /LIBPATH:external_libs\GL external_libs\GL\freeglut_static.lib external_libs\GL\freeglut.lib external_libs\GL\glew32.lib external_libs\GL\glew32s.lib ode_0_15_1\lib\release\ode.lib external_libs\boost_1_64_0\lib64-msvc-14.0\libboost_serialization-vc140-mt-s-1_64.lib external_libs\boost_1_64_0\lib64-msvc-14.0\libboost_filesystem-vc140-mt-s-1_64.lib external_libs\boost_1_64_0\lib64-msvc-14.0\libboost_system-vc140-mt-s-1_64.lib external_libs\shark\lib\Release\shark.lib /LIBPATH:C:\Qt\5.10.1\msvc2015_64_static\plugins\styles C:\Qt\5.10.1\msvc2015_64_static\plugins\styles\qwindowsvistastyle.lib /LIBPATH:C:\Qt\5.10.1\msvc2015_64_static\plugins\platforms C:\Qt\5.10.1\msvc2015_64_static\plugins\platforms\qwindows.lib winspool.lib imm32.lib oleaut32.lib opengl32.lib shlwapi.lib rpcrt4.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5EventDispatcherSupport.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5FontDatabaseSupport.lib gdi32.lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtfreetype.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5ThemeSupport.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5AccessibilitySupport.lib /LIBPATH:C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qgif.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qicns.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qico.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qjpeg.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qtga.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qtiff.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qwbmp.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qwebp.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Widgets.lib uxtheme.lib dwmapi.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Gui.lib comdlg32.lib oleaut32.lib imm32.lib winmm.lib ws2_32.lib ole32.lib uuid.lib advapi32.lib glu32.lib opengl32.lib gdi32.lib user32.lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtlibpng.lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtharfbuzz.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Core.lib mpr.lib netapi32.lib userenv.lib version.lib ws2_32.lib kernel32.lib user32.lib shell32.lib uuid.lib ole32.lib advapi32.lib winmm.lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtpcre2.lib 
+LIBS          = /LIBPATH:C:\Qt\5.10.1\msvc2015_64_static\lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtmain.lib /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\lib\x64" /LIBPATH:external_libs\GL external_libs\GL\freeglut_static.lib external_libs\GL\freeglut.lib external_libs\GL\glew32.lib external_libs\GL\glew32s.lib ode_0_15_1\lib\release\ode.lib external_libs\boost_1_64_0\lib64-msvc-14.0\libboost_serialization-vc140-mt-s-1_64.lib external_libs\boost_1_64_0\lib64-msvc-14.0\libboost_filesystem-vc140-mt-s-1_64.lib external_libs\boost_1_64_0\lib64-msvc-14.0\libboost_system-vc140-mt-s-1_64.lib external_libs\shark\lib\Release\shark.lib "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\lib\x64\cuda.lib" "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\lib\x64\cudart.lib" /LIBPATH:C:\Qt\5.10.1\msvc2015_64_static\plugins\styles C:\Qt\5.10.1\msvc2015_64_static\plugins\styles\qwindowsvistastyle.lib /LIBPATH:C:\Qt\5.10.1\msvc2015_64_static\plugins\platforms C:\Qt\5.10.1\msvc2015_64_static\plugins\platforms\qwindows.lib winspool.lib imm32.lib oleaut32.lib opengl32.lib shlwapi.lib rpcrt4.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5EventDispatcherSupport.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5FontDatabaseSupport.lib gdi32.lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtfreetype.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5ThemeSupport.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5AccessibilitySupport.lib /LIBPATH:C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qgif.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qicns.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qico.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qjpeg.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qtga.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qtiff.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qwbmp.lib C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qwebp.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Widgets.lib uxtheme.lib dwmapi.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Gui.lib comdlg32.lib oleaut32.lib imm32.lib winmm.lib ws2_32.lib ole32.lib uuid.lib advapi32.lib glu32.lib opengl32.lib gdi32.lib user32.lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtlibpng.lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtharfbuzz.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Core.lib mpr.lib netapi32.lib userenv.lib version.lib ws2_32.lib kernel32.lib user32.lib shell32.lib uuid.lib ole32.lib advapi32.lib winmm.lib C:\Qt\5.10.1\msvc2015_64_static\lib\qtpcre2.lib 
 QMAKE         = C:\Qt\5.10.1\msvc2015_64_static\bin\qmake.exe
 IDC           = idc
 IDL           = midl /NOLOGO
@@ -146,12 +146,19 @@ SOURCES       = main.cpp \
 		core\pose_control\twolinkik.cpp \
 		core\ground_contact_control\estimationworld.cpp \
 		core\ground_contact_control\stancefootcontactcontroller.cpp \
-		core\medium_control\externalforcefieldscompenser.cpp D:/Users/scarensac/Documents/qt_projects/simbicon_qt/simbicon_qt_plugin_import.cpp \
+		core\medium_control\externalforcefieldscompenser.cpp \
+		SPlisHSPlasH\Interface.cpp \
+		SPlisHSPlasH\Shader.cpp \
+		SPlisHSPlasH\SPHKernels.cpp \
+		SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp \
+		SPlisHSPlasH\DFSPH\DFSPH_CUDA.cpp \
+		SPlisHSPlasH\Utilities\Timing.cpp D:/Users/scarensac/Documents/qt_projects/simbicon_qt/simbicon_qt_plugin_import.cpp \
 		release\moc\moc_mainwindow.cpp \
 		release\moc\moc_simulationwindow.cpp \
 		release\moc\moc_consolewindow.cpp \
 		release\moc\moc_qtmessenger.cpp
-OBJECTS       = release\obj\main.obj \
+OBJECTS       = release\cuda\DFSPH_cuda_basic_cuda.o \
+		release\obj\main.obj \
 		release\obj\gui\qtmessenger.obj \
 		release\obj\Physics\softbodypointmass.obj \
 		release\obj\core\ground_contact_control\estimationworld.obj \
@@ -253,6 +260,12 @@ OBJECTS       = release\obj\main.obj \
 		release\obj\core\ground_contact_control\estimationworld.obj \
 		release\obj\core\ground_contact_control\stancefootcontactcontroller.obj \
 		release\obj\core\medium_control\externalforcefieldscompenser.obj \
+		release\obj\SPlisHSPlasH\Interface.obj \
+		release\obj\SPlisHSPlasH\Shader.obj \
+		release\obj\SPlisHSPlasH\SPHKernels.obj \
+		release\obj\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.obj \
+		release\obj\SPlisHSPlasH\DFSPH\DFSPH_CUDA.obj \
+		release\obj\SPlisHSPlasH\Utilities\Timing.obj \
 		release\obj\simbicon_qt_plugin_import.obj \
 		release\obj\release\moc\moc_mainwindow.obj \
 		release\obj\release\moc\moc_simulationwindow.obj \
@@ -361,7 +374,18 @@ DIST          =  gui\mainwindow.h \
 		core\pose_control\twolinkik.h \
 		core\ground_contact_control\estimationworld.h \
 		core\ground_contact_control\stancefootcontactcontroller.h \
-		core\medium_control\externalforcefieldscompenser.h main.cpp \
+		core\medium_control\externalforcefieldscompenser.h \
+		SPlisHSPlasH\BasicTypes.h \
+		SPlisHSPlasH\Common.h \
+		SPlisHSPlasH\Interface.h \
+		SPlisHSPlasH\Quaternion.h \
+		SPlisHSPlasH\Shader.h \
+		SPlisHSPlasH\SPHKernels.h \
+		SPlisHSPlasH\Vector.h \
+		SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH\DFSPH\DFSPH_CUDA.h \
+		SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h \
+		SPlisHSPlasH\Utilities\Timing.h main.cpp \
 		gui\qtmessenger.cpp \
 		Physics\softbodypointmass.cpp \
 		core\ground_contact_control\estimationworld.cpp \
@@ -462,7 +486,13 @@ DIST          =  gui\mainwindow.h \
 		core\pose_control\twolinkik.cpp \
 		core\ground_contact_control\estimationworld.cpp \
 		core\ground_contact_control\stancefootcontactcontroller.cpp \
-		core\medium_control\externalforcefieldscompenser.cpp
+		core\medium_control\externalforcefieldscompenser.cpp \
+		SPlisHSPlasH\Interface.cpp \
+		SPlisHSPlasH\Shader.cpp \
+		SPlisHSPlasH\SPHKernels.cpp \
+		SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp \
+		SPlisHSPlasH\DFSPH\DFSPH_CUDA.cpp \
+		SPlisHSPlasH\Utilities\Timing.cpp
 QMAKE_TARGET  = simbicon_qt
 DESTDIR        = release\ #avoid trailing-slash linebreak
 TARGET         = simbicon_qt.exe
@@ -491,10 +521,11 @@ all: Makefile.Release  $(DESTDIR_TARGET)
 
 $(DESTDIR_TARGET): C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Widgets.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Gui.lib C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Core.lib release\ui\ui_mainwindow.h release\ui\ui_simulationwindow.h release\ui\ui_consolewindow.h $(OBJECTS) 
 	$(LINKER) $(LFLAGS) /MANIFEST:embed /OUT:$(DESTDIR_TARGET) @<<
-release\obj\main.obj release\obj\gui\qtmessenger.obj release\obj\Physics\softbodypointmass.obj release\obj\core\ground_contact_control\estimationworld.obj release\obj\gui\mainwindow.obj release\obj\gui\simulationwindow.obj release\obj\gui\consolewindow.obj release\obj\globals.obj release\obj\gui\Application.obj release\obj\gui\consolewindow.obj release\obj\gui\ControllerEditor.obj release\obj\gui\CurveEditor.obj release\obj\gui\GLWindow.obj release\obj\gui\InteractionInterface.obj release\obj\gui\InteractiveWorld.obj release\obj\gui\mainwindow.obj release\obj\gui\Primitive.obj release\obj\gui\qtmessenger.obj release\obj\gui\simulationwindow.obj release\obj\gui\SubGLWindow.obj release\obj\gui\UI.obj release\obj\gsl\error.obj release\obj\gsl\blas\blas.obj release\obj\gsl\blas\cblas.obj release\obj\gsl\block\block.obj release\obj\gsl\block\file.obj release\obj\gsl\block\init.obj release\obj\gsl\matrix\copy.obj release\obj\gsl\matrix\file.obj release\obj\gsl\matrix\getset.obj
-release\obj\gsl\matrix\init.obj release\obj\gsl\matrix\matrix.obj release\obj\gsl\matrix\minmax.obj release\obj\gsl\matrix\oper.obj release\obj\gsl\matrix\prop.obj release\obj\gsl\matrix\swap.obj release\obj\gsl\vector\copy.obj release\obj\gsl\vector\file.obj release\obj\gsl\vector\init.obj release\obj\gsl\vector\minmax.obj release\obj\gsl\vector\oper.obj release\obj\gsl\vector\prop.obj release\obj\gsl\vector\swap.obj release\obj\gsl\vector\vector.obj release\obj\Utils\BMPIO.obj release\obj\Utils\Image.obj release\obj\Utils\ImageIO.obj release\obj\Utils\Timer.obj release\obj\Utils\Utils.obj release\obj\MathLib\Capsule.obj release\obj\MathLib\Matrix.obj release\obj\MathLib\Plane.obj release\obj\MathLib\Point3d.obj release\obj\MathLib\Quaternion.obj release\obj\MathLib\Sphere.obj release\obj\MathLib\ThreeTuple.obj release\obj\MathLib\TransformationMatrix.obj release\obj\MathLib\Vector.obj release\obj\MathLib\Vector3d.obj release\obj\GLutils\GLCamera.obj release\obj\GLutils\GLMesh.obj
-release\obj\GLutils\GLTexture.obj release\obj\GLutils\GLUtils.obj release\obj\GLutils\OBJReader.obj release\obj\Physics\ODEWorld.obj release\obj\Physics\PreCollisionQuery.obj release\obj\Physics\softbodypointmass.obj release\obj\Physics\rb\AbstractRBEngine.obj release\obj\Physics\rb\ArticulatedFigure.obj release\obj\Physics\rb\ArticulatedRigidBody.obj release\obj\Physics\rb\RBProperties.obj release\obj\Physics\rb\RBState.obj release\obj\Physics\rb\RBUtils.obj release\obj\Physics\rb\RigidBody.obj release\obj\Physics\cdp\BoxCDP.obj release\obj\Physics\cdp\CapsuleCDP.obj release\obj\Physics\cdp\CollisionDetectionPrimitive.obj release\obj\Physics\cdp\PlaneCDP.obj release\obj\Physics\cdp\SphereCDP.obj release\obj\Physics\joints\BallInSocketJoint.obj release\obj\Physics\joints\HingeJoint.obj release\obj\Physics\joints\Joint.obj release\obj\Physics\joints\UniversalJoint.obj release\obj\core\BalanceFeedback.obj release\obj\core\BaseControlFramework.obj release\obj\core\Character.obj
-release\obj\core\Controller.obj release\obj\core\ConUtils.obj release\obj\core\SimBiConFramework.obj release\obj\core\SimBiConState.obj release\obj\core\SimBiController.obj release\obj\core\SimGlobals.obj release\obj\core\Trajectory.obj release\obj\core\VirtualModelController.obj release\obj\core\velocity_control\velocitycontroller.obj release\obj\core\pose_control\posecontrolglobals.obj release\obj\core\pose_control\posecontroller.obj release\obj\core\pose_control\swingfootcontroller.obj release\obj\core\pose_control\twolinkik.obj release\obj\core\ground_contact_control\estimationworld.obj release\obj\core\ground_contact_control\stancefootcontactcontroller.obj release\obj\core\medium_control\externalforcefieldscompenser.obj release\obj\simbicon_qt_plugin_import.obj release\obj\release\moc\moc_mainwindow.obj release\obj\release\moc\moc_simulationwindow.obj release\obj\release\moc\moc_consolewindow.obj release\obj\release\moc\moc_qtmessenger.obj
+release\cuda\DFSPH_cuda_basic_cuda.o release\obj\main.obj release\obj\gui\qtmessenger.obj release\obj\Physics\softbodypointmass.obj release\obj\core\ground_contact_control\estimationworld.obj release\obj\gui\mainwindow.obj release\obj\gui\simulationwindow.obj release\obj\gui\consolewindow.obj release\obj\globals.obj release\obj\gui\Application.obj release\obj\gui\consolewindow.obj release\obj\gui\ControllerEditor.obj release\obj\gui\CurveEditor.obj release\obj\gui\GLWindow.obj release\obj\gui\InteractionInterface.obj release\obj\gui\InteractiveWorld.obj release\obj\gui\mainwindow.obj release\obj\gui\Primitive.obj release\obj\gui\qtmessenger.obj release\obj\gui\simulationwindow.obj release\obj\gui\SubGLWindow.obj release\obj\gui\UI.obj release\obj\gsl\error.obj release\obj\gsl\blas\blas.obj release\obj\gsl\blas\cblas.obj release\obj\gsl\block\block.obj release\obj\gsl\block\file.obj release\obj\gsl\block\init.obj release\obj\gsl\matrix\copy.obj release\obj\gsl\matrix\file.obj
+release\obj\gsl\matrix\getset.obj release\obj\gsl\matrix\init.obj release\obj\gsl\matrix\matrix.obj release\obj\gsl\matrix\minmax.obj release\obj\gsl\matrix\oper.obj release\obj\gsl\matrix\prop.obj release\obj\gsl\matrix\swap.obj release\obj\gsl\vector\copy.obj release\obj\gsl\vector\file.obj release\obj\gsl\vector\init.obj release\obj\gsl\vector\minmax.obj release\obj\gsl\vector\oper.obj release\obj\gsl\vector\prop.obj release\obj\gsl\vector\swap.obj release\obj\gsl\vector\vector.obj release\obj\Utils\BMPIO.obj release\obj\Utils\Image.obj release\obj\Utils\ImageIO.obj release\obj\Utils\Timer.obj release\obj\Utils\Utils.obj release\obj\MathLib\Capsule.obj release\obj\MathLib\Matrix.obj release\obj\MathLib\Plane.obj release\obj\MathLib\Point3d.obj release\obj\MathLib\Quaternion.obj release\obj\MathLib\Sphere.obj release\obj\MathLib\ThreeTuple.obj release\obj\MathLib\TransformationMatrix.obj release\obj\MathLib\Vector.obj release\obj\MathLib\Vector3d.obj release\obj\GLutils\GLCamera.obj
+release\obj\GLutils\GLMesh.obj release\obj\GLutils\GLTexture.obj release\obj\GLutils\GLUtils.obj release\obj\GLutils\OBJReader.obj release\obj\Physics\ODEWorld.obj release\obj\Physics\PreCollisionQuery.obj release\obj\Physics\softbodypointmass.obj release\obj\Physics\rb\AbstractRBEngine.obj release\obj\Physics\rb\ArticulatedFigure.obj release\obj\Physics\rb\ArticulatedRigidBody.obj release\obj\Physics\rb\RBProperties.obj release\obj\Physics\rb\RBState.obj release\obj\Physics\rb\RBUtils.obj release\obj\Physics\rb\RigidBody.obj release\obj\Physics\cdp\BoxCDP.obj release\obj\Physics\cdp\CapsuleCDP.obj release\obj\Physics\cdp\CollisionDetectionPrimitive.obj release\obj\Physics\cdp\PlaneCDP.obj release\obj\Physics\cdp\SphereCDP.obj release\obj\Physics\joints\BallInSocketJoint.obj release\obj\Physics\joints\HingeJoint.obj release\obj\Physics\joints\Joint.obj release\obj\Physics\joints\UniversalJoint.obj release\obj\core\BalanceFeedback.obj release\obj\core\BaseControlFramework.obj
+release\obj\core\Character.obj release\obj\core\Controller.obj release\obj\core\ConUtils.obj release\obj\core\SimBiConFramework.obj release\obj\core\SimBiConState.obj release\obj\core\SimBiController.obj release\obj\core\SimGlobals.obj release\obj\core\Trajectory.obj release\obj\core\VirtualModelController.obj release\obj\core\velocity_control\velocitycontroller.obj release\obj\core\pose_control\posecontrolglobals.obj release\obj\core\pose_control\posecontroller.obj release\obj\core\pose_control\swingfootcontroller.obj release\obj\core\pose_control\twolinkik.obj release\obj\core\ground_contact_control\estimationworld.obj release\obj\core\ground_contact_control\stancefootcontactcontroller.obj release\obj\core\medium_control\externalforcefieldscompenser.obj release\obj\SPlisHSPlasH\Interface.obj release\obj\SPlisHSPlasH\Shader.obj release\obj\SPlisHSPlasH\SPHKernels.obj release\obj\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.obj release\obj\SPlisHSPlasH\DFSPH\DFSPH_CUDA.obj
+release\obj\SPlisHSPlasH\Utilities\Timing.obj release\obj\simbicon_qt_plugin_import.obj release\obj\release\moc\moc_mainwindow.obj release\obj\release\moc\moc_simulationwindow.obj release\obj\release\moc\moc_consolewindow.obj release\obj\release\moc\moc_qtmessenger.obj
 $(LIBS)
 <<
 
@@ -504,11 +535,12 @@ qmake: FORCE
 qmake_all: FORCE
 
 dist:
-	$(ZIP) simbicon_qt.zip $(SOURCES) $(DIST) simbicon_qt.pro C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\spec_pre.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\common\angle.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\common\windows-vulkan.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\common\msvc-desktop.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\qconfig.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_accessibility_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axbase.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axbase_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axcontainer.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axcontainer_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axserver.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axserver_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_bootstrap_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_concurrent.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_concurrent_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_core.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_core_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_dbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_dbus_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_devicediscovery_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_edid_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_eventdispatcher_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_fb_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_fontdatabase_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_gui.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_gui_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_network.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_network_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_networkauth.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_networkauth_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_opengl.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_opengl_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_openglextensions.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_openglextensions_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_platformcompositor_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_printsupport.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_printsupport_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_serialbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_serialbus_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_serialport.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_serialport_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_sql.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_sql_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_svg.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_svg_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_testlib.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_testlib_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_theme_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_widgets.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_widgets_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_xml.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_xml_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_xmlpatterns.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_xmlpatterns_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_zlib_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qdirect2d.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qgenericbearer.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qgif.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qicns.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qico.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qjpeg.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qminimal.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qoffscreen.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qsqlite.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qsqlodbc.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qsvg.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qsvgicon.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtga.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtiff.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtpeakcanbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtsysteccanbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qttinycanbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtuiotouchplugin.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtvectorcanbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qwbmp.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qwebp.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qwindows.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qwindowsvistastyle.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_windowsprintersupport.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\qt_functions.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\qt_config.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\win32-msvc\qmake.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\spec_post.prf .qmake.stash C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\exclusive_builds.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\common\msvc-version.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\toolchain.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\default_pre.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\win32\default_pre.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\resolve_config.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\exclusive_builds_post.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\default_post.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\build_pass.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\static_runtime.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\precompile_header.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\warn_on.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\qt.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\resources.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\moc.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\win32\opengl.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\uic.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\qmake_use.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\file_copies.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\win32\windows.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\testcase_targets.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\exceptions.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\yacc.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\lex.prf simbicon_qt.pro C:\Qt\5.10.1\msvc2015_64_static\lib\qtmain.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\styles\qwindowsvistastyle.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\platforms\qwindows.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qgif.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qicns.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qico.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qjpeg.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qtga.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qtiff.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qwbmp.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qwebp.prl C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Widgets.prl C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Gui.prl C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Core.prl    C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\data\dummy.cpp gui\mainwindow.h gui\simulationwindow.h gui\consolewindow.h gui\qtmessenger.h Physics\softbodypointmass.h core\ground_contact_control\estimationworld.h globals.h gui\Application.h gui\consolewindow.h gui\ControllerEditor.h gui\CurveEditor.h gui\GLWindow.h gui\InteractionInterface.h gui\InteractiveWorld.h gui\mainwindow.h gui\Primitive.h gui\qtmessenger.h gui\simulationwindow.h gui\SubGLWindow.h gui\UI.h gsl\gsl_errno.h gsl\gsl_math.h gsl\gsl_nan.h gsl\gsl_pow_int.h gsl\gsl_precision.h gsl\gsl_types.h gsl\templates_off.h gsl\templates_on.h gsl\blas\cblas.h gsl\blas\f2c.h gsl\blas\gsl_blas.h gsl\blas\gsl_blas_types.h gsl\block\gsl_block.h gsl\block\gsl_block_double.h gsl\block\gsl_check_range.h gsl\matrix\gsl_matrix.h gsl\matrix\gsl_matrix_double.h gsl\vector\gsl_vector.h gsl\vector\gsl_vector_double.h Utils\BMPIO.h Utils\Image.h Utils\ImageIO.h Utils\qdebugstream.h Utils\std_redirector.h Utils\Timer.h Utils\Utils.h Utils\std_redirector.h MathLib\Capsule.h MathLib\mathLib.h MathLib\Matrix.h MathLib\Plane.h MathLib\Point3d.h MathLib\Quaternion.h MathLib\Sphere.h MathLib\ThreeTuple.h MathLib\TransformationMatrix.h MathLib\Vector.h MathLib\Vector3d.h GLutils\GLCamera.h GLutils\GLMesh.h GLutils\gltexture.h GLutils\glutils.h GLutils\OBJReader.h Physics\ContactPoint.h Physics\ODEWorld.h Physics\PreCollisionQuery.h Physics\softbodypointmass.h Physics\rb\AbstractRBEngine.h Physics\rb\articulatedfigure.h Physics\rb\ArticulatedRigidBody.h Physics\rb\RBProperties.h Physics\rb\RBState.h Physics\rb\RBUtils.h Physics\rb\RigidBody.h Physics\cdp\BoxCDP.h Physics\cdp\capsulecdp.h Physics\cdp\CollisionDetectionPrimitive.h Physics\cdp\planecdp.h Physics\cdp\spherecdp.h Physics\joints\BallInSocketJoint.h Physics\joints\hingejoint.h Physics\joints\Joint.h Physics\joints\universaljoint.h core\BalanceFeedback.h core\BaseControlFramework.h core\Character.h core\Controller.h core\ConUtils.h core\ForcesUtilitary.h core\SimBiConFramework.h core\SimBiConState.h core\SimBiController.h core\SimGlobals.h core\Trajectory.h core\VirtualModelController.h core\velocity_control\velocitycontroller.h core\pose_control\posecontrolglobals.h core\pose_control\posecontroller.h core\pose_control\swingfootcontroller.h core\pose_control\twolinkik.h core\ground_contact_control\estimationworld.h core\ground_contact_control\stancefootcontactcontroller.h core\medium_control\externalforcefieldscompenser.h  main.cpp gui\qtmessenger.cpp Physics\softbodypointmass.cpp core\ground_contact_control\estimationworld.cpp gui\mainwindow.cpp gui\simulationwindow.cpp gui\consolewindow.cpp globals.cpp gui\Application.cpp gui\consolewindow.cpp gui\ControllerEditor.cpp gui\CurveEditor.cpp gui\GLWindow.cpp gui\InteractionInterface.cpp gui\InteractiveWorld.cpp gui\mainwindow.cpp gui\Primitive.cpp gui\qtmessenger.cpp gui\simulationwindow.cpp gui\SubGLWindow.cpp gui\UI.cpp gsl\error.c gsl\blas\blas.c gsl\blas\cblas.c gsl\block\block.c gsl\block\file.c gsl\block\init.c gsl\matrix\copy.c gsl\matrix\file.c gsl\matrix\getset.c gsl\matrix\init.c gsl\matrix\matrix.c gsl\matrix\minmax.c gsl\matrix\oper.c gsl\matrix\prop.c gsl\matrix\swap.c gsl\vector\copy.c gsl\vector\file.c gsl\vector\init.c gsl\vector\minmax.c gsl\vector\oper.c gsl\vector\prop.c gsl\vector\swap.c gsl\vector\vector.c Utils\BMPIO.cpp Utils\Image.cpp Utils\ImageIO.cpp Utils\Timer.cpp Utils\Utils.cpp MathLib\Capsule.cpp MathLib\Matrix.cpp MathLib\Plane.cpp MathLib\Point3d.cpp MathLib\Quaternion.cpp MathLib\Sphere.cpp MathLib\ThreeTuple.cpp MathLib\TransformationMatrix.cpp MathLib\Vector.cpp MathLib\Vector3d.cpp GLutils\GLCamera.cpp GLutils\GLMesh.cpp GLutils\GLTexture.cpp GLutils\GLUtils.cpp GLutils\OBJReader.cpp Physics\ODEWorld.cpp Physics\PreCollisionQuery.cpp Physics\softbodypointmass.cpp Physics\rb\AbstractRBEngine.cpp Physics\rb\ArticulatedFigure.cpp Physics\rb\ArticulatedRigidBody.cpp Physics\rb\RBProperties.cpp Physics\rb\RBState.cpp Physics\rb\RBUtils.cpp Physics\rb\RigidBody.cpp Physics\cdp\BoxCDP.cpp Physics\cdp\CapsuleCDP.cpp Physics\cdp\CollisionDetectionPrimitive.cpp Physics\cdp\PlaneCDP.cpp Physics\cdp\SphereCDP.cpp Physics\joints\BallInSocketJoint.cpp Physics\joints\HingeJoint.cpp Physics\joints\Joint.cpp Physics\joints\UniversalJoint.cpp core\BalanceFeedback.cpp core\BaseControlFramework.cpp core\Character.cpp core\Controller.cpp core\ConUtils.cpp core\SimBiConFramework.cpp core\SimBiConState.cpp core\SimBiController.cpp core\SimGlobals.cpp core\Trajectory.cpp core\VirtualModelController.cpp core\velocity_control\velocitycontroller.cpp core\pose_control\posecontrolglobals.cpp core\pose_control\posecontroller.cpp core\pose_control\swingfootcontroller.cpp core\pose_control\twolinkik.cpp core\ground_contact_control\estimationworld.cpp core\ground_contact_control\stancefootcontactcontroller.cpp core\medium_control\externalforcefieldscompenser.cpp gui\mainwindow.ui gui\simulationwindow.ui gui\consolewindow.ui    
+	$(ZIP) simbicon_qt.zip $(SOURCES) $(DIST) simbicon_qt.pro C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\spec_pre.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\common\angle.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\common\windows-vulkan.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\common\msvc-desktop.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\qconfig.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_accessibility_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axbase.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axbase_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axcontainer.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axcontainer_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axserver.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_axserver_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_bootstrap_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_concurrent.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_concurrent_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_core.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_core_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_dbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_dbus_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_devicediscovery_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_edid_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_eventdispatcher_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_fb_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_fontdatabase_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_gui.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_gui_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_network.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_network_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_networkauth.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_networkauth_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_opengl.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_opengl_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_openglextensions.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_openglextensions_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_platformcompositor_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_printsupport.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_printsupport_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_serialbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_serialbus_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_serialport.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_serialport_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_sql.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_sql_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_svg.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_svg_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_testlib.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_testlib_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_theme_support_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_widgets.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_widgets_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_xml.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_xml_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_xmlpatterns.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_xmlpatterns_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_lib_zlib_private.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qdirect2d.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qgenericbearer.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qgif.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qicns.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qico.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qjpeg.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qminimal.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qoffscreen.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qsqlite.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qsqlodbc.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qsvg.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qsvgicon.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtga.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtiff.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtpeakcanbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtsysteccanbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qttinycanbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtuiotouchplugin.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qtvectorcanbus.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qwbmp.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qwebp.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qwindows.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_qwindowsvistastyle.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\modules\qt_plugin_windowsprintersupport.pri C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\qt_functions.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\qt_config.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\win32-msvc\qmake.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\spec_post.prf .qmake.stash C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\exclusive_builds.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\common\msvc-version.conf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\toolchain.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\default_pre.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\win32\default_pre.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\resolve_config.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\exclusive_builds_post.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\default_post.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\build_pass.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\static_runtime.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\precompile_header.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\warn_on.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\qt.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\resources.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\moc.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\win32\opengl.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\uic.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\qmake_use.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\file_copies.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\win32\windows.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\testcase_targets.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\exceptions.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\yacc.prf C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\lex.prf simbicon_qt.pro C:\Qt\5.10.1\msvc2015_64_static\lib\qtmain.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\styles\qwindowsvistastyle.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\platforms\qwindows.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qgif.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qicns.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qico.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qjpeg.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qtga.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qtiff.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qwbmp.prl C:\Qt\5.10.1\msvc2015_64_static\plugins\imageformats\qwebp.prl C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Widgets.prl C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Gui.prl C:\Qt\5.10.1\msvc2015_64_static\lib\Qt5Core.prl  SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.cu   C:\Qt\5.10.1\msvc2015_64_static\mkspecs\features\data\dummy.cpp gui\mainwindow.h gui\simulationwindow.h gui\consolewindow.h gui\qtmessenger.h Physics\softbodypointmass.h core\ground_contact_control\estimationworld.h globals.h gui\Application.h gui\consolewindow.h gui\ControllerEditor.h gui\CurveEditor.h gui\GLWindow.h gui\InteractionInterface.h gui\InteractiveWorld.h gui\mainwindow.h gui\Primitive.h gui\qtmessenger.h gui\simulationwindow.h gui\SubGLWindow.h gui\UI.h gsl\gsl_errno.h gsl\gsl_math.h gsl\gsl_nan.h gsl\gsl_pow_int.h gsl\gsl_precision.h gsl\gsl_types.h gsl\templates_off.h gsl\templates_on.h gsl\blas\cblas.h gsl\blas\f2c.h gsl\blas\gsl_blas.h gsl\blas\gsl_blas_types.h gsl\block\gsl_block.h gsl\block\gsl_block_double.h gsl\block\gsl_check_range.h gsl\matrix\gsl_matrix.h gsl\matrix\gsl_matrix_double.h gsl\vector\gsl_vector.h gsl\vector\gsl_vector_double.h Utils\BMPIO.h Utils\Image.h Utils\ImageIO.h Utils\qdebugstream.h Utils\std_redirector.h Utils\Timer.h Utils\Utils.h Utils\std_redirector.h MathLib\Capsule.h MathLib\mathLib.h MathLib\Matrix.h MathLib\Plane.h MathLib\Point3d.h MathLib\Quaternion.h MathLib\Sphere.h MathLib\ThreeTuple.h MathLib\TransformationMatrix.h MathLib\Vector.h MathLib\Vector3d.h GLutils\GLCamera.h GLutils\GLMesh.h GLutils\gltexture.h GLutils\glutils.h GLutils\OBJReader.h Physics\ContactPoint.h Physics\ODEWorld.h Physics\PreCollisionQuery.h Physics\softbodypointmass.h Physics\rb\AbstractRBEngine.h Physics\rb\articulatedfigure.h Physics\rb\ArticulatedRigidBody.h Physics\rb\RBProperties.h Physics\rb\RBState.h Physics\rb\RBUtils.h Physics\rb\RigidBody.h Physics\cdp\BoxCDP.h Physics\cdp\capsulecdp.h Physics\cdp\CollisionDetectionPrimitive.h Physics\cdp\planecdp.h Physics\cdp\spherecdp.h Physics\joints\BallInSocketJoint.h Physics\joints\hingejoint.h Physics\joints\Joint.h Physics\joints\universaljoint.h core\BalanceFeedback.h core\BaseControlFramework.h core\Character.h core\Controller.h core\ConUtils.h core\ForcesUtilitary.h core\SimBiConFramework.h core\SimBiConState.h core\SimBiController.h core\SimGlobals.h core\Trajectory.h core\VirtualModelController.h core\velocity_control\velocitycontroller.h core\pose_control\posecontrolglobals.h core\pose_control\posecontroller.h core\pose_control\swingfootcontroller.h core\pose_control\twolinkik.h core\ground_contact_control\estimationworld.h core\ground_contact_control\stancefootcontactcontroller.h core\medium_control\externalforcefieldscompenser.h SPlisHSPlasH\BasicTypes.h SPlisHSPlasH\Common.h SPlisHSPlasH\Interface.h SPlisHSPlasH\Quaternion.h SPlisHSPlasH\Shader.h SPlisHSPlasH\SPHKernels.h SPlisHSPlasH\Vector.h SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h SPlisHSPlasH\DFSPH\DFSPH_CUDA.h SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h SPlisHSPlasH\Utilities\Timing.h  main.cpp gui\qtmessenger.cpp Physics\softbodypointmass.cpp core\ground_contact_control\estimationworld.cpp gui\mainwindow.cpp gui\simulationwindow.cpp gui\consolewindow.cpp globals.cpp gui\Application.cpp gui\consolewindow.cpp gui\ControllerEditor.cpp gui\CurveEditor.cpp gui\GLWindow.cpp gui\InteractionInterface.cpp gui\InteractiveWorld.cpp gui\mainwindow.cpp gui\Primitive.cpp gui\qtmessenger.cpp gui\simulationwindow.cpp gui\SubGLWindow.cpp gui\UI.cpp gsl\error.c gsl\blas\blas.c gsl\blas\cblas.c gsl\block\block.c gsl\block\file.c gsl\block\init.c gsl\matrix\copy.c gsl\matrix\file.c gsl\matrix\getset.c gsl\matrix\init.c gsl\matrix\matrix.c gsl\matrix\minmax.c gsl\matrix\oper.c gsl\matrix\prop.c gsl\matrix\swap.c gsl\vector\copy.c gsl\vector\file.c gsl\vector\init.c gsl\vector\minmax.c gsl\vector\oper.c gsl\vector\prop.c gsl\vector\swap.c gsl\vector\vector.c Utils\BMPIO.cpp Utils\Image.cpp Utils\ImageIO.cpp Utils\Timer.cpp Utils\Utils.cpp MathLib\Capsule.cpp MathLib\Matrix.cpp MathLib\Plane.cpp MathLib\Point3d.cpp MathLib\Quaternion.cpp MathLib\Sphere.cpp MathLib\ThreeTuple.cpp MathLib\TransformationMatrix.cpp MathLib\Vector.cpp MathLib\Vector3d.cpp GLutils\GLCamera.cpp GLutils\GLMesh.cpp GLutils\GLTexture.cpp GLutils\GLUtils.cpp GLutils\OBJReader.cpp Physics\ODEWorld.cpp Physics\PreCollisionQuery.cpp Physics\softbodypointmass.cpp Physics\rb\AbstractRBEngine.cpp Physics\rb\ArticulatedFigure.cpp Physics\rb\ArticulatedRigidBody.cpp Physics\rb\RBProperties.cpp Physics\rb\RBState.cpp Physics\rb\RBUtils.cpp Physics\rb\RigidBody.cpp Physics\cdp\BoxCDP.cpp Physics\cdp\CapsuleCDP.cpp Physics\cdp\CollisionDetectionPrimitive.cpp Physics\cdp\PlaneCDP.cpp Physics\cdp\SphereCDP.cpp Physics\joints\BallInSocketJoint.cpp Physics\joints\HingeJoint.cpp Physics\joints\Joint.cpp Physics\joints\UniversalJoint.cpp core\BalanceFeedback.cpp core\BaseControlFramework.cpp core\Character.cpp core\Controller.cpp core\ConUtils.cpp core\SimBiConFramework.cpp core\SimBiConState.cpp core\SimBiController.cpp core\SimGlobals.cpp core\Trajectory.cpp core\VirtualModelController.cpp core\velocity_control\velocitycontroller.cpp core\pose_control\posecontrolglobals.cpp core\pose_control\posecontroller.cpp core\pose_control\swingfootcontroller.cpp core\pose_control\twolinkik.cpp core\ground_contact_control\estimationworld.cpp core\ground_contact_control\stancefootcontactcontroller.cpp core\medium_control\externalforcefieldscompenser.cpp SPlisHSPlasH\Interface.cpp SPlisHSPlasH\Shader.cpp SPlisHSPlasH\SPHKernels.cpp SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp SPlisHSPlasH\DFSPH\DFSPH_CUDA.cpp SPlisHSPlasH\Utilities\Timing.cpp gui\mainwindow.ui gui\simulationwindow.ui gui\consolewindow.ui    
 
 clean: compiler_clean 
-	-$(DEL_FILE) release\obj\main.obj release\obj\gui\qtmessenger.obj release\obj\Physics\softbodypointmass.obj release\obj\core\ground_contact_control\estimationworld.obj release\obj\gui\mainwindow.obj release\obj\gui\simulationwindow.obj release\obj\gui\consolewindow.obj release\obj\globals.obj release\obj\gui\Application.obj release\obj\gui\consolewindow.obj release\obj\gui\ControllerEditor.obj release\obj\gui\CurveEditor.obj release\obj\gui\GLWindow.obj release\obj\gui\InteractionInterface.obj release\obj\gui\InteractiveWorld.obj release\obj\gui\mainwindow.obj release\obj\gui\Primitive.obj release\obj\gui\qtmessenger.obj release\obj\gui\simulationwindow.obj release\obj\gui\SubGLWindow.obj release\obj\gui\UI.obj release\obj\gsl\error.obj release\obj\gsl\blas\blas.obj release\obj\gsl\blas\cblas.obj release\obj\gsl\block\block.obj release\obj\gsl\block\file.obj release\obj\gsl\block\init.obj release\obj\gsl\matrix\copy.obj release\obj\gsl\matrix\file.obj release\obj\gsl\matrix\getset.obj release\obj\gsl\matrix\init.obj release\obj\gsl\matrix\matrix.obj release\obj\gsl\matrix\minmax.obj release\obj\gsl\matrix\oper.obj release\obj\gsl\matrix\prop.obj release\obj\gsl\matrix\swap.obj release\obj\gsl\vector\copy.obj release\obj\gsl\vector\file.obj release\obj\gsl\vector\init.obj release\obj\gsl\vector\minmax.obj release\obj\gsl\vector\oper.obj release\obj\gsl\vector\prop.obj release\obj\gsl\vector\swap.obj release\obj\gsl\vector\vector.obj release\obj\Utils\BMPIO.obj release\obj\Utils\Image.obj release\obj\Utils\ImageIO.obj release\obj\Utils\Timer.obj release\obj\Utils\Utils.obj release\obj\MathLib\Capsule.obj release\obj\MathLib\Matrix.obj release\obj\MathLib\Plane.obj release\obj\MathLib\Point3d.obj release\obj\MathLib\Quaternion.obj release\obj\MathLib\Sphere.obj release\obj\MathLib\ThreeTuple.obj release\obj\MathLib\TransformationMatrix.obj release\obj\MathLib\Vector.obj release\obj\MathLib\Vector3d.obj release\obj\GLutils\GLCamera.obj release\obj\GLutils\GLMesh.obj release\obj\GLutils\GLTexture.obj
-	-$(DEL_FILE) release\obj\GLutils\GLUtils.obj release\obj\GLutils\OBJReader.obj release\obj\Physics\ODEWorld.obj release\obj\Physics\PreCollisionQuery.obj release\obj\Physics\softbodypointmass.obj release\obj\Physics\rb\AbstractRBEngine.obj release\obj\Physics\rb\ArticulatedFigure.obj release\obj\Physics\rb\ArticulatedRigidBody.obj release\obj\Physics\rb\RBProperties.obj release\obj\Physics\rb\RBState.obj release\obj\Physics\rb\RBUtils.obj release\obj\Physics\rb\RigidBody.obj release\obj\Physics\cdp\BoxCDP.obj release\obj\Physics\cdp\CapsuleCDP.obj release\obj\Physics\cdp\CollisionDetectionPrimitive.obj release\obj\Physics\cdp\PlaneCDP.obj release\obj\Physics\cdp\SphereCDP.obj release\obj\Physics\joints\BallInSocketJoint.obj release\obj\Physics\joints\HingeJoint.obj release\obj\Physics\joints\Joint.obj release\obj\Physics\joints\UniversalJoint.obj release\obj\core\BalanceFeedback.obj release\obj\core\BaseControlFramework.obj release\obj\core\Character.obj release\obj\core\Controller.obj release\obj\core\ConUtils.obj release\obj\core\SimBiConFramework.obj release\obj\core\SimBiConState.obj release\obj\core\SimBiController.obj release\obj\core\SimGlobals.obj release\obj\core\Trajectory.obj release\obj\core\VirtualModelController.obj release\obj\core\velocity_control\velocitycontroller.obj release\obj\core\pose_control\posecontrolglobals.obj release\obj\core\pose_control\posecontroller.obj release\obj\core\pose_control\swingfootcontroller.obj release\obj\core\pose_control\twolinkik.obj release\obj\core\ground_contact_control\estimationworld.obj release\obj\core\ground_contact_control\stancefootcontactcontroller.obj release\obj\core\medium_control\externalforcefieldscompenser.obj release\obj\simbicon_qt_plugin_import.obj release\obj\release\moc\moc_mainwindow.obj release\obj\release\moc\moc_simulationwindow.obj release\obj\release\moc\moc_consolewindow.obj release\obj\release\moc\moc_qtmessenger.obj
+	-$(DEL_FILE) release\cuda\DFSPH_cuda_basic_cuda.o release\obj\main.obj release\obj\gui\qtmessenger.obj release\obj\Physics\softbodypointmass.obj release\obj\core\ground_contact_control\estimationworld.obj release\obj\gui\mainwindow.obj release\obj\gui\simulationwindow.obj release\obj\gui\consolewindow.obj release\obj\globals.obj release\obj\gui\Application.obj release\obj\gui\consolewindow.obj release\obj\gui\ControllerEditor.obj release\obj\gui\CurveEditor.obj release\obj\gui\GLWindow.obj release\obj\gui\InteractionInterface.obj release\obj\gui\InteractiveWorld.obj release\obj\gui\mainwindow.obj release\obj\gui\Primitive.obj release\obj\gui\qtmessenger.obj release\obj\gui\simulationwindow.obj release\obj\gui\SubGLWindow.obj release\obj\gui\UI.obj release\obj\gsl\error.obj release\obj\gsl\blas\blas.obj release\obj\gsl\blas\cblas.obj release\obj\gsl\block\block.obj release\obj\gsl\block\file.obj release\obj\gsl\block\init.obj release\obj\gsl\matrix\copy.obj release\obj\gsl\matrix\file.obj release\obj\gsl\matrix\getset.obj release\obj\gsl\matrix\init.obj release\obj\gsl\matrix\matrix.obj release\obj\gsl\matrix\minmax.obj release\obj\gsl\matrix\oper.obj release\obj\gsl\matrix\prop.obj release\obj\gsl\matrix\swap.obj release\obj\gsl\vector\copy.obj release\obj\gsl\vector\file.obj release\obj\gsl\vector\init.obj release\obj\gsl\vector\minmax.obj release\obj\gsl\vector\oper.obj release\obj\gsl\vector\prop.obj release\obj\gsl\vector\swap.obj release\obj\gsl\vector\vector.obj release\obj\Utils\BMPIO.obj release\obj\Utils\Image.obj release\obj\Utils\ImageIO.obj release\obj\Utils\Timer.obj release\obj\Utils\Utils.obj release\obj\MathLib\Capsule.obj release\obj\MathLib\Matrix.obj release\obj\MathLib\Plane.obj release\obj\MathLib\Point3d.obj release\obj\MathLib\Quaternion.obj release\obj\MathLib\Sphere.obj release\obj\MathLib\ThreeTuple.obj release\obj\MathLib\TransformationMatrix.obj release\obj\MathLib\Vector.obj release\obj\MathLib\Vector3d.obj release\obj\GLutils\GLCamera.obj release\obj\GLutils\GLMesh.obj
+	-$(DEL_FILE) release\obj\GLutils\GLTexture.obj release\obj\GLutils\GLUtils.obj release\obj\GLutils\OBJReader.obj release\obj\Physics\ODEWorld.obj release\obj\Physics\PreCollisionQuery.obj release\obj\Physics\softbodypointmass.obj release\obj\Physics\rb\AbstractRBEngine.obj release\obj\Physics\rb\ArticulatedFigure.obj release\obj\Physics\rb\ArticulatedRigidBody.obj release\obj\Physics\rb\RBProperties.obj release\obj\Physics\rb\RBState.obj release\obj\Physics\rb\RBUtils.obj release\obj\Physics\rb\RigidBody.obj release\obj\Physics\cdp\BoxCDP.obj release\obj\Physics\cdp\CapsuleCDP.obj release\obj\Physics\cdp\CollisionDetectionPrimitive.obj release\obj\Physics\cdp\PlaneCDP.obj release\obj\Physics\cdp\SphereCDP.obj release\obj\Physics\joints\BallInSocketJoint.obj release\obj\Physics\joints\HingeJoint.obj release\obj\Physics\joints\Joint.obj release\obj\Physics\joints\UniversalJoint.obj release\obj\core\BalanceFeedback.obj release\obj\core\BaseControlFramework.obj release\obj\core\Character.obj release\obj\core\Controller.obj release\obj\core\ConUtils.obj release\obj\core\SimBiConFramework.obj release\obj\core\SimBiConState.obj release\obj\core\SimBiController.obj release\obj\core\SimGlobals.obj release\obj\core\Trajectory.obj release\obj\core\VirtualModelController.obj release\obj\core\velocity_control\velocitycontroller.obj release\obj\core\pose_control\posecontrolglobals.obj release\obj\core\pose_control\posecontroller.obj release\obj\core\pose_control\swingfootcontroller.obj release\obj\core\pose_control\twolinkik.obj release\obj\core\ground_contact_control\estimationworld.obj release\obj\core\ground_contact_control\stancefootcontactcontroller.obj release\obj\core\medium_control\externalforcefieldscompenser.obj release\obj\SPlisHSPlasH\Interface.obj release\obj\SPlisHSPlasH\Shader.obj release\obj\SPlisHSPlasH\SPHKernels.obj release\obj\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.obj release\obj\SPlisHSPlasH\DFSPH\DFSPH_CUDA.obj release\obj\SPlisHSPlasH\Utilities\Timing.obj release\obj\simbicon_qt_plugin_import.obj
+	-$(DEL_FILE) release\obj\release\moc\moc_mainwindow.obj release\obj\release\moc\moc_simulationwindow.obj release\obj\release\moc\moc_consolewindow.obj release\obj\release\moc\moc_qtmessenger.obj
 
 distclean: clean 
 	-$(DEL_FILE) D:\Users\scarensac\Documents\qt_projects\simbicon_qt\simbicon_qt_plugin_import.cpp .qmake.stash
@@ -522,6 +554,199 @@ mocables: compiler_moc_header_make_all compiler_moc_objc_header_make_all compile
 check: first
 
 benchmark: first
+
+compiler_cuda_make_all: release\cuda\DFSPH_cuda_basic_cuda.o
+compiler_cuda_clean:
+	-$(DEL_FILE) release\cuda\DFSPH_cuda_basic_cuda.o
+release\cuda\DFSPH_cuda_basic_cuda.o: "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_runtime.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\host_config.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\host_config.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\builtin_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\device_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\host_defines.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\host_defines.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\driver_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\vector_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\surface_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\texture_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\library_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\channel_descriptor.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_runtime_api.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_device_runtime_api.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\driver_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\vector_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\vector_functions.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\device_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\device_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\device_functions.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\device_atomic_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\device_atomic_functions.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\device_double_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\device_double_functions.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_20_atomic_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_20_atomic_functions.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_32_atomic_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_32_atomic_functions.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_35_atomic_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_60_atomic_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_60_atomic_functions.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_20_intrinsics.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_20_intrinsics.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_30_intrinsics.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_30_intrinsics.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_32_intrinsics.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_32_intrinsics.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_35_intrinsics.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_61_intrinsics.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\sm_61_intrinsics.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\sm_70_rt.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\sm_70_rt.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\surface_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_surface_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\texture_fetch_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_texture_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\texture_indirect_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\surface_indirect_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\common_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\common_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\math_functions.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\func_macro.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\math_functions.hpp" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\math_constants.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\device_launch_parameters.h" \
+		SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h \
+		include\GL\glew.h \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_gl_interop.h" \
+		SPlisHSPlasH\Vector.h \
+		SPlisHSPlasH\BasicTypes.h \
+		SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH\Quaternion.h \
+		external_libs\cub-1.7.4\cub\cub.cuh \
+		external_libs\cub-1.7.4\cub\block\block_histogram.cuh \
+		external_libs\cub-1.7.4\cub\block\specializations\block_histogram_sort.cuh \
+		external_libs\cub-1.7.4\cub\block\block_radix_sort.cuh \
+		external_libs\cub-1.7.4\cub\block\block_exchange.cuh \
+		external_libs\cub-1.7.4\cub\util_ptx.cuh \
+		external_libs\cub-1.7.4\cub\util_type.cuh \
+		external_libs\cub-1.7.4\cub\util_macro.cuh \
+		external_libs\cub-1.7.4\cub\util_namespace.cuh \
+		external_libs\cub-1.7.4\cub\util_arch.cuh \
+		external_libs\cub-1.7.4\cub\util_debug.cuh \
+		external_libs\cub-1.7.4\cub\block\block_radix_rank.cuh \
+		external_libs\cub-1.7.4\cub\thread\thread_reduce.cuh \
+		external_libs\cub-1.7.4\cub\thread\thread_operators.cuh \
+		external_libs\cub-1.7.4\cub\thread\thread_scan.cuh \
+		external_libs\cub-1.7.4\cub\block\block_scan.cuh \
+		external_libs\cub-1.7.4\cub\block\specializations\block_scan_raking.cuh \
+		external_libs\cub-1.7.4\cub\block\block_raking_layout.cuh \
+		external_libs\cub-1.7.4\cub\warp\warp_scan.cuh \
+		external_libs\cub-1.7.4\cub\warp\specializations\warp_scan_shfl.cuh \
+		external_libs\cub-1.7.4\cub\warp\specializations\warp_scan_smem.cuh \
+		external_libs\cub-1.7.4\cub\thread\thread_load.cuh \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda.h" \
+		external_libs\cub-1.7.4\cub\thread\thread_store.cuh \
+		external_libs\cub-1.7.4\cub\block\specializations\block_scan_warp_scans.cuh \
+		external_libs\cub-1.7.4\cub\block\block_discontinuity.cuh \
+		external_libs\cub-1.7.4\cub\block\specializations\block_histogram_atomic.cuh \
+		external_libs\cub-1.7.4\cub\block\block_load.cuh \
+		external_libs\cub-1.7.4\cub\iterator\cache_modified_input_iterator.cuh \
+		external_libs\cub-1.7.4\cub\util_device.cuh \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\iterator_facade.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\config.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\simple_defines.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\compiler.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\host_system.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\device_system.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\host_device.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\debug.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\compiler_fence.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\forceinline.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\exec_check_disable.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\config\global_workarounds.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\type_traits.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\type_traits\has_trivial_assign.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\iterator_facade_category.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\host_system_tag.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\device_system_tag.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\any_system_tag.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\detail\execution_policy.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\iterator_categories.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\iterator_category_with_system_and_traversal.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\iterator_traversal_tags.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\universal_categories.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\is_iterator_category.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\iterator_category_to_traversal.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\iterator_category_to_system.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\distance_from_result.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\iterator_traits.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\iterator\detail\iterator_traits.inl" \
+		external_libs\cub-1.7.4\cub\block\block_reduce.cuh \
+		external_libs\cub-1.7.4\cub\block\specializations\block_reduce_raking.cuh \
+		external_libs\cub-1.7.4\cub\warp\warp_reduce.cuh \
+		external_libs\cub-1.7.4\cub\warp\specializations\warp_reduce_shfl.cuh \
+		external_libs\cub-1.7.4\cub\warp\specializations\warp_reduce_smem.cuh \
+		external_libs\cub-1.7.4\cub\block\specializations\block_reduce_raking_commutative_only.cuh \
+		external_libs\cub-1.7.4\cub\block\specializations\block_reduce_warp_reductions.cuh \
+		external_libs\cub-1.7.4\cub\block\block_store.cuh \
+		external_libs\cub-1.7.4\cub\device\device_histogram.cuh \
+		external_libs\cub-1.7.4\cub\device\dispatch\dispatch_histogram.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_histogram.cuh \
+		external_libs\cub-1.7.4\cub\grid\grid_queue.cuh \
+		external_libs\cub-1.7.4\cub\thread\thread_search.cuh \
+		external_libs\cub-1.7.4\cub\device\device_partition.cuh \
+		external_libs\cub-1.7.4\cub\device\dispatch\dispatch_select_if.cuh \
+		external_libs\cub-1.7.4\cub\device\dispatch\dispatch_scan.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_scan.cuh \
+		external_libs\cub-1.7.4\cub\agent\single_pass_scan_operators.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_select_if.cuh \
+		external_libs\cub-1.7.4\cub\device\device_radix_sort.cuh \
+		external_libs\cub-1.7.4\cub\device\dispatch\dispatch_radix_sort.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_radix_sort_upsweep.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_radix_sort_downsweep.cuh \
+		external_libs\cub-1.7.4\cub\grid\grid_even_share.cuh \
+		external_libs\cub-1.7.4\cub\grid\grid_mapping.cuh \
+		external_libs\cub-1.7.4\cub\device\device_reduce.cuh \
+		external_libs\cub-1.7.4\cub\iterator\arg_index_input_iterator.cuh \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\thrust\version.h" \
+		external_libs\cub-1.7.4\cub\device\dispatch\dispatch_reduce.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_reduce.cuh \
+		external_libs\cub-1.7.4\cub\device\dispatch\dispatch_reduce_by_key.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_reduce_by_key.cuh \
+		external_libs\cub-1.7.4\cub\iterator\constant_input_iterator.cuh \
+		external_libs\cub-1.7.4\cub\device\device_run_length_encode.cuh \
+		external_libs\cub-1.7.4\cub\device\dispatch\dispatch_rle.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_rle.cuh \
+		external_libs\cub-1.7.4\cub\device\device_scan.cuh \
+		external_libs\cub-1.7.4\cub\device\device_segmented_radix_sort.cuh \
+		external_libs\cub-1.7.4\cub\device\device_segmented_reduce.cuh \
+		external_libs\cub-1.7.4\cub\device\device_select.cuh \
+		external_libs\cub-1.7.4\cub\device\device_spmv.cuh \
+		external_libs\cub-1.7.4\cub\device\dispatch\dispatch_spmv_orig.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_segment_fixup.cuh \
+		external_libs\cub-1.7.4\cub\agent\agent_spmv_orig.cuh \
+		external_libs\cub-1.7.4\cub\iterator\counting_input_iterator.cuh \
+		external_libs\cub-1.7.4\cub\iterator\tex_ref_input_iterator.cuh \
+		external_libs\cub-1.7.4\cub\iterator\cache_modified_output_iterator.cuh \
+		external_libs\cub-1.7.4\cub\iterator\tex_obj_input_iterator.cuh \
+		external_libs\cub-1.7.4\cub\iterator\transform_input_iterator.cuh \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_kernel.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_discrete.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_precalc.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_mrg32k3a.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_mtgp32_kernel.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_mtgp32.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_philox4x32_x.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_globals.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_uniform.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_normal.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_normal_static.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_lognormal.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_poisson.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\curand_discrete2.h" \
+		SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.cu
+	C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/bin/nvcc.exe -Xcompiler /EHsc,/O2,/MT -I"." -I"include" -I"ode_0_15_1\include" -I".\external_libs\boost_1_64_0" -I".\external_libs\shark\include" -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -I"external_libs\cub-1.7.4\cub" --machine 64 -arch=compute_61 -c -o release\cuda\DFSPH_cuda_basic_cuda.o SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.cu
 
 compiler_no_pch_compiler_make_all:
 compiler_no_pch_compiler_clean:
@@ -1750,7 +1975,7 @@ release\moc\moc_mainwindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWidget
 		gui\mainwindow.h \
 		release\moc\moc_predefs.h \
 		C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe
-	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\mainwindow.h -o release\moc\moc_mainwindow.cpp
+	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/cub-1.7.4/cub -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\mainwindow.h -o release\moc\moc_mainwindow.cpp
 
 release\moc\moc_simulationwindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMainWindow \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmainwindow.h \
@@ -1861,7 +2086,7 @@ release\moc\moc_simulationwindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\Qt
 		gui\simulationwindow.h \
 		release\moc\moc_predefs.h \
 		C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe
-	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\simulationwindow.h -o release\moc\moc_simulationwindow.cpp
+	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/cub-1.7.4/cub -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\simulationwindow.h -o release\moc\moc_simulationwindow.cpp
 
 release\moc\moc_consolewindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMainWindow \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmainwindow.h \
@@ -1983,7 +2208,7 @@ release\moc\moc_consolewindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWid
 		gui\consolewindow.h \
 		release\moc\moc_predefs.h \
 		C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe
-	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\consolewindow.h -o release\moc\moc_consolewindow.cpp
+	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/cub-1.7.4/cub -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\consolewindow.h -o release\moc\moc_consolewindow.cpp
 
 release\moc\moc_qtmessenger.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QObject \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qobject.h \
@@ -2092,7 +2317,7 @@ release\moc\moc_qtmessenger.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\
 		gui\qtmessenger.h \
 		release\moc\moc_predefs.h \
 		C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe
-	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\qtmessenger.h -o release\moc\moc_qtmessenger.cpp
+	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/cub-1.7.4/cub -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\qtmessenger.h -o release\moc\moc_qtmessenger.cpp
 
 release\moc\moc_consolewindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMainWindow \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmainwindow.h \
@@ -2214,7 +2439,7 @@ release\moc\moc_consolewindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWid
 		gui\consolewindow.h \
 		release\moc\moc_predefs.h \
 		C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe
-	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\consolewindow.h -o release\moc\moc_consolewindow.cpp
+	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/cub-1.7.4/cub -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\consolewindow.h -o release\moc\moc_consolewindow.cpp
 
 release\moc\moc_mainwindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMainWindow \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmainwindow.h \
@@ -3430,7 +3655,7 @@ release\moc\moc_mainwindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWidget
 		gui\mainwindow.h \
 		release\moc\moc_predefs.h \
 		C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe
-	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\mainwindow.h -o release\moc\moc_mainwindow.cpp
+	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/cub-1.7.4/cub -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\mainwindow.h -o release\moc\moc_mainwindow.cpp
 
 release\moc\moc_qtmessenger.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QObject \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qobject.h \
@@ -3539,7 +3764,7 @@ release\moc\moc_qtmessenger.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\
 		gui\qtmessenger.h \
 		release\moc\moc_predefs.h \
 		C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe
-	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\qtmessenger.h -o release\moc\moc_qtmessenger.cpp
+	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/cub-1.7.4/cub -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\qtmessenger.h -o release\moc\moc_qtmessenger.cpp
 
 release\moc\moc_simulationwindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMainWindow \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmainwindow.h \
@@ -3650,7 +3875,7 @@ release\moc\moc_simulationwindow.cpp: C:\Qt\5.10.1\msvc2015_64_static\include\Qt
 		gui\simulationwindow.h \
 		release\moc\moc_predefs.h \
 		C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe
-	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\simulationwindow.h -o release\moc\moc_simulationwindow.cpp
+	C:\Qt\5.10.1\msvc2015_64_static\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include release/moc/moc_predefs.h -IC:/Qt/5.10.1/msvc2015_64_static/mkspecs/win32-msvc -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/ode_0_15_1/include -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/boost_1_64_0 -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/shark/include -I"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/include" -ID:/Users/scarensac/Documents/qt_projects/simbicon_qt/external_libs/cub-1.7.4/cub -IC:/Qt/5.10.1/msvc2015_64_static/include -IC:/Qt/5.10.1/msvc2015_64_static/include/QtWidgets -IC:/Qt/5.10.1/msvc2015_64_static/include/QtGui -IC:/Qt/5.10.1/msvc2015_64_static/include/QtCore -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE" -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\shared" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\um" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.16299.0\winrt" gui\simulationwindow.h -o release\moc\moc_simulationwindow.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
@@ -3677,7 +3902,7 @@ compiler_yacc_impl_make_all:
 compiler_yacc_impl_clean:
 compiler_lex_make_all:
 compiler_lex_clean:
-compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
+compiler_clean: compiler_cuda_clean compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
 
 
 
@@ -7588,67 +7813,13 @@ release\obj\gui\mainwindow.obj: gui\mainwindow.cpp gui/mainwindow.h \
 		external_libs\boost_1_64_0\boost\serialization\deque.hpp \
 		external_libs\shark\include\shark\ObjectiveFunctions\AbstractConstraintHandler.h \
 		release\ui\ui_mainwindow.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QVariant \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QAction \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qaction.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qactiongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QApplication \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qcoreapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qeventloop.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qdesktopwidget.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qguiapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qinputmethod.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QButtonGroup \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qbuttongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QCheckBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qcheckbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractbutton.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QComboBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qcombobox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemdelegate.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyleoption.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qvalidator.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qregularexpression.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyle.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtabbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qrubberband.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qframe.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qabstractitemmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QDoubleSpinBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHBoxLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qboxlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayoutitem.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qgridlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHeaderView \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qheaderview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractscrollarea.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qitemselectionmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QLabel \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlabel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMenuBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenubar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenu.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QPushButton \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qpushbutton.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QSpinBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QStatusBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstatusbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QToolBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtoolbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QVBoxLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QDebug \
 		gui/consolewindow.h \
 		Utils/qdebugstream.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QMutex \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QTextEdit.h \
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractscrollarea.h \
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qframe.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qtextdocument.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qtextoption.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qtextcursor.h \
@@ -7782,6 +7953,7 @@ release\obj\gui\mainwindow.obj: gui\mainwindow.cpp gui/mainwindow.h \
 		gui/SubGLWindow.h \
 		gui/qtmessenger.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QObject \
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget \
 		Core\pose_control\posecontroller.h \
 		external_libs\shark\include\shark\Algorithms\DirectSearch\CMA.h \
 		external_libs\shark\include\shark\Algorithms\AbstractSingleObjectiveOptimizer.h \
@@ -8453,64 +8625,6 @@ release\obj\gui\simulationwindow.obj: gui\simulationwindow.cpp gui/simulationwin
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtabwidget.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qicon.h \
 		release\ui\ui_simulationwindow.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QVariant \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QAction \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qaction.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qactiongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QApplication \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qcoreapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qeventloop.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qdesktopwidget.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qguiapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qinputmethod.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QButtonGroup \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qbuttongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QCheckBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qcheckbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractbutton.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QComboBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qcombobox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemdelegate.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyleoption.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qvalidator.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qregularexpression.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyle.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtabbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qrubberband.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qframe.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qabstractitemmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QDoubleSpinBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QFrame \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QGridLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qgridlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayoutitem.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qboxlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHBoxLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHeaderView \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qheaderview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractscrollarea.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qitemselectionmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QLabel \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlabel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMenu \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenu.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMenuBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenubar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QPushButton \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qpushbutton.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QSlider \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QSpacerItem \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QSpinBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QTabWidget \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QVBoxLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget \
 		Globals.h \
 		gui/Application.h \
 		MathLib/Vector3d.h \
@@ -8611,6 +8725,7 @@ release\obj\gui\simulationwindow.obj: gui\simulationwindow.cpp gui/simulationwin
 		gui/SubGLWindow.h \
 		gui/qtmessenger.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QObject \
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QStringList \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\QPixmap \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\QIcon \
@@ -8736,45 +8851,8 @@ release\obj\gui\consolewindow.obj: gui\consolewindow.cpp gui/consolewindow.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qpen.h \
 		Utils/std_redirector.h \
 		release\ui\ui_consolewindow.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QVariant \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QAction \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qaction.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qactiongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QApplication \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qcoreapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qeventloop.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qdesktopwidget.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qguiapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qinputmethod.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QButtonGroup \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qbuttongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QGridLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qgridlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayoutitem.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qboxlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHeaderView \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qheaderview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qabstractitemmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qitemselectionmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemdelegate.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyleoption.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qvalidator.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qregularexpression.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyle.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtabbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qrubberband.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMenuBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenubar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenu.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QTextEdit \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtextedit.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtextedit.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\gui\consolewindow.obj gui\consolewindow.cpp
 
 release\obj\globals.obj: globals.cpp Globals.h \
@@ -9009,45 +9087,8 @@ release\obj\gui\consolewindow.obj: gui\consolewindow.cpp gui/consolewindow.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qpen.h \
 		Utils/std_redirector.h \
 		release\ui\ui_consolewindow.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QVariant \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QAction \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qaction.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qactiongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QApplication \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qcoreapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qeventloop.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qdesktopwidget.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qguiapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qinputmethod.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QButtonGroup \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qbuttongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QGridLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qgridlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayoutitem.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qboxlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHeaderView \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qheaderview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qabstractitemmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qitemselectionmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemdelegate.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyleoption.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qvalidator.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qregularexpression.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyle.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtabbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qrubberband.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMenuBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenubar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenu.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QTextEdit \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtextedit.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtextedit.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\gui\consolewindow.obj gui\consolewindow.cpp
 
 release\obj\gui\ControllerEditor.obj: gui\ControllerEditor.cpp gui/ControllerEditor.h \
@@ -9256,11 +9297,11 @@ release\obj\gui\ControllerEditor.obj: gui\ControllerEditor.cpp gui/ControllerEdi
 		gui/UI.h \
 		Core\velocity_control\velocitycontroller.h \
 		Physics/softbodypointmass.h \
-		SPlisHSPlasH\Interface.h \
-		SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h \
-		SPlisHSPlasH\BasicTypes.h \
-		SPlisHSPlasH\Vector.h \
-		SPlisHSPlasH\Quaternion.h
+		SPlisHSPlasH/Interface.h \
+		SPlisHSPlasH/DFSPH/DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH/BasicTypes.h \
+		SPlisHSPlasH/Vector.h \
+		SPlisHSPlasH/Quaternion.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\gui\ControllerEditor.obj gui\ControllerEditor.cpp
 
 release\obj\gui\CurveEditor.obj: gui\CurveEditor.cpp gui/CurveEditor.h \
@@ -10713,67 +10754,13 @@ release\obj\gui\mainwindow.obj: gui\mainwindow.cpp gui/mainwindow.h \
 		external_libs\boost_1_64_0\boost\serialization\deque.hpp \
 		external_libs\shark\include\shark\ObjectiveFunctions\AbstractConstraintHandler.h \
 		release\ui\ui_mainwindow.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QVariant \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QAction \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qaction.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qactiongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QApplication \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qcoreapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qeventloop.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qdesktopwidget.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qguiapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qinputmethod.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QButtonGroup \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qbuttongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QCheckBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qcheckbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractbutton.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QComboBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qcombobox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemdelegate.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyleoption.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qvalidator.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qregularexpression.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyle.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtabbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qrubberband.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qframe.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qabstractitemmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QDoubleSpinBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHBoxLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qboxlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayoutitem.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qgridlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHeaderView \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qheaderview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractscrollarea.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qitemselectionmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QLabel \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlabel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMenuBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenubar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenu.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QPushButton \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qpushbutton.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QSpinBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QStatusBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstatusbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QToolBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtoolbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QVBoxLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QDebug \
 		gui/consolewindow.h \
 		Utils/qdebugstream.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QMutex \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QTextEdit.h \
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractscrollarea.h \
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qframe.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qtextdocument.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qtextoption.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qtextcursor.h \
@@ -10907,6 +10894,7 @@ release\obj\gui\mainwindow.obj: gui\mainwindow.cpp gui/mainwindow.h \
 		gui/SubGLWindow.h \
 		gui/qtmessenger.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QObject \
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget \
 		Core\pose_control\posecontroller.h \
 		external_libs\shark\include\shark\Algorithms\DirectSearch\CMA.h \
 		external_libs\shark\include\shark\Algorithms\AbstractSingleObjectiveOptimizer.h \
@@ -11708,64 +11696,6 @@ release\obj\gui\simulationwindow.obj: gui\simulationwindow.cpp gui/simulationwin
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtabwidget.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qicon.h \
 		release\ui\ui_simulationwindow.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QVariant \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QAction \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qaction.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qactiongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QApplication \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qcoreapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qeventloop.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qdesktopwidget.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qguiapplication.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qinputmethod.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QButtonGroup \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qbuttongroup.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QCheckBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qcheckbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractbutton.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QComboBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qcombobox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemdelegate.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyleoption.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qvalidator.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qregularexpression.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractslider.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qstyle.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qtabbar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qrubberband.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qframe.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qabstractitemmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QDoubleSpinBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qspinbox.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QFrame \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QGridLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qgridlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlayoutitem.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qboxlayout.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHBoxLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QHeaderView \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qheaderview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractitemview.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qabstractscrollarea.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qitemselectionmodel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QLabel \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qlabel.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMenu \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenu.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QMenuBar \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qmenubar.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QPushButton \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\qpushbutton.h \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QSlider \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QSpacerItem \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QSpinBox \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QTabWidget \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QVBoxLayout \
-		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget \
 		Globals.h \
 		gui/Application.h \
 		MathLib/Vector3d.h \
@@ -11866,6 +11796,7 @@ release\obj\gui\simulationwindow.obj: gui\simulationwindow.cpp gui/simulationwin
 		gui/SubGLWindow.h \
 		gui/qtmessenger.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QObject \
+		C:\Qt\5.10.1\msvc2015_64_static\include\QtWidgets\QWidget \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\QStringList \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\QPixmap \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\QIcon \
@@ -12083,11 +12014,11 @@ release\obj\gui\UI.obj: gui\UI.cpp include\GL\glew.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtCore\qfiledevice.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qvector2d.h \
 		C:\Qt\5.10.1\msvc2015_64_static\include\QtGui\qtouchdevice.h \
-		SPlisHSPlasH\Interface.h \
-		SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h \
-		SPlisHSPlasH\BasicTypes.h \
-		SPlisHSPlasH\Vector.h \
-		SPlisHSPlasH\Quaternion.h
+		SPlisHSPlasH/Interface.h \
+		SPlisHSPlasH/DFSPH/DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH/BasicTypes.h \
+		SPlisHSPlasH/Vector.h \
+		SPlisHSPlasH/Quaternion.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\gui\UI.obj gui\UI.cpp
 
 release\obj\gsl\error.obj: gsl\error.c gsl/gsl_errno.h
@@ -12732,11 +12663,11 @@ release\obj\Physics\ODEWorld.obj: Physics\ODEWorld.cpp Physics/ODEWorld.h \
 		mathLib\Point3d.h \
 		Core\Character.h \
 		Physics/softbodypointmass.h \
-		SPlisHSPlasH\Interface.h \
-		SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h \
-		SPlisHSPlasH\BasicTypes.h \
-		SPlisHSPlasH\Vector.h \
-		SPlisHSPlasH\Quaternion.h
+		SPlisHSPlasH/Interface.h \
+		SPlisHSPlasH/DFSPH/DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH/BasicTypes.h \
+		SPlisHSPlasH/Vector.h \
+		SPlisHSPlasH/Quaternion.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\Physics\ODEWorld.obj Physics\ODEWorld.cpp
 
 release\obj\Physics\PreCollisionQuery.obj: Physics\PreCollisionQuery.cpp Physics/PreCollisionQuery.h \
@@ -13835,11 +13766,11 @@ release\obj\core\SimBiConFramework.obj: core\SimBiConFramework.cpp core/SimBiCon
 		Utils/Timer.h \
 		GLUtils\GLCamera.h \
 		mathLib\Point3d.h \
-		SPlisHSPlasH\Interface.h \
-		SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h \
-		SPlisHSPlasH\BasicTypes.h \
-		SPlisHSPlasH\Vector.h \
-		SPlisHSPlasH\Quaternion.h \
+		SPlisHSPlasH/Interface.h \
+		SPlisHSPlasH/DFSPH/DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH/BasicTypes.h \
+		SPlisHSPlasH/Vector.h \
+		SPlisHSPlasH/Quaternion.h \
 		core/velocity_control/velocitycontroller.h \
 		core/pose_control/swingfootcontroller.h \
 		Core\pose_control\posecontrolglobals.h \
@@ -19433,6 +19364,89 @@ release\obj\core\medium_control\externalforcefieldscompenser.obj: core\medium_co
 		MathLib/Plane.h \
 		Physics/PreCollisionQuery.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\core\medium_control\externalforcefieldscompenser.obj core\medium_control\externalforcefieldscompenser.cpp
+
+release\obj\SPlisHSPlasH\Interface.obj: SPlisHSPlasH\Interface.cpp SPlisHSPlasH/Interface.h \
+		SPlisHSPlasH/DFSPH/DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH/BasicTypes.h \
+		SPlisHSPlasH/Vector.h \
+		SPlisHSPlasH/Quaternion.h \
+		MathLib/Point3d.h \
+		MathLib/ThreeTuple.h \
+		MathLib/mathLib.h \
+		Utils/Utils.h \
+		MathLib/Quaternion.h \
+		mathLib\TransformationMatrix.h \
+		MathLib/Matrix.h \
+		MathLib\MathLib.h \
+		gsl/matrix/gsl_matrix.h \
+		gsl/matrix/gsl_matrix_double.h \
+		gsl/gsl_types.h \
+		gsl/gsl_errno.h \
+		gsl/block/gsl_check_range.h \
+		gsl/vector/gsl_vector_double.h \
+		gsl/block/gsl_block_double.h \
+		MathLib/Vector3d.h \
+		mathLib\Vector3d.h \
+		SPlisHSPlasH/Shader.h \
+		include\GL\glew.h \
+		SPlisHSPlasH/DFSPH/DFSPH_CUDA.h \
+		SPlisHSPlasH/Common.h \
+		SPlisHSPlasH/SPHKernels.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\SPlisHSPlasH\Interface.obj SPlisHSPlasH\Interface.cpp
+
+release\obj\SPlisHSPlasH\Shader.obj: SPlisHSPlasH\Shader.cpp SPlisHSPlasH/Shader.h \
+		include\GL\glew.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\SPlisHSPlasH\Shader.obj SPlisHSPlasH\Shader.cpp
+
+release\obj\SPlisHSPlasH\SPHKernels.obj: SPlisHSPlasH\SPHKernels.cpp SPlisHSPlasH/SPHKernels.h \
+		SPlisHSPlasH/Common.h \
+		SPlisHSPlasH/BasicTypes.h \
+		SPlisHSPlasH/Vector.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\SPlisHSPlasH\SPHKernels.obj SPlisHSPlasH\SPHKernels.cpp
+
+release\obj\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.obj: SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp SPlisHSPlasH/DFSPH/DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH/BasicTypes.h \
+		SPlisHSPlasH/Vector.h \
+		SPlisHSPlasH/Quaternion.h \
+		SPlisHSPlasH/SPHKernels.h \
+		SPlisHSPlasH/Common.h \
+		SPlisHSPlasH/DFSPH/DFSPH_cuda_basic.h \
+		include\GL\glew.h \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_gl_interop.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\builtin_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\device_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\host_defines.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\host_defines.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\driver_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\vector_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\surface_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\texture_types.h"
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.obj SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp
+
+release\obj\SPlisHSPlasH\DFSPH\DFSPH_CUDA.obj: SPlisHSPlasH\DFSPH\DFSPH_CUDA.cpp SPlisHSPlasH/DFSPH/DFSPH_CUDA.h \
+		SPlisHSPlasH/Common.h \
+		SPlisHSPlasH/BasicTypes.h \
+		SPlisHSPlasH/Vector.h \
+		SPlisHSPlasH/SPHKernels.h \
+		SPlisHSPlasH/DFSPH/DFSPH_c_arrays_structure.h \
+		SPlisHSPlasH/Quaternion.h \
+		SPlisHSPlasH/Utilities/Timing.h \
+		SPlisHSPlasH/DFSPH/DFSPH_cuda_basic.h \
+		include\GL\glew.h \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\cuda_gl_interop.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\builtin_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\device_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\host_defines.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\host_defines.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\driver_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\vector_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\surface_types.h" \
+		"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\texture_types.h"
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\SPlisHSPlasH\DFSPH\DFSPH_CUDA.obj SPlisHSPlasH\DFSPH\DFSPH_CUDA.cpp
+
+release\obj\SPlisHSPlasH\Utilities\Timing.obj: SPlisHSPlasH\Utilities\Timing.cpp SPlisHSPlasH/Utilities/Timing.h \
+		SPlisHSPlasH/BasicTypes.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\SPlisHSPlasH\Utilities\Timing.obj SPlisHSPlasH\Utilities\Timing.cpp
 
 release\obj\simbicon_qt_plugin_import.obj: D:/Users/scarensac/Documents/qt_projects/simbicon_qt/simbicon_qt_plugin_import.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\obj\simbicon_qt_plugin_import.obj D:/Users/scarensac/Documents/qt_projects/simbicon_qt/simbicon_qt_plugin_import.cpp

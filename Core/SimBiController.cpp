@@ -129,7 +129,7 @@ void SimBiController::preprocess_simulation_step(double dt, std::vector<ContactP
 
 }
 
-void SimBiController::simulation_step(double dt,std::map<uint, WaterImpact>& resulting_impact)
+void SimBiController::simulation_step(double dt, WaterImpact &resulting_impact)
 {
     //launch the controller to compute the torques we will need to apply
     computeTorques(resulting_impact);
@@ -265,7 +265,7 @@ void SimBiController::updateTrackingPose(DynamicArray<double>& trackingPose, dou
 /**
     This method is used to compute the torques that are to be applied at the next step.
 */
-void SimBiController::computeTorques(std::map<uint, WaterImpact>& resulting_impact){
+void SimBiController::computeTorques(WaterImpact &resulting_impact){
     //*
     if (!pose_controller->check_fsm_state()){
         return;
@@ -328,58 +328,7 @@ void SimBiController::computeTorques(std::map<uint, WaterImpact>& resulting_impa
     //*/
 
 
-    //we'll also compute the torques that cancel out the effects of gravity, for better tracking purposes
-    external_force_fields_compenser->compute_compensation(resulting_impact);
-    const std::vector<Vector3d>& buff_vec=external_force_fields_compenser->torques();
-    external_force_fields_compenser->compute_compensation_v2(resulting_impact);
-    std::vector<Vector3d>& buff_vec2=external_force_fields_compenser->torques2();
-    Vector3d taif=torques[0];
-    Vector3d taf=taif+buff_vec2[0];
-    double reduction_factor=0.;
-    double reduction_factor_test_order=1;//ce système ne marche pas
-    for (int i = 0; i<(int)character->getJointCount(); i++){
-        Vector3d calc=torques[i]*buff_vec2[i];
-        if (calc.x<0){
-            buff_vec2[i].x*=reduction_factor;
-        }else{
-            if (buff_vec2[i].x>0){
-                double test_order=std::abs(torques[i].x/buff_vec2[i].x);
-                if (test_order<0.1){
-                    buff_vec2[i].x*=reduction_factor_test_order;
-                }
-            }
-        }
-        if (calc.y<0){
-            buff_vec2[i].y*=reduction_factor;
-        }else{
-            if (buff_vec2[i].y>0){
-                double test_order=std::abs(torques[i].y/buff_vec2[i].y);
-                if (test_order<0.1){
-                    buff_vec2[i].y*=reduction_factor_test_order;
-                }
-            }
-        }
-        if (calc.z<0){
-            buff_vec2[i].z*=reduction_factor;
-        }else{
-            if (buff_vec2[i].z>0){
-                double test_order=std::abs(torques[i].z/buff_vec2[i].z);
-                if (test_order<0.1){
-                    buff_vec2[i].z*=reduction_factor_test_order;
-                }
-            }
-        }
 
-
-        torques[i] += buff_vec2[i];
-
-
-        /*
-                if (buff_vec2[i].length()>0){
-                    std::cout<<character->getJoint(i)->name();
-                }
-                //*/
-    }
 
 
     /*
@@ -484,8 +433,19 @@ void SimBiController::computeTorques(std::map<uint, WaterImpact>& resulting_impa
         std::cout<<oss.str();
     }
     //*/
-    if (phi>0.4){
-//        torques[character->stance_foot()->parent_joint()->idx()].y=150;
+
+    //we'll also compute the torques that cancel out the effects of gravity, for better tracking purposes
+    external_force_fields_compenser->compute_compensation_v2(resulting_impact);
+    std::vector<Vector3d>& buff_vec2=external_force_fields_compenser->torques2();
+    for (int i = 0; i<(int)character->getJointCount(); i++){
+        torques[i] += buff_vec2[i];
+
+
+        /*
+                if (buff_vec2[i].length()>0){
+                    std::cout<<character->getJoint(i)->name();
+                }
+                //*/
     }
 
     //this is a ponderation if we are near to fall

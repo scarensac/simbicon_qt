@@ -1115,11 +1115,14 @@ void ODEWorld::applyTorqueTo(RigidBody* b, const Vector3d& t){
     this method is used to compute the effect of water (it convert a level of water into the induced forces
     this version only work for the bipV2 caracter
 */
-void ODEWorld::compute_water_impact(Character* character, float water_level, std::map<uint, WaterImpact>& resulting_impact){
+void ODEWorld::compute_water_impact(Character* character, float water_level, WaterImpact &resulting_impact){
     //first I check if the water have any density (if not it's useless to try anything)
     if (IS_ZERO(SimGlobals::liquid_density)||IS_ZERO(SimGlobals::water_level)){
         return;
     }
+
+
+    resulting_impact.clear();
 
     //*
     std::vector<Joint*> lower_body;
@@ -1179,8 +1182,11 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, std
         }
         //*/
 
+        ///TODO see what the deal with that, it's a relic from old code, and I won't work with it anymore normaly
+        ///I don't realy see why limiting the torque is a thing ...
         //Now I need to limit the drag torque (depending on the type of join)
         //there are 3 types of join with only one having a restriction (the HingeJoint)
+        /*
         HingeJoint* hj = dynamic_cast<HingeJoint*>(joint);
         if (hj != NULL){
             Vector3d axis = body->getWorldCoordinates(hj->axis());
@@ -1188,6 +1194,7 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, std
             water_impact.drag_torque = axis*water_impact.drag_torque.dotProductWith(axis);
         }
         resulting_impact[joint->idx()] = water_impact;
+        //*/
 
     }
     //*/
@@ -2275,7 +2282,7 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
                 }
 
                 //another easy case is when the cilinder is near vertical
-                //I will supose that as long as the angle is less than 5° it is vertical
+                //I will supose that as long as the angle is less than 5ï¿½ it is vertical
                 //trully I conpare with 5.73 so that the sin is near 0.1
                 if (std::abs(sin_angle) < 0.01){
                     double h = water_level - lowest_pt.y + vh.y / 2;
@@ -2440,10 +2447,10 @@ void ODEWorld::initParticleFluid(){
 
     //now the problem is that I need ot add the objects that interact witht he fluid in the physics simulation
     //add all the objects
-    /*
+    //*
     std::string vect_obj_name[]={"pelvis","torso","head","lUpperarm","lLowerarm","rUpperarm","rLowerarm",
                                  "lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};
-    int numObj=1;
+    int numObj=13;
 
     for(int i=0;i<numObj;++i){
         if(getRBByName(vect_obj_name[i])!=NULL){
@@ -2457,7 +2464,7 @@ void ODEWorld::initParticleFluid(){
     //*/
 
 
-    //*
+    /*
     //this is a test with a sphere
     //std::string objs_models[]={"configuration_data/fluid_data/objects/boxTest.rbs"};
     std::string objs_models[]={"configuration_data/fluid_data/objects/ballTest.rbs"};

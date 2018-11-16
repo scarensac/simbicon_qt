@@ -6,7 +6,7 @@
 
 CONFIG += object_parallel_to_source
 CONFIG += no_batch
-#CONFIG += FLUID_COMPIL
+CONFIG += FLUID_COMPIL
 
 QT       += core gui
 

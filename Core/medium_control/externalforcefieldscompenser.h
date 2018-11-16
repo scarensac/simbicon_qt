@@ -33,13 +33,13 @@ public:
     This method computes the torques that cancel out the effects of gravity,
     for better tracking purposes
     */
-    void compute_compensation(std::map<uint, WaterImpact>& resulting_impact);
+    void compute_compensation(WaterImpact& resulting_impact);
 
     /**
     This method computes the torques that cancel out the effects of gravity,
     for better tracking purposes
     */
-    void compute_compensation_v2(std::map<uint, WaterImpact>& resulting_impact);
+    void compute_compensation_v2(WaterImpact &resulting_impact);
 
 protected:
     /**

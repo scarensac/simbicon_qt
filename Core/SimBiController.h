@@ -163,7 +163,7 @@ public:
     /**
      * @brief this function handles all the processing necessary during simulation step
      */
-    void simulation_step(double dt, std::map<uint, WaterImpact> &resulting_impact);
+    void simulation_step(double dt, WaterImpact &resulting_impact);
 
     /**
      * @brief this function handles all the postprocessing necessary at the end of a simulation step
@@ -183,7 +183,7 @@ public:
     /**
         This method is used to compute the torques that are to be applied at the next step.
     */
-    void computeTorques(std::map<uint, WaterImpact>& resulting_impact);
+    void computeTorques(WaterImpact& resulting_impact);
 
     /**
         This method is used to advance the controller in time. It takes in a list of the contact points, since they might be

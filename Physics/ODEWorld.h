@@ -275,7 +275,7 @@ public:
 	/**
 		this method is used to compute the effect of water (it convert a level of water into the induced forces
 	*/
-	void compute_water_impact(Character* character,float water_level,std::map<uint,WaterImpact>& resulting_impact);
+    void compute_water_impact(Character* character,float water_level,   WaterImpact& resulting_impact);
 
 
 

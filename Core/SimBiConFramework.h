@@ -67,7 +67,7 @@ private:
 
 public:
     //tis variable contain the impact of the water for the previous step
-    std::map<uint, WaterImpact> resulting_impact;
+    WaterImpact resulting_impact;
 
 public:
     SimBiConFramework(char* input, char* conFile = NULL);
