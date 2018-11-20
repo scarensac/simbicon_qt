@@ -1232,6 +1232,10 @@ void DFSPHCUDA::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_fo
     m_data.getFluidImpactOnDynamicBodies(sph_forces,sph_moments);
 }
 
+void DFSPHCUDA::getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli){
+    m_data.getFluidBoyancyOnDynamicBodies(forces,pts_appli);
+}
+
 SPH::Vector3d DFSPHCUDA::getSimulationCenter(){
     return m_data.getSimulationCenter();
 }

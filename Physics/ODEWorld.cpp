@@ -1004,16 +1004,71 @@ void ODEWorld::advanceInTimeParticleFluidEngine(double deltaT){
     //do the particle fluid simulation
     Interface::updateTimeStepDuration(deltaT);
     Interface::fluidSimulationStep();
+
+    //now Ill get other values that will represent the boyant force
+    std::vector<Vector3d> forces_b;
+    std::vector<Point3d> pts_appli_b;
+    Interface::getFluidBoyancyOnDynamicBodies(forces_b,pts_appli_b);
+
+    for (int i=0;i<vect_objects_fluid_interaction.size();++i){
+        RigidBody* body=vect_objects_fluid_interaction[i];
+
+        ForceStruct impact;
+        impact.pt=pts_appli_b[i];
+        impact.F=forces_b[i];
+        impact.M=Vector3d(0,0,0);
+
+        SimGlobals::vect_forces.push_back(impact);
+    }
+
 }
-void ODEWorld::readDataFromParticleFluidEngine(){
+void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact){
+
+
+    //resize the data structure
+    resulting_impact.init(getRBCount());
+
+    //now Ill get other values that will represent the boyant force
+    std::vector<Vector3d> forces_b;
+    std::vector<Point3d> pts_appli_b;
+    Interface::getFluidBoyancyOnDynamicBodies(forces_b,pts_appli_b);
+
+    for (int i=0;i<vect_objects_fluid_interaction.size();++i){
+        RigidBody* body=vect_objects_fluid_interaction[i];
+
+        ForceStruct impact;
+        impact.pt=pts_appli_b[i];
+        impact.F=forces_b[i];
+        impact.M=Vector3d(0,0,0);
+        resulting_impact.impact_boyancy[body->idx()]=impact;
+    }
+
+
+
+
     std::vector<Vector3d> forces, moments;
     Interface::getFluidImpactOnDynamicBodies(forces, moments);
 
     for (int i=0;i<vect_objects_fluid_interaction.size();++i){
         RigidBody* body=vect_objects_fluid_interaction[i];
-        applyForceTo(body,forces[i],Point3d(0,0,0));
-        applyTorqueTo(body,moments[i]);
+
+        ForceStruct impact;
+        impact.pt=body->getCMPosition();
+        impact.F=forces[i];
+        impact.M=moments[i];
+
+        if (!impact.F.isZeroVector()){
+            applyForceTo(body,impact.F,body->getLocalCoordinates(impact.pt));
+        }
+        if (!impact.M.isZeroVector()){
+            applyTorqueTo(body,impact.M);
+        }
+
+        resulting_impact.impact_drag[body->idx()]=impact;
+
     }
+
+
 
     //std::cout<<"sum force automatic : "<<forces[0].x<<" "<<forces[0].y<<" "<<forces[0].z<<std::endl;
 
@@ -1116,13 +1171,15 @@ void ODEWorld::applyTorqueTo(RigidBody* b, const Vector3d& t){
     this version only work for the bipV2 caracter
 */
 void ODEWorld::compute_water_impact(Character* character, float water_level, WaterImpact &resulting_impact){
+
+    //resize the data structure
+    resulting_impact.init(getRBCount());
+
     //first I check if the water have any density (if not it's useless to try anything)
     if (IS_ZERO(SimGlobals::liquid_density)||IS_ZERO(SimGlobals::water_level)){
         return;
     }
 
-
-    resulting_impact.clear();
 
     //*
     std::vector<Joint*> lower_body;
@@ -1142,38 +1199,41 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
         std::string bname=body->name();
 
 
-        WaterImpact water_impact;
+        ForceStruct impact_drag;
+        ForceStruct impact_boyancy;
+
+        //*
+        //don't bother with the toes they are not large enougth to have any significative impact
         if (bname=="rToes"){
-            water_impact.drag_torque = compute_liquid_drag_on_toes(joint, water_level, drag_density);
-            water_impact.boyancy = compute_buoyancy(joint, water_level);
+            //impact_drag = compute_liquid_drag_on_toes(body, water_level, drag_density);
+            //impact_boyancy = compute_buoyancy(body, water_level);
         }
         else if (bname=="lToes"){
-            water_impact.drag_torque = compute_liquid_drag_on_toes(joint, water_level, drag_density);
-            water_impact.boyancy = compute_buoyancy(joint, water_level);
-        }
-        else if (bname=="rFoot"){
-            water_impact.drag_torque = compute_liquid_drag_on_feet(joint, water_level, drag_density, friction_factor);
-            water_impact.boyancy = compute_buoyancy(joint, water_level);
+            //impact_drag = compute_liquid_drag_on_toes(body, water_level, drag_density);
+            //impact_boyancy = compute_buoyancy(body, water_level);
+        }else if (bname=="rFoot"){
+            impact_drag = compute_liquid_drag_on_feet(body, water_level, drag_density, friction_factor);
+            impact_boyancy = compute_buoyancy(body, water_level);
         }
         else if (bname=="lFoot"){
-            water_impact.drag_torque = compute_liquid_drag_on_feet(joint, water_level, drag_density, friction_factor);
-            water_impact.boyancy = compute_buoyancy(joint, water_level);
+            impact_drag = compute_liquid_drag_on_feet(body, water_level, drag_density, friction_factor);
+            impact_boyancy = compute_buoyancy(body, water_level);
         }
         else if (bname=="lLowerleg"){
-            water_impact.drag_torque = compute_liquid_drag_on_legs(joint, water_level, drag_density, friction_factor);
-            water_impact.boyancy = compute_buoyancy(joint, water_level);
+            impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density, friction_factor);
+            impact_boyancy = compute_buoyancy(body, water_level);
         }
         else if (bname=="rLowerleg"){
-            water_impact.drag_torque = compute_liquid_drag_on_legs(joint, water_level, drag_density, friction_factor);
-            water_impact.boyancy = compute_buoyancy(joint, water_level);
+            impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density, friction_factor);
+            impact_boyancy = compute_buoyancy(body, water_level);
         }
         else if (bname=="lUpperleg"){
-            water_impact.drag_torque = compute_liquid_drag_on_legs(joint, water_level, drag_density, friction_factor);
-            water_impact.boyancy = compute_buoyancy(joint, water_level);
+            impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density, friction_factor);
+            impact_boyancy = compute_buoyancy(body, water_level);
         }
         else if (bname=="rUpperleg"){
-            water_impact.drag_torque = compute_liquid_drag_on_legs(joint, water_level, drag_density, friction_factor);
-            water_impact.boyancy = compute_buoyancy(joint, water_level);
+            impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density, friction_factor);
+            impact_boyancy = compute_buoyancy(body, water_level);
         }
         else{
             //should be impossible with the current system
@@ -1182,23 +1242,37 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
         }
         //*/
 
-        ///TODO see what the deal with that, it's a relic from old code, and I won't work with it anymore normaly
-        ///I don't realy see why limiting the torque is a thing ...
-        //Now I need to limit the drag torque (depending on the type of join)
-        //there are 3 types of join with only one having a restriction (the HingeJoint)
-        /*
-        HingeJoint* hj = dynamic_cast<HingeJoint*>(joint);
-        if (hj != NULL){
-            Vector3d axis = body->getWorldCoordinates(hj->axis());
-            axis /= axis.length();
-            water_impact.drag_torque = axis*water_impact.drag_torque.dotProductWith(axis);
+        if (!impact_boyancy.isZero()){
+
+            impact_drag.modifyApplicationPoint(body->getCMPosition());
+            impact_boyancy.modifyApplicationPoint(body->getCMPosition());
+
+            //*
+            applyForceTo(body, impact_drag.F, body->getLocalCoordinates(impact_drag.pt));
+            if (!impact_drag.M.isZeroVector()){
+                //applyTorqueTo(body,impact_drag.M);
+            }
+
+            applyForceTo(body, impact_boyancy.F, body->getLocalCoordinates(impact_boyancy.pt));
+            if (!impact_boyancy.M.isZeroVector()){
+                //applyTorqueTo(body,impact_boyancy.M);
+            }
+            //*/
+
+
+
+            resulting_impact.impact_drag[body->idx()]=impact_drag;
+            resulting_impact.impact_boyancy[body->idx()]=impact_boyancy;
+
+
+
         }
-        resulting_impact[joint->idx()] = water_impact;
-        //*/
+
 
     }
     //*/
 
+    resulting_impact.check_for_undefined();
 }
 
 
@@ -1207,22 +1281,21 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
 this function is a children function of the above one (it prevent mass duplication of code for similar body parts
 this function handle the toes
 */
-Vector3d ODEWorld::compute_liquid_drag_on_toes(Joint* joint, float water_level, double eff_density){
+ForceStruct ODEWorld::compute_liquid_drag_on_toes(RigidBody *body, float water_level, double eff_density){
 
-
-    RigidBody* body = static_cast<RigidBody*>(joint->child());
+    throw("ODEWorld::compute_liquid_drag_on_toes we don't use a sphere for the toes anymore and so this function must be changed");
 
     CollisionDetectionPrimitive* cdp = body->cdps.front();
     SphereCDP* sphere = dynamic_cast<SphereCDP*>(cdp);
 
     if (sphere == NULL){
-        throwError("the toes should only have a sphere primitive...");
-        return Vector3d();
+        throw("the toes should only have a sphere primitive...");
+        return ForceStruct();
     }
 
     double dy = water_level - body->getCMPosition().getY();
 
-    Vector3d drag_torque = Vector3d(0, 0, 0);
+    ForceStruct drag_impact;
 
     //we vrify that the water hit the ball before doing anything
     if (dy + sphere->getRadius()>0){
@@ -1285,44 +1358,26 @@ Vector3d ODEWorld::compute_liquid_drag_on_toes(Joint* joint, float water_level, 
         Vector3d F = -V*V.length() * 1 / 2 * eff_density*S;
 
 
-        //if we remove th e approximation of constant speed on the whole toes we need to stop doing the integral
-        //and apply the force on every ds
-        applyForceTo(body, F, sphere->getCenter());
-
-
-
-
-        /*
-        //this can be used to show the forces
-        ForceStruct cp;
-        cp.F = F;
-        cp.pt = body->getWorldCoordinates(sphere->getCenter());
-        SimGlobals::vect_forces.push_back(cp);
-        //*/
-
-
-        Vector3d op = sphere->getCenter()-joint->child_joint_position();
-        drag_torque= body->getWorldCoordinates(op).crossProductWith(F);
-
+        drag_impact.pt=body->getWorldCoordinates(sphere->getCenter());
+        drag_impact.F=F;
 
     }
 
-    return drag_torque;
+    return drag_impact;
 }
 
 /**
 this function is a children function of the above one (it prevent mass duplication of code for similar body parts)
 this function handle the feet
 */
-Vector3d ODEWorld::compute_liquid_drag_on_feet(Joint* joint, float water_level, double eff_density, double friction_coef){
-    RigidBody* body = static_cast<RigidBody*>(joint->child());
+ForceStruct ODEWorld::compute_liquid_drag_on_feet(RigidBody *body, float water_level, double eff_density, double friction_coef){
 
     CollisionDetectionPrimitive* cdp = body->cdps.front();
     BoxCDP* box = dynamic_cast<BoxCDP*>(cdp);
 
     if (box == NULL){
         //throwError("the toes should only have a sphere primitive...");
-        return Vector3d();
+        return ForceStruct();
     }
 
     //I want the lower points to find out if the box is in the water
@@ -1350,7 +1405,7 @@ Vector3d ODEWorld::compute_liquid_drag_on_feet(Joint* joint, float water_level, 
         }
     }
 
-    Vector3d drag_torque=Vector3d(0,0,0);
+    ForceStruct drag_impact(body->getCMPosition());
 
     //we vrify that the water hit the ball before doing anything
     if (miny<water_level){
@@ -1412,7 +1467,6 @@ Vector3d ODEWorld::compute_liquid_drag_on_feet(Joint* joint, float water_level, 
         //*/
         //*
         //I need this to get hthe world coordinates
-        RigidBody* body = static_cast<RigidBody*>(joint->child());
 
         Vector3d nx = body->getWorldCoordinates(Vector3d(1, 0, 0));
         Vector3d ny = body->getWorldCoordinates(Vector3d(0, 1, 0));
@@ -1429,61 +1483,60 @@ Vector3d ODEWorld::compute_liquid_drag_on_feet(Joint* joint, float water_level, 
         cur_pos = body->getWorldCoordinates(center + Point3d(-box->X_length() / 2 + d_x / 2,
                                                              -box->Y_length() / 2 + d_y / 2, -box->Z_length() / 2));
         cur_normal = -nz;
-        drag_torque += compute_liquid_drag_on_planev2(joint, cur_pos, cur_normal, water_level,
+        drag_impact += compute_liquid_drag_on_planev2(body, cur_pos, cur_normal, water_level,
                                                       wvx, wvy, nbr_interval_x, nbr_interval_y, eff_density);
 
         //now the front face
         cur_pos = body->getWorldCoordinates(center + Point3d(-box->X_length() / 2 + d_x / 2,
                                                              -box->Y_length() / 2 + d_y / 2, box->Z_length() / 2));
         cur_normal = nz;
-        drag_torque += compute_liquid_drag_on_planev2(joint, cur_pos, cur_normal, water_level
+        drag_impact += compute_liquid_drag_on_planev2(body, cur_pos, cur_normal, water_level
                                                       , wvx, wvy, nbr_interval_x, nbr_interval_y, eff_density);
 
         //now the left face
         cur_pos = body->getWorldCoordinates(center + Point3d(box->X_length() / 2, -box->Y_length() / 2 + d_y / 2,
                                                              -box->Z_length() / 2 + d_z / 2));
         cur_normal = nx;
-        drag_torque += compute_liquid_drag_on_planev2(joint, cur_pos, cur_normal, water_level,
+        drag_impact += compute_liquid_drag_on_planev2(body, cur_pos, cur_normal, water_level,
                                                       wvy, wvz, nbr_interval_y, nbr_interval_z, eff_density);
 
         //now the right face
         cur_pos = body->getWorldCoordinates(center + Point3d(-box->X_length() / 2, -box->Y_length() / 2 + d_y / 2
                                                              , -box->Z_length() / 2 + d_z / 2));
         cur_normal = -nx;
-        drag_torque += compute_liquid_drag_on_planev2(joint, cur_pos, cur_normal, water_level,
+        drag_impact += compute_liquid_drag_on_planev2(body, cur_pos, cur_normal, water_level,
                                                       wvy, wvz, nbr_interval_y, nbr_interval_z, eff_density);
 
         //now the top face
         cur_pos = body->getWorldCoordinates(center + Point3d(-box->X_length() / 2 + d_x / 2, box->Y_length() / 2,
                                                              -box->Z_length() / 2 + d_z / 2));
         cur_normal = ny;
-        drag_torque += compute_liquid_drag_on_planev2(joint, cur_pos, cur_normal, water_level,
+        drag_impact += compute_liquid_drag_on_planev2(body, cur_pos, cur_normal, water_level,
                                                       wvx, wvz, nbr_interval_x, nbr_interval_z, eff_density);
 
         //now the bottom face to finish
         cur_pos = body->getWorldCoordinates(center + Point3d(-box->X_length() / 2 + d_x / 2, -box->Y_length() / 2,
                                                              -box->Z_length() / 2 + d_z / 2));
         cur_normal = -ny;
-        drag_torque += compute_liquid_drag_on_planev2(joint, cur_pos, cur_normal, water_level,
+        drag_impact += compute_liquid_drag_on_planev2(body, cur_pos, cur_normal, water_level,
                                                       wvx, wvz, nbr_interval_x, nbr_interval_z, eff_density);
 
         //*/
     }
 
-    return drag_torque;
+    return drag_impact;
 }
 
 /**
     Compute and affect to force on a face
 */
-Vector3d ODEWorld::compute_liquid_drag_on_plane(Joint* joint, double l_x, double l_y, double l_z, Point3d pos,
+ForceStruct ODEWorld::compute_liquid_drag_on_plane(RigidBody *body, double l_x, double l_y, double l_z, Point3d pos,
                                                 Vector3d normal, float water_level,	int nbr_interval_x, int nbr_interval_y, int nbr_interval_z){
 
 
-    RigidBody* body = static_cast<RigidBody*>(joint->child());
 
 
-    Vector3d drag_torque = Vector3d(0, 0, 0);
+    ForceStruct drag_impact(body->getCMPosition());
 
     double d_x = 0, d_y = 0, d_z = 0;
     if (nbr_interval_x > 0){
@@ -1525,12 +1578,16 @@ Vector3d ODEWorld::compute_liquid_drag_on_plane(Joint* joint, double l_x, double
                     if (F.length() > 0.1){
                         F /= 2;
                     }
-                    //if we remove th e approximation of constant speed on the whole toes we need to stop doing the integral
-                    //and apply the force on every ds
-                    applyForceTo(body,F, pos);
 
-                    Vector3d op = pos - joint->child_joint_position();
-                    drag_torque += body->getWorldCoordinates(op).crossProductWith(F);
+                    ForceStruct elem_impact;
+                    elem_impact.F=F;
+                    elem_impact.pt=body->getWorldCoordinates(pos);
+
+                    //now tranfer it to the body COM
+                    elem_impact.modifyApplicationPoint(body->getCMPosition());
+
+                    //and add it
+                    drag_impact+=elem_impact;
 
                     /*
                     //this can be used to show the forces
@@ -1576,12 +1633,17 @@ Vector3d ODEWorld::compute_liquid_drag_on_plane(Joint* joint, double l_x, double
                     if (F.length() > 0.1){
                         F /= 2;
                     }
-                    //if we remove th e approximation of constant speed on the whole toes we need to stop doing the integral
-                    //and apply the force on every ds
-                    applyForceTo(body, F, pos);
 
-                    Vector3d op = pos - joint->child_joint_position();
-                    drag_torque += body->getWorldCoordinates(op).crossProductWith(F);
+
+                    ForceStruct elem_impact;
+                    elem_impact.F=F;
+                    elem_impact.pt=body->getWorldCoordinates(pos);
+
+                    //now tranfer it to the body COM
+                    elem_impact.modifyApplicationPoint(body->getCMPosition());
+
+                    //and add it
+                    drag_impact+=elem_impact;
 
                     /*
                     //this can be used to show the forces
@@ -1624,13 +1686,20 @@ Vector3d ODEWorld::compute_liquid_drag_on_plane(Joint* joint, double l_x, double
 
                     //if we remove th e approximation of constant speed on the whole toes we need to stop doing the integral
                     //and apply the force on every ds
-                    applyForceTo(body, F, pos);
                     if (F.length() > 0.1){
                         F /= 2;
                     }
-                    Vector3d op = pos - joint->child_joint_position();
-                    drag_torque += body->getWorldCoordinates(op).crossProductWith(F);
 
+
+                    ForceStruct elem_impact;
+                    elem_impact.F=F;
+                    elem_impact.pt=body->getWorldCoordinates(pos);
+
+                    //now tranfer it to the body COM
+                    elem_impact.modifyApplicationPoint(body->getCMPosition());
+
+                    //and add it
+                    drag_impact+=elem_impact;
                     /*
                     //this can be used to show the forces
                     ForceStruct cp;
@@ -1645,17 +1714,16 @@ Vector3d ODEWorld::compute_liquid_drag_on_plane(Joint* joint, double l_x, double
         }
     }
 
-    return drag_torque;
+    return drag_impact;
 }
 
 
 
-Vector3d ODEWorld::compute_liquid_drag_on_planev2(Joint* joint, Point3d pos, Vector3d normal, float water_level,
+ForceStruct ODEWorld::compute_liquid_drag_on_planev2(RigidBody *body, Point3d pos, Vector3d normal, float water_level,
                                                   Vector3d v1, Vector3d v2, int nbr_interval_v1, int nbr_interval_v2, double density, double friction_coef, double l3){
 
-    RigidBody* body = static_cast<RigidBody*>(joint->child());
 
-    Vector3d drag_torque = Vector3d(0, 0, 0);
+    ForceStruct drag_impact(body->getCMPosition());
 
 
     double d_S = v1.length()*v2.length();
@@ -1693,13 +1761,15 @@ Vector3d ODEWorld::compute_liquid_drag_on_planev2(Joint* joint, Point3d pos, Vec
                 }
 
 
-                //if we remove th e approximation of constant speed on the whole toes we need to stop doing the integral
-                //and apply the force on every ds
-                applyForceTo(body, F, body->getLocalCoordinates(pos));
+                ForceStruct elem_impact;
+                elem_impact.F=F;
+                elem_impact.pt=pos;
 
+                //now tranfer it to the body COM
+                elem_impact.modifyApplicationPoint(body->getCMPosition());
 
-                Vector3d op = pos - body->getWorldCoordinates(joint->child_joint_position());
-                drag_torque += op.crossProductWith(F);
+                //and add it
+                drag_impact+=elem_impact;
 
                 /*
                 //this can be used to show the forces
@@ -1719,7 +1789,7 @@ Vector3d ODEWorld::compute_liquid_drag_on_planev2(Joint* joint, Point3d pos, Vec
         }
         pos = line_start + v1;
     }
-    return drag_torque;
+    return drag_impact;
 }
 
 
@@ -1728,14 +1798,13 @@ Vector3d ODEWorld::compute_liquid_drag_on_planev2(Joint* joint, Point3d pos, Vec
 this function is a children function of the above one (it prevent mass duplication of code for similar body parts)
 this function handle the legs and arms
 */
-Vector3d ODEWorld::compute_liquid_drag_on_legs(Joint* joint, float water_level, double eff_density, double friction_coef){
-    RigidBody* body = static_cast<RigidBody*>(joint->child());
+ForceStruct ODEWorld::compute_liquid_drag_on_legs(RigidBody *body, float water_level, double eff_density, double friction_coef){
 
     CollisionDetectionPrimitive* cdp = body->cdps.front();
     CapsuleCDP* capsule = dynamic_cast<CapsuleCDP*>(cdp);
 
     if (capsule == NULL){
-        return Vector3d();
+        return ForceStruct();
     }
 
     //I want the lower points to find out if the capsule is in the water
@@ -1747,7 +1816,7 @@ Vector3d ODEWorld::compute_liquid_drag_on_legs(Joint* joint, float water_level, 
     miny -= capsule->radius();
 
 
-    Vector3d drag_torque = Vector3d(0, 0, 0);
+    ForceStruct drag_impact(body->getCMPosition());
 
 
     //we vrify that the water hit the capsule before doing anything
@@ -1755,8 +1824,8 @@ Vector3d ODEWorld::compute_liquid_drag_on_legs(Joint* joint, float water_level, 
         //now I'll subdivide the faces in smaller surfaces and apply the necessary force on each of them
         //so I'll first concider the cylindric part of the capsule.
 
-        //let's say we will consider 100 intervals on the axis of the cylinder
-        //and we will consider 5 intervals on the facet for each interval on the axis
+        //let's say we will consider 20 intervals on the axis of the cylinder
+        //and we will consider 3 intervals on the facet for each interval on the axis
         int axis_intervals = 20;
         int facet_intervals = 3;
 
@@ -1819,11 +1888,15 @@ Vector3d ODEWorld::compute_liquid_drag_on_legs(Joint* joint, float water_level, 
                     Vector3d F = -local_speed*local_speed.length() * 1 / 2 * eff_density*S;
                     F = body->getWorldCoordinates(F);
 
-                    //we apply the force
-                    applyForceTo(body, F, cur_pos);
+                    ForceStruct elem_impact;
+                    elem_impact.F=F;
+                    elem_impact.pt=body->getWorldCoordinates(cur_pos);
 
-                    Vector3d op = cur_pos - joint->child_joint_position();
-                    drag_torque += body->getWorldCoordinates(op).crossProductWith(F);
+                    //now tranfer it to the body COM
+                    elem_impact.modifyApplicationPoint(body->getCMPosition());
+
+                    //and add it
+                    drag_impact+=elem_impact;
 
                     /*
                     //this can be used to show the forces
@@ -1846,12 +1919,11 @@ Vector3d ODEWorld::compute_liquid_drag_on_legs(Joint* joint, float water_level, 
             axis_cur_pos += axis_interval_vect;
         }
     }
-    return drag_torque;
+    return drag_impact;
 }
 
 
-ForceStruct ODEWorld::compute_buoyancy(Joint* joint, float water_level){
-    RigidBody* body = static_cast<RigidBody*>(joint->child());
+ForceStruct ODEWorld::compute_buoyancy(RigidBody *body, float water_level){
 
     CollisionDetectionPrimitive* cdp = body->cdps.front();
     SphereCDP* sphere = dynamic_cast<SphereCDP*>(cdp);
@@ -1869,16 +1941,6 @@ ForceStruct ODEWorld::compute_buoyancy(Joint* joint, float water_level){
         result_force = compute_buoyancy_on_capsule(body, water_level, -SimGlobals::gravity, SimGlobals::liquid_density);// +SimGlobals::force_alpha);
     }
 
-    if (!result_force.F.isZeroVector()){
-        applyForceTo(body, result_force.F, result_force.pt);
-        /*
-        //this can be used to show the forces
-        ForceStruct show_force = result_force;
-        result_force.pt = body->getWorldCoordinates(result_force.pt);
-        SimGlobals::vect_forces.push_back(result_force);
-        //*/
-    }
-
     return result_force;
 }
 
@@ -1893,30 +1955,31 @@ ForceStruct ODEWorld::compute_buoyancy_on_sphere(RigidBody* body, float water_le
     }
 
     double r = sphere->getRadius();
-    double h = water_level - body->getCMPosition().getY() - r;
+    double h = water_level - (body->getWorldCoordinates(sphere->getCenter()).getY() + r);
 
     ForceStruct result;
 
     //we vrify that the water hit the ball before doing anything
     if (h>0){
         //I first eliminate the case where the spere is fully in the water (for efficiency purposes)
-        if (h > (2 * r)){
-            double V = 4/3 * PI* r*r*r;
-            Vector3d F = Vector3d(0, 1, 0)*V*density*gravity;
-            //applyForceTo(body, F, sphere->getCenter());
+        if (h >= (2 * r)){
+            double V = 4.0/3.0 * PI* r*r*r;
+            Vector3d F = Vector3d(0, V*density*gravity, 0);
             result.F = F;
-            result.pt = sphere->getCenter();
+            result.pt = body->getWorldCoordinates(sphere->getCenter());
 
             return result;
         }
 
-        double V = PI / 3 * h*h* (3 * r - h);
-        Vector3d F = Vector3d(0, 1, 0)*V*density*gravity;
+        //formula for volume here https://www.lmnoeng.com/Volume/CylConeSphere.php
+        double V = PI / 3.0 * h*h* (3.0 * r - h);
+        Vector3d F = Vector3d(0, V*density*gravity, 0);
 
-        double dy = 3/4 * (2 * r - h)*(2 * r - h) / (3 * r - h);
-        Point3d pt = body->getLocalCoordinates(body->getCMPosition() - Point3d(0, dy, 0));
+        //pr une demontration of that formula look for spherical cap
+        //https://math.stackexchange.com/questions/845959/centre-of-mass-and-moment-of-inertia-of-a-sphere-spherical-cap
+        double dy = 3.0/4.0 * (2.0 * r - h)*(2.0 * r - h) / (3.0 * r - h);
+        Point3d pt = body->getWorldCoordinates(sphere->getCenter()) - Point3d(0, dy, 0);
 
-        //applyForceTo(body, F, pt);
 
         result.F = F;
         result.pt = pt;
@@ -1954,18 +2017,38 @@ ForceStruct ODEWorld::compute_buoyancy_on_box(RigidBody* body, float water_level
     double miny = body->getWorldCoordinates(corners[0]).getY();
     int idx_min = 0;
 
+    double maxy= body->getWorldCoordinates(corners[0]).getY();
+
     for (int i = 0; i < 8; ++i){
         wcorners[i] = body->getWorldCoordinates(corners[i]);
         if (wcorners[i].getY() < miny){
             miny = wcorners[i].getY();
             idx_min = i;
         }
+        if (wcorners[i].getY() > maxy){
+            maxy = wcorners[i].getY();
+        }
     }
+
 
 
     //we vrify that the water hit the box before doing anything
     if (miny<water_level){
-        ForceStruct result_force;
+        // I want to check some easy to compute cases.
+        // First if the object is fully immersed (easy to find the highest point if we know the positions
+        //of the lower int the box)
+        //*
+        if (maxy < water_level){
+            double V = lx*ly*lz;
+            Vector3d F = Vector3d(0, V*density*gravity, 0);
+
+            ForceStruct result_force;
+            result_force.F = F;
+            result_force.pt = body->getWorldCoordinates(center);
+
+            return result_force;
+        }//*/
+
 
         // for all that is after it ill be easier if we know the basis formed by a corner
         // please note that the condition are set like that because of the way I built the corner structure
@@ -1980,21 +2063,7 @@ ForceStruct ODEWorld::compute_buoyancy_on_box(RigidBody* body, float water_level
             vx *= -1;
         }
 
-        // I want to check some easy to compute cases.
-        // First if the object is fully immersed (easy to find the highest point if we know the positions
-        //of the lower int the box)
-        //*
-        Point3d upper_corner = corners[idx_min] + vx*lx + vy*ly + vz*lz;
-        if (body->getWorldCoordinates(upper_corner).y < water_level){
-            double V = lx*ly*lz;
-            Vector3d F = Vector3d(0, 1, 0)*V*density*gravity;
-            //applyForceTo(body, F, center);
 
-            result_force.F = F;
-            result_force.pt = center;
-
-            return result_force;
-        }//*/
 
         //I'll initialize some variable since i'll need them for every following tests
         int nbr_interval_x = 3;
@@ -2022,6 +2091,7 @@ ForceStruct ODEWorld::compute_buoyancy_on_box(RigidBody* body, float water_level
 
         if (count_alligned>0){
             //so we have in a configuration were I simplify by a prism calculation
+            //I'm not sure of those computations so i'll forget that case ...
 
             /*if (count_alligned>1){
                 //so we have a vertical prism calculationare simple so I won't comment it
@@ -2045,7 +2115,6 @@ ForceStruct ODEWorld::compute_buoyancy_on_box(RigidBody* body, float water_level
                 }
                 V *= h;
                 Vector3d F = Vector3d(0, 1, 0)*V*density*gravity;
-                applyForceTo(body, F, pt);
                 return;
             }
 
@@ -2134,7 +2203,6 @@ ForceStruct ODEWorld::compute_buoyancy_on_box(RigidBody* body, float water_level
             }
 
             Vector3d F = Vector3d(0, 1, 0)*V*SimGlobals::liquid_density*SimGlobals::gravity;
-            applyForceTo(body, F, center);
             return;
             //*/
         }
@@ -2186,12 +2254,10 @@ ForceStruct ODEWorld::compute_buoyancy_on_box(RigidBody* body, float water_level
 
         //and now we apply the force if it is possible
         if (count != 0){
-            Vector3d F = Vector3d(0, 1, 0)*V*density*gravity;
-            Point3d inter = result / count;//forced to use an inter var or it does realy strange things...
-            Point3d pt = body->getLocalCoordinates(inter);
+            Vector3d F = Vector3d(0, V*density*gravity, 0);
+            Point3d pt = result / count;
 
-            //applyForceTo(body, F, pt);
-
+            ForceStruct result_force;
             result_force.F = F;
             result_force.pt = pt;
 
@@ -2225,33 +2291,39 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
 
         double r = capsule->radius();
 
+        //I need the normal of the vertica plane to create the rotation to get the lowest point
+        //also used to know which shepre is the bottom one
+        Point3d axis_lowest_pt = wB;
+        Point3d axis_upper_pt = wA;
+        if (axis_upper_pt.y < axis_lowest_pt.y){
+            axis_lowest_pt = wA;
+            axis_upper_pt = wB;
+        }
+
+        //compute the axis
+        Vector3d axis_vector = axis_upper_pt - axis_lowest_pt;
+        double axis_len = axis_vector.length();
+        axis_vector /= axis_len;
+
         //there are 3 parts: lower sphere, upper sphere and cylinder
         //FOr each part I'll tryto handle easy cases then use a general method in case none of the optimisation are possible
+        //but I have no idea for the formulae of a cut half sphere.
+        //so the best solution is to extend the cynlindrical part a bit to simulate the impact of the two half spheres
+        axis_upper_pt=axis_upper_pt+axis_vector*r*3.0/4.0;
+        axis_lowest_pt=axis_lowest_pt-axis_vector*r*3.0/4.0;
 
-        //First I handle the lower half sphere
+        //update the axis for the approximation
+        axis_vector = axis_upper_pt - axis_lowest_pt;
+        axis_len = axis_vector.length();
+        axis_vector /= axis_len;
 
-        //then I handle the cylindric part
+        //and finaly I handle the cylindric part
         //that for is just an easy way to skip the complex calculation in the case the simplification works
         for (int uselessvar = 0; uselessvar < 1; ++uselessvar){
-            //first I need the lowest point
-
-            //I need the normal of the vertica plane to create the rotation to get the lowest point
-            Vector3d axis_vector = wA - wB;
-            Point3d axis_lowest_pt = wB;
-            Point3d axis_upper_pt = wA;
-            if (axis_vector.y < 0){
-                axis_vector *= -1;
-                axis_lowest_pt = wA;
-                axis_upper_pt = wB;
-            }
-
-            double axis_len = axis_vector.length();
-            axis_vector /= axis_len;
 
             Vector3d n = Vector3d(0, 1, 0).crossProductWith(axis_vector);
             double sin_angle = n.length();
             n /= sin_angle;
-
 
             //and now I calculate the lowest point
             Quaternion quat = Quaternion::getRotationQuaternion(PI / 2, n);
@@ -2268,12 +2340,10 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
                 Point3d highest_pt = axis_upper_pt - vh;
                 if (highest_pt.y < water_level){
                     double V = PI*r*r*axis_len;
-                    Vector3d F = Vector3d(0, 1, 0)*V*density*gravity;
-                    Point3d inter = Vector3d(wA + wB) / 2;
-                    Point3d pt = body->getLocalCoordinates(inter);
-                    Point3d pt2 = body->getLocalCoordinates(body->getCMPosition());
+                    Vector3d F = Vector3d(0, V*density*gravity, 0);
+                    Point3d inter = Vector3d(axis_upper_pt + axis_lowest_pt) / 2;
+                    Point3d pt = inter;
 
-                    //applyForceTo(body, F, pt);
 
                     result_force.F = F;
                     result_force.pt = pt;
@@ -2293,9 +2363,7 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
                         double V = PI*r*r*h;
                         Vector3d F = Vector3d(0, 1, 0)*V*density*gravity;
                         Point3d inter = axis_lowest_pt + axis_vector*h/ 2 +vh*sin_angle;
-                        Point3d pt = body->getLocalCoordinates(inter);
-
-                        //applyForceTo(body, F, pt);
+                        Point3d pt = inter;
 
                         result_force.F = F;
                         result_force.pt = pt;
@@ -2344,9 +2412,7 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
                             }
 
                             Point3d inter = Vector3d(axis_lowest_pt + Point3d(0, dy, 0) + axis_vector*(cylinder_length-v_inter.length()) / 2);
-                            Point3d pt = body->getLocalCoordinates(inter);
-
-                            //applyForceTo(body, F, pt);
+                            Point3d pt = inter;
 
                             result_force.F = F;
                             result_force.pt = pt;
@@ -2374,8 +2440,7 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
                     double dz = (5*h1*h1+6*h1*h2+5*h2*h2)/(16*(h1+h2));
 
                     Point3d inter = Vector3d(axis_lowest_pt + axis_vector*dz + vh / vh.length()*dx);
-                    Point3d pt = body->getLocalCoordinates(inter);
-                    //applyForceTo(body, F, pt);
+                    Point3d pt = inter;
 
                     result_force.F = F;
                     result_force.pt = pt;
@@ -2395,12 +2460,20 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
                     //since the calculation of the real application point seems to be pretty hard
                     //I'll use a simplification conidering that the point is on the triangle centroid
                     Point3d inter = Vector3d(lowest_pt - vh / vh.length()*b + lowest_pt + lowest_pt + axis_vector*h) / 3;
-                    Point3d pt = body->getLocalCoordinates(inter);
-                    //applyForceTo(body, F, pt);
+                    Point3d pt = inter;
 
                     result_force.F = F;
                     result_force.pt = pt;
 
+                }
+
+                try{
+                    result_force.check_for_undefined();
+                }catch(const char* c){
+                    std::string msg(c);
+                    std::ostringstream oss;
+                    oss<<msg<<"  //  "<<" boyancy capsule complex middle for body : "<<body->name();
+                    throw(oss.str().c_str());
                 }
 
 
@@ -2419,20 +2492,29 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
                     //since the calculation of the real application point seems to be pretty hard
                     //I'll use a simplification conidering that the point is on the triangle centroid
                     Point3d pt = Vector3d(low_high_pt - vh / vh.length()*b + low_high_pt + low_high_pt + axis_vector*h) / 3;
-                    //applyForceTo(body, F, pt);
 
-                    //here getting the result force is more tricky
-                    //so the effective application point is the point where the sum of the moment is null.
-                    Point3d pt2 = body->getWorldCoordinates(result_force.pt);
-                    Vector3d vect_support = pt2 - pt;
-                    double L2 = vect_support.length()*F.length() / (result_force.F.length() - F.length());
-                    result_force.pt = pt2 + vect_support / vect_support.length()*L2;
-                    result_force.pt = body->getLocalCoordinates(result_force.pt);
+                    //add the forces to and use the barycenter for new application point (its correct since there is only
+                    //one component to the force
+                    result_force.pt = result_force.pt*result_force.F.length() + pt*F.length();
+                    result_force.pt = result_force.pt/(result_force.F.length()+F.length());
                     result_force.F += F;
+
+                    try{
+                        result_force.check_for_undefined();
+                        pt.check_for_undefined();
+                    }catch(const char* c){
+                        std::string msg(c);
+                        std::ostringstream oss;
+                        oss<<msg<<"  //  "<<" boyancy capsule complex end for body : "<<body->name()<<
+                             " vh.y: "<<vh.y<<"   b: "<<b<<"   V: "<<V<<"   a: "<<a;
+                        throw(oss.str().c_str());
+                    }
                 }
+
             }
         }
-        //applyForceTo(body, result_force.F, result_force.pt);
+
+
 
         return result_force;
     }
@@ -2448,9 +2530,11 @@ void ODEWorld::initParticleFluid(){
     //now the problem is that I need ot add the objects that interact witht he fluid in the physics simulation
     //add all the objects
     //*
-    std::string vect_obj_name[]={"pelvis","torso","head","lUpperarm","lLowerarm","rUpperarm","rLowerarm",
-                                 "lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};
-    int numObj=13;
+    //std::string vect_obj_name[]={"pelvis","torso","head","lUpperarm","lLowerarm","rUpperarm","rLowerarm",
+    //                             "lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};
+
+    std::string vect_obj_name[]={"lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};
+    int numObj=6;
 
     for(int i=0;i<numObj;++i){
         if(getRBByName(vect_obj_name[i])!=NULL){

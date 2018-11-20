@@ -19,6 +19,9 @@ protected:
     std::vector<Vector3d> _torques;
     std::vector<Vector3d> _torques2;
 
+    std::vector<Vector3d> _torques3_gravity;
+    std::vector<Vector3d> _torques3_fluid;
+
     ///Internal members
     std::vector<int> stance_leg_idxs;
 
@@ -26,8 +29,10 @@ public:
     ExternalForceFieldsCompenser(Character *c);
     virtual ~ExternalForceFieldsCompenser();
 
-    const std::vector<Vector3d>& torques(){return _torques;}
+    std::vector<Vector3d>& torques(){return _torques;}
     std::vector<Vector3d>& torques2(){return _torques2;}
+    std::vector<Vector3d>& torques3_gravity(){return _torques3_gravity;}
+    std::vector<Vector3d>& torques3_fluid(){return _torques3_fluid;}
 
     /**
     This method computes the torques that cancel out the effects of gravity,
@@ -36,10 +41,23 @@ public:
     void compute_compensation(WaterImpact& resulting_impact);
 
     /**
-    This method computes the torques that cancel out the effects of gravity,
-    for better tracking purposes
+    this version uses an addition of the forces before doing the compensation
+    but contains an amélioration by using a leaf rb consideration
     */
     void compute_compensation_v2(WaterImpact &resulting_impact);
+
+    /**
+    This version treat the gravity and the fluid separately
+    uses the same leaf consideration as v2
+    */
+    void compute_compensation_v3(std::vector<ForceStruct> &force_field, std::vector<Vector3d> &result_ptr);
+
+
+    void preprocess_simulation_step();
+
+    void simulation_step();
+    void compute_fluid_impact_compensation(WaterImpact &resulting_impact);
+
 
 protected:
     /**
@@ -77,8 +95,15 @@ protected:
         origin of link 1 to p, and the second entry is the vector (in pBase coordinates) from
         the origin of link 2 to p (and therein lies the general way of writing this).
         */
-        void compute_joint_torques_equivalent_to_force(Joint* start, const Point3d& pLocal,
-                                                   const Vector3d& fGlobal, Joint* end);
+    void compute_joint_torques_equivalent_to_force(Joint* start, const Point3d& pLocal,
+                                               const Vector3d& fGlobal, Joint* end);
+
+    /**
+        Similar to the function above but only do the computation for a single joint and return the result
+        also directly require the global force ...
+    */
+    Vector3d compute_joint_torques_equivalent_to_force(Joint *joint, const Point3d& pGlobal, const Vector3d& fGlobal);
+
 };
 
 #endif // EXTERNALFORCEFIELDSCOMPENSER_H

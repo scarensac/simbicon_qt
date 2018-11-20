@@ -12,6 +12,9 @@
 #include "SPlisHSPlasH\Vector.h"
 #include "SPlisHSPlasH\Quaternion.h"
 
+
+#define GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+
 class ParticleSetRenderingData;
 
 namespace SPH
@@ -415,6 +418,11 @@ namespace SPH
 		UnifiedParticleSet* vector_dynamic_bodies_data;
 		UnifiedParticleSet* vector_dynamic_bodies_data_cuda;
 		int numDynamicBodies;
+        //this neighbors search structure willwork on the solids as a group
+        //this allow a way smaller memory size needed and faster computations
+        NeighborsSearchDataSet* neighborsDataSetGroupedDynamicBodies;
+        NeighborsSearchDataSet* neighborsDataSetGroupedDynamicBodies_cuda;
+        Vector3d* posBufferGroupedDynamicBodies;
 
 		bool damp_borders;
 		int damp_borders_steps_count;
@@ -475,6 +483,7 @@ namespace SPH
 		void handleFLuidLevelControl(RealCuda level);
 
         void getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments);
+        void getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli);
 
         SPH::Vector3d getSimulationCenter();
 

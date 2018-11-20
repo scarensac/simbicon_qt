@@ -157,8 +157,7 @@ void SimBiConFramework::preprocess_simulation_step(double dt)
     //here I'll organize the contact forces for easier use later
     con->get_character()->organize_foot_contact_forces(pw->getContactForces());
 
-    //clear the vector that's used to show the forces
-    SimGlobals::vect_forces.clear();
+
 
     _new_character_step=false;
 
@@ -411,6 +410,8 @@ void SimBiConFramework::preprocess_simulation_step(double dt)
 #include <iostream>
 void SimBiConFramework::simulation_step(double dt)
 {
+    resulting_impact.check_for_undefined();
+
     //compute and apply the necessayr torques
     con->simulation_step(dt,resulting_impact);
 }

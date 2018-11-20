@@ -50,7 +50,7 @@ Vector3d Vector3d::crossProductWith(const Vector3d &v) const{
         Vector3d t=result;
         if(v.x==v.x&&u.x==u.x){
             if ((t.x!=t.x)||(t.y!=t.y)||(t.z!=t.z)){
-                std::cout<<"Quaternion getParentOrientation nan detected";
+                throw("Vector3d::crossProductWith nan detected");
             }
         }
     }

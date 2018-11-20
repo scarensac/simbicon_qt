@@ -1371,15 +1371,16 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
     unsigned int successive_cells_count = (x > 0) ? 3 : 2;
     x = (x > 0) ? x - 1 : x;
 
-#define ITER_CELLS_FOR_BODY(input_body,code){\
-    const SPH::UnifiedParticleSet& body = input_body;\
+#define ITER_CELLS_FOR_BODY(neighborsDataSet_i,pos_body_particles_i,code){\
+    SPH::NeighborsSearchDataSet* neighborsDataSet= neighborsDataSet_i;\
+    Vector3d* pos_body_particles=pos_body_particles_i;\
     for (int k = -1; k < 2; ++k) {\
     for (int m = -1; m < 2; ++m) {\
     unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x, y + k, z + m);\
-    unsigned int end = body.neighborsDataSet->cell_start_end[cur_cell_id + successive_cells_count];\
-    for (unsigned int cur_particle = body.neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {\
-    unsigned int j = body.neighborsDataSet->p_id_sorted[cur_particle];\
-    if ((pos - body.pos[j]).squaredNorm() < radius_sq) {\
+    unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + successive_cells_count];\
+    for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {\
+    unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];\
+    if ((pos - pos_body_particles[j]).squaredNorm() < radius_sq) {\
     code\
 }\
 }\
@@ -1388,18 +1389,36 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 }
 #endif
 
+
     //fluid
-    ITER_CELLS_FOR_BODY(data.fluid_data_cuda[0], if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
+    ITER_CELLS_FOR_BODY(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
+            if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
 
     //boundaries
-    ITER_CELLS_FOR_BODY(data.boundaries_data_cuda[0], *cur_neighbor_ptr++ = j; nb_neighbors_boundary++; );
+    ITER_CELLS_FOR_BODY(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
+            *cur_neighbor_ptr++ = j; nb_neighbors_boundary++; );
 
+    //dynamic bodies
     if (data.vector_dynamic_bodies_data_cuda != NULL) {
+
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+        ITER_CELLS_FOR_BODY(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
+                                {int body_id=0; int count_particles_previous_bodies=0;
+                                 while((count_particles_previous_bodies+data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<j ){
+                                     count_particles_previous_bodies+=data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
+                                     body_id++;
+                                 }
+                                *cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j-count_particles_previous_bodies);
+                                 nb_neighbors_dynamic_objects++;} )
+#else
         for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {
-            ITER_CELLS_FOR_BODY(data.vector_dynamic_bodies_data_cuda[id_body],
+            ITER_CELLS_FOR_BODY(data.vector_dynamic_bodies_data_cuda[id_body].neighborsDataSet, data.vector_dynamic_bodies_data_cuda[id_body].pos,
                                 *cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j); nb_neighbors_dynamic_objects++; )
         }
+#endif
+
     };
+
 
 
     particleSet->numberOfNeighbourgs[3 * i] = nb_neighbors_fluid;
@@ -2556,24 +2575,31 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
     static float time_avg_global = 0;
     time_count++;
 
+    /*
     if (time_count<5) {
         cuda_shuffleData(data.fluid_data[0]);
         std::cout << "randomizing particle order" << std::endl;
     }
+    //*/
 
     cudaError_t cudaStatus;
     if (true){
-        /*
-        float time;
-        static float time_avg = 0;
+        //*
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         //*/
 
         //first let's generate the cell start end for the dynamic bodies
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+        cuda_initNeighborsSearchDataSetGroupedDynamicBodies(data);
+#else
         for (int i = 0; i < data.numDynamicBodies; ++i) {
             SPH::UnifiedParticleSet& body = data.vector_dynamic_bodies_data[i];
             body.initNeighborsSearchData(data.m_kernel_precomp.getRadius(), false);
         }
+#endif
+
+
+        std::chrono::steady_clock::time_point middle = std::chrono::steady_clock::now();
 
         //no need to ever do it forthe boundaries since they don't ever move
 
@@ -2597,12 +2623,17 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
         }
 
-        /*
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        time = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() / 1000000.0f;
+        //*
 
-        time_avg += time;
-        printf("Time to generate cell start end: %f ms   avg: %f ms \n", time, time_avg / time_count);
+        float time0;
+        float time1;
+        static float time_avg = 0;
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        time0 = std::chrono::duration_cast<std::chrono::nanoseconds> (middle - begin).count() / 1000000.0f;
+        time1 = std::chrono::duration_cast<std::chrono::nanoseconds> (end - middle).count() / 1000000.0f;
+
+        time_avg += time0+time1;
+        printf("Time to generate cell start end: %f ms (%f,%f)   avg: %f ms \n", time0+time1,time0,time1, time_avg / time_count);
 
         if (time_count > 150) {
             time_avg = 0;
@@ -2614,7 +2645,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
     //and we can now do the actual search of the neaighbor for eahc fluid particle
     if (true)
     {
-        /*
+        //*
         float time;
         static float time_avg = 0;
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -2646,7 +2677,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
             exit(1598);
         }
 
-        /*
+        //*
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         time = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() / 1000000.0f;
 
@@ -2714,6 +2745,8 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet,
                                      RealCuda kernel_radius, bool sortBuffers){
 
+
+
     //com the id
     cuda_neighborsSearchInternal_sortParticlesId(particleSet.pos, kernel_radius, dataSet.numParticles,
                                                  &dataSet.d_temp_storage_pair_sort, dataSet.temp_storage_bytes_pair_sort, dataSet.cell_id, dataSet.cell_id_sorted,
@@ -2727,9 +2760,59 @@ void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::
     }
 
 
+
     //and now I cna compute the start and end of each cell :)
     cuda_neighborsSearchInternal_computeCellStartEnd(dataSet.numParticles, dataSet.cell_id_sorted, dataSet.hist,
                                                      &dataSet.d_temp_storage_cumul_hist, dataSet.temp_storage_bytes_cumul_hist, dataSet.cell_start_end);
+
+
+
+
+}
+
+
+__global__ void DFSPH_fill_aggregated_pos_buffer_kernel(SPH::DFSPHCData data, unsigned int num_particles) {
+
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= num_particles) { return; }
+
+    //find the current dynamic body
+    int body_id=0;
+    int count_particles_previous_bodies=0;
+    while((count_particles_previous_bodies+data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<i ){
+        count_particles_previous_bodies+=data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
+        body_id++;
+    }
+
+    //writte de pos
+    data.posBufferGroupedDynamicBodies[i]=data.vector_dynamic_bodies_data_cuda[body_id].pos[i-count_particles_previous_bodies];
+}
+
+void cuda_initNeighborsSearchDataSetGroupedDynamicBodies(SPH::DFSPHCData& data){
+    if (data.numDynamicBodies<1){
+        return;
+    }
+
+    SPH::NeighborsSearchDataSet& dataSet=*(data.neighborsDataSetGroupedDynamicBodies);
+
+
+    // now fill itr
+    int numBlocks = (dataSet.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+    DFSPH_fill_aggregated_pos_buffer_kernel<< <numBlocks, BLOCKSIZE >> > (data, dataSet.numParticles);
+    gpuErrchk(cudaDeviceSynchronize());
+
+    //and now we can do the neighbor search
+    //com the id
+    cuda_neighborsSearchInternal_sortParticlesId(data.posBufferGroupedDynamicBodies, data.getKernelRadius(), dataSet.numParticles,
+                                                 &dataSet.d_temp_storage_pair_sort, dataSet.temp_storage_bytes_pair_sort, dataSet.cell_id, dataSet.cell_id_sorted,
+                                                 dataSet.p_id, dataSet.p_id_sorted);
+
+
+
+    //and now I cna compute the start and end of each cell :)
+    cuda_neighborsSearchInternal_computeCellStartEnd(dataSet.numParticles, dataSet.cell_id_sorted, dataSet.hist,
+                                                     &dataSet.d_temp_storage_cumul_hist, dataSet.temp_storage_bytes_cumul_hist, dataSet.cell_start_end);
+
 
 }
 
@@ -3038,6 +3121,58 @@ void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& containe
     moment=*moment_cuda;
 }
 
+__global__ void compute_fluid_boyancy_on_dynamic_body_kernel(SPH::UnifiedParticleSet* container, Vector3d* force, Vector3d* pt_appli) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= container->numParticles) { return; }
+
+
+
+    //I use the abs just in case for some reason the vertical force is negative ...
+    //By this I mena that the y component also contains the y component of the drag. but there
+    //is no way to extract the actual boyancy, soand approximation will have to do
+    RealCuda boyancy=container->F[i].y;
+    RealCuda boyancy_abs=abs(boyancy);
+    if(boyancy_abs>0){
+        Vector3d pt=container->pos[i]*boyancy_abs;
+
+        //in the x componant I'll store the total abs
+        atomicAdd(&(force->x),boyancy_abs);
+        atomicAdd(&(force->y),boyancy);
+        atomicAdd(&(pt_appli->x),pt.x);
+        atomicAdd(&(pt_appli->y),pt.y);
+        atomicAdd(&(pt_appli->z),pt.z);
+    }
+}
+
+void compute_fluid_Boyancy_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& pt_appli){
+    static Vector3d* force_cuda = NULL;
+    static Vector3d* pt_cuda = NULL;
+    if (force_cuda == NULL) {
+        cudaMallocManaged(&(force_cuda),sizeof(Vector3d));
+        cudaMallocManaged(&(pt_cuda),sizeof(Vector3d));
+    }
+    *force_cuda=Vector3d(0,0,0);
+    *pt_cuda=Vector3d(0,0,0);
+
+    int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+    compute_fluid_boyancy_on_dynamic_body_kernel << <numBlocks, BLOCKSIZE >> > (container.gpu_ptr, force_cuda, pt_cuda);
+    gpuErrchk(cudaDeviceSynchronize());
+
+    force=*force_cuda;
+    //if the sum of the force is non zero
+    if(abs(force.y)>0){
+        pt_appli=*pt_cuda;
+
+        //now compute the avg to get the actual point
+        pt_appli= pt_appli/force.x;
+        //and clear the x component
+        force.x=0;
+    }else{
+        force=Vector3d(0,0,0);
+        pt_appli=Vector3d(0,0,0);
+    }
+}
+
 void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets) {
 
     gpuErrchk(cudaMalloc(out_vector, numSets * sizeof(SPH::UnifiedParticleSet)));
@@ -3064,10 +3199,20 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
         body.releaseDataOnDestruction = false;
 
         //duplicate the neighbor dataset to the gpu
-        gpuErrchk(cudaMalloc(&(body.neighborsDataSet), sizeof(SPH::NeighborsSearchDataSet)));
+        bool copy_neighbor_struct=true;
 
-        gpuErrchk(cudaMemcpy(body.neighborsDataSet, in_vector[i].neighborsDataSet,
-                             sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+        //copy_neighbor_struct=false;
+#endif
+
+        if (copy_neighbor_struct){
+            gpuErrchk(cudaMalloc(&(body.neighborsDataSet), sizeof(SPH::NeighborsSearchDataSet)));
+
+            gpuErrchk(cudaMemcpy(body.neighborsDataSet, in_vector[i].neighborsDataSet,
+                                 sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+        }else{
+            body.neighborsDataSet=NULL;
+        }
 
     }
     //*/
@@ -3077,11 +3222,39 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
 
 
     //Now I have to update the pointer of the cpu set so that it point to the gpu structure
-
-
     delete[] temp;
+
+
+
 }
 
+
+
+void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data){
+    int numParticles=0;
+    for(int i=0;i<data.numDynamicBodies;++i){
+        numParticles+= data.vector_dynamic_bodies_data[i].numParticles;
+    }
+
+    //allocate the dataset
+    if (data.neighborsDataSetGroupedDynamicBodies==NULL){
+        data.neighborsDataSetGroupedDynamicBodies=new SPH::NeighborsSearchDataSet(numParticles,numParticles);
+
+        //duplicate the neighbor dataset to the gpu
+        gpuErrchk(cudaMalloc(&(data.neighborsDataSetGroupedDynamicBodies_cuda), sizeof(SPH::NeighborsSearchDataSet)));
+
+        gpuErrchk(cudaMemcpy(data.neighborsDataSetGroupedDynamicBodies_cuda, data.neighborsDataSetGroupedDynamicBodies,
+                             sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+    }
+
+    //now it's like the normal neighbor search excapt that we have to iterate on all the solid particles
+    //instead of just one buffer
+    //the easiest way is to build a new pos array that contains all the solid particles
+    if (data.posBufferGroupedDynamicBodies==NULL){
+        cudaMalloc(&(data.posBufferGroupedDynamicBodies), numParticles * sizeof(Vector3d));
+    }
+
+}
 
 void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets) {
     SPH::UnifiedParticleSet* temp;

@@ -137,6 +137,10 @@ public:
 
 	void drawObject();
 
+    bool isZero() const{
+        return (*this == Point3d(0,0,0));
+    }
+
 //	virtual Point3d* createCopy();
 };
 

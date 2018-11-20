@@ -28,6 +28,7 @@ public:
     static void forceUpdateDynamicBodies();
     static void updateDynamicBodies(const std::vector<SPH::DynamicBody> &vect_new_info);
     static void getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Vector3d>& moments);
+    static void getFluidBoyancyOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Point3d>& pts_appli);
     static void fluidSimulationStep();
     static void updateTimeStepDuration(double duration);
     static void handleDynamicBodiesPause(bool pause);

@@ -42,8 +42,9 @@ int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const 
 
 //those functions are for the neighbors search
 void cuda_neighborsSearch(SPH::DFSPHCData& data);
-void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet, 
-	RealCuda kernel_radius, bool sortBuffers=false);
+void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet,
+    RealCuda kernel_radius, bool sortBuffers=false);
+void cuda_initNeighborsSearchDataSetGroupedDynamicBodies(SPH::DFSPHCData& data);
 void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id);
 void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet);
 
@@ -82,7 +83,9 @@ void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass, Vector3d* pos0=NULL);
 void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container);
 void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& moment);
+void compute_fluid_Boyancy_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& pt_appli);
 void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
+void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data);
 void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
 //this function is the one that must be called when releasing the unified particles that are fully cuda allocated
 void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, int numSets);

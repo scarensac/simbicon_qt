@@ -309,7 +309,7 @@ void SimulationWindow::slider_state_duration_changed(int val)
     ui->spin_box_state_duration->setValue(new_state_duration);
     SimGlobals::requested_state_duration=new_state_duration;
     SimGlobals::state_duration_modified=true;
-    std::cout<<"slider trigger"<<std::endl;
+    std::cout<<"slider trigger: "<<new_state_duration<<std::endl;
 }
 
 void SimulationWindow::spin_box_state_duration_changed(double val)
@@ -318,7 +318,7 @@ void SimulationWindow::spin_box_state_duration_changed(double val)
     ui->slider_state_duration->setValue(new_state_duration);
     SimGlobals::requested_state_duration=val;
     SimGlobals::state_duration_modified=true;
-    std::cout<<"spin box trigger"<<std::endl;
+    std::cout<<"spin box trigger: "<<new_state_duration<<std::endl;
 }
 
 void SimulationWindow::slider_target_sagittal_speed_changed(int val)

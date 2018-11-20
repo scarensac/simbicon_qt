@@ -126,6 +126,7 @@ void SimBiController::preprocess_simulation_step(double dt, std::vector<ContactP
         stance_foot_contact_controller->preprocess_simulation_step(getPhase());
     }
 
+    external_force_fields_compenser->preprocess_simulation_step();
 
 }
 
@@ -134,8 +135,6 @@ void SimBiController::simulation_step(double dt, WaterImpact &resulting_impact)
     //launch the controller to compute the torques we will need to apply
     computeTorques(resulting_impact);
 
-    //add some frition so that the uncontrolled torque don't do nawak
-    add_friction_on_uncontrolled();
 
     //apply the torques to the character (just  copy the actual simulation is done later)
     applyTorques();
@@ -275,19 +274,10 @@ void SimBiController::computeTorques(WaterImpact &resulting_impact){
     //first I check if we are near to fall (or even already on the ground
     double h = character->getRoot()->getCMPosition().y;
 
-    double hMax = 0.4;
-    double hMin = 0.2;
-
-    if (h > hMax)
-        h = hMax;
-
-    if (h < hMin)
-        h = hMin;
-
-    h = (h - hMin) / (hMax - hMin);
+    double h_limit = 0.4;
 
     //if we are on the ground I can just skip everything
-    if (h <= 0.01){
+    if (h <= h_limit){
         for (int i = 0; i <(int) torques.size(); i++){
             torques[i] = Vector3d(0, 0, 0);
         }
@@ -298,83 +288,59 @@ void SimBiController::computeTorques(WaterImpact &resulting_impact){
     pose_controller->simulation_step(phi);
 
 
+    //compute the torque to reach the target pose
     const std::vector<Vector3d>& pose_control_tq=pose_controller->torques();
     for (int i = 0; i<(int)character->getJointCount(); i++){
         torques[i] = pose_control_tq[i];
     }
 
 
-
-    /*
-    {
-        std::ostringstream oss;
-        Vector3d tq=torques[character->swing_hip()->child()->child_joints()[0]->idx()];
-        oss<<"swing hip torque first: "<<tq.x<< " "<<tq.y<<" "<<tq.z;
-        std::cout<<oss.str();
-    }
-    //*/
-
-    /*
-    {
-        Vector3d t=torques[0];
-        static double sum=0;
-        sum+=t.length();
-        if (phi>0.7){
-            std::ostringstream oss;
-            oss<<sum;
-            std::cout<<oss.str();
-        }
-    }
-    //*/
+    //compute the orientation control
+    pose_controller->compute_root_orientation_torques(torques[character->stance_hip()->idx()],
+            torques[character->swing_hip()->idx()],torques[character->root_top()->idx()]);
 
 
-
-
-
-    /*
-    {
-        std::ostringstream oss;
-        Vector3d tq=torques[character->swing_hip()->child()->child_joints()[0]->idx()];
-        oss<<"swing hip torque second: "<<tq.x<< " "<<tq.y<<" "<<tq.z;
-        std::cout<<oss.str();
-    }
-    //*/
-
-    //    if (character->get_stance_foot_weight_ratio() > 0)
+    //virtual force velocity control
     {
         velocity_controller->apply_virtual_force(character->getCOMVelocity());
 
         std::vector<Vector3d>& tq=velocity_controller->torques();
-        //do not apply anything on the stanc eleg as long as it is not anchored in the ground correctly
-        /*
-        if (SimGlobals::foot_flat_on_ground)
-        {
-            tq[character->stance_foot()->parent_joint()->idx()]=Vector3d(0,0,0);
-            tq[character->stance_foot()->parent_joint()->parent()->parent_joint()->idx()]=Vector3d(0,0,0);
-        }
-        //*/
+
         for (int i=0; i<tq.size();++i){
             torques[i]+=tq[i];
         }
     }
 
 
+    //we'll also compute the torques that cancel out the effects of gravity, for better tracking purposes
+    external_force_fields_compenser->simulation_step();
+    external_force_fields_compenser->compute_fluid_impact_compensation(resulting_impact);
+    std::vector<Vector3d>& buff_vec2=external_force_fields_compenser->torques3_gravity();
+    std::vector<Vector3d>& buff_vec3=external_force_fields_compenser->torques3_fluid();
 
 
+    //this system check if the computed torque opose the one computed by the rest of the controller
+    //since this component goal is just to maque the control easier, I cancel the torque if it opose the
+    //one computed by the rest of the controller
+    double reduction_factor=0;
+    for (int i = 0; i<(int)character->getJointCount(); i++){
+        buff_vec2[i]+=buff_vec3[i];
 
-    pose_controller->compute_root_orientation_torques(torques[character->stance_hip()->idx()],
-            torques[character->swing_hip()->idx()],torques[character->root_top()->idx()]);
+        Vector3d calc=torques[i]*buff_vec2[i];
+        if (calc.x<0){
+            buff_vec2[i].x*=reduction_factor;
+        }
+        if (calc.y<0){
+            buff_vec2[i].y*=reduction_factor;
+        }
+        if (calc.z<0){
+            buff_vec2[i].z*=reduction_factor;
+        }
 
-
-    int stance_factor = 1;
-    if (getStance() == RIGHT_STANCE){
-        stance_factor = -1;
+        //and apply the torque
+        torques[i] += buff_vec2[i];
     }
 
-    //Vector3d test=torques[character->swing_hip()->idx()];
-    //std::ostringstream oss;
-    //oss<<"roottorque "<<test.x<<" "<<test.y<<" "<<test.z;
-    //    std::cout<<oss.str();
 
     //here I'l start the stance foot control system
     if (Globals::use_contact_controller){
@@ -389,16 +355,8 @@ void SimBiController::computeTorques(WaterImpact &resulting_impact){
         torques[character->stance_foot()->parent_joint()->idx()]+=vect_torques_stance_foot_controler[1];
         torques[character->stance_foot()->parent_joint()->parent()->parent_joint()->idx()]+=vect_torques_stance_foot_controler[2];
 
-        /*
-        if (false){
-            std::ostringstream oss;
-            oss<<"delta torques length: "<<vect_torques_stance_foot_controler[0].length()<<"  "<<
-                 vect_torques_stance_foot_controler[1].length()<<"  "<<
-                 vect_torques_stance_foot_controler[2].length();
-            std::cout<<oss.str();
-        }
-        //*/
 
+        /*
         static double count_time=0;
         static double delta_time=0;
         delta_time+=t.timeEllapsed();
@@ -412,53 +370,14 @@ void SimBiController::computeTorques(WaterImpact &resulting_impact){
     //*
 
 
-    //*/
-    /*
-    std::ofstream myfile;
-    myfile.open("additional_ankle_torque.csv",std::ios::app);
-
-    myfile <<phi<<","<<stance_foot_contact_controller->stance_ankle_torque().x<<
-             ","<<stance_foot_contact_controller->stance_ankle_torque().y<<
-             ","<<stance_foot_contact_controller->stance_ankle_torque().z<<
-             std::endl;
-
-    myfile.close();
-    //*/
-
-    /*
-    {
-        std::ostringstream oss;
-        Vector3d tq=torques[character->swing_hip()->idx()];
-        oss<<"swing hip torque total: "<<tq.x<< " "<<tq.y<<" "<<tq.z;
-        std::cout<<oss.str();
-    }
-    //*/
-
-    //we'll also compute the torques that cancel out the effects of gravity, for better tracking purposes
-    external_force_fields_compenser->compute_compensation_v2(resulting_impact);
-    std::vector<Vector3d>& buff_vec2=external_force_fields_compenser->torques2();
-    for (int i = 0; i<(int)character->getJointCount(); i++){
-        torques[i] += buff_vec2[i];
 
 
-        /*
-                if (buff_vec2[i].length()>0){
-                    std::cout<<character->getJoint(i)->name();
-                }
-                //*/
-    }
-
-    //this is a ponderation if we are near to fall
     for (uint i=0;i<torques.size();i++){
-
+        //check for null
         Vector3d t=torques[i];
         if ((t.x!=t.x)||(t.y!=t.y)||(t.z!=t.z)){
-            std::cout<<"simbicon::compute_torques  undefinned torques   ";
-            std::cout<<"swing hip is "<<character->swing_hip()->name();
-
+            throw("simbicon::compute_torques  undefinned torques   ");
         }
-
-        torques[i] = torques[i] * h;// +Vector3d(0, 0, 0) * (1 - h);
     }
 
 }

@@ -11,6 +11,8 @@ ExternalForceFieldsCompenser::ExternalForceFieldsCompenser(Character* c)
 
     _torques.resize(character->getJointCount());
     _torques2.resize(character->getJointCount());
+    _torques3_gravity.resize(character->getJointCount());
+    _torques3_fluid.resize(character->getJointCount());
 }
 
 ExternalForceFieldsCompenser::~ExternalForceFieldsCompenser()
@@ -18,6 +20,9 @@ ExternalForceFieldsCompenser::~ExternalForceFieldsCompenser()
     _torques.clear();
     _torques2.clear();
     stance_leg_idxs.clear();
+
+    _torques3_gravity.clear();
+    _torques3_fluid.clear();
 }
 
 
@@ -43,18 +48,13 @@ void ExternalForceFieldsCompenser::compute_compensation(WaterImpact &resulting_i
     //now we compute the actual compensation
     for (uint i = 0; i<character->getJointCount(); i++){
         if (std::find(stance_leg_idxs.begin(),stance_leg_idxs.end(),i)==stance_leg_idxs.end()){
-            std::string joint_name=character->getJoint(i)->name();
-            if (joint_name=="lElbow"||joint_name=="rElbow"||joint_name=="rShoulder"||joint_name=="lShoulder"){
-                continue;
-            }
-
 
             Point3d pt1=character->getJoint(i)->child()->getCMPosition();
 
             //compute the gravity compensation
             Vector3d F1 = Vector3d(0, character->getJoint(i)->child()->getMass()*9.8, 0);
 
-            throw("the boyancy compensation need to be repaired first");
+            //throw("the boyancy compensation need to be repaired first");
             ///TODO redo that computation with the new model
             /*
             //compute the boyancy compensation
@@ -212,7 +212,7 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(WaterImpact &resultin
                 F1 = Vector3d(0, arb->getMass()*9.8, 0);
 
 
-                throw("the boyancy compensation need to be repaired first");
+                //throw("the boyancy compensation need to be repaired first");
                 ///TODO redo that computation with the new model
                 /*
                 //compute the boyancy compensation
@@ -325,7 +325,7 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(WaterImpact &resultin
             Vector3d F1 = Vector3d(0, arb->getMass()*9.8, 0);
 
 
-            throw("the boyancy compensation need to be repaired first");
+            //throw("the boyancy compensation need to be repaired first");
             ///TODO redo that computation with the new model
             /*
             //compute the boyancy compensation
@@ -377,7 +377,7 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(WaterImpact &resultin
             Vector3d F1 = Vector3d(0, arb->getMass()*9.8, 0);
 
 
-            throw("the boyancy compensation need to be repaired first");
+            //throw("the boyancy compensation need to be repaired first");
             ///TODO redo that computation with the new model
             /*
             //compute the boyancy compensation
@@ -421,4 +421,235 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(WaterImpact &resultin
         }
     }
 //*/
+}
+
+
+
+void ExternalForceFieldsCompenser::compute_compensation_v3(std::vector<ForceStruct> &force_field, std::vector<Vector3d>& result_ptr){
+
+    //we won't do any compensation on the ankles in contact with the ground because it will cause more noise than anything.
+    //the reason is that the foot itself lay on the ground so we don't need to compensate it's weight
+    //and we can't have the ankle trying to hold the whole body because it may create huge torques which may
+    //lead to worse contacts...
+    //we do the check for both f the feet because in the case of a flight phase none of the foots are in contact with the ground
+    bool swing_foot_contact=false;
+    bool stance_foot_contact=false;
+    for (int i=0;i<4;++i){
+        if ((character->force_stance_foot()[i]).length()>0){
+            stance_foot_contact=true;
+        }
+
+        if ((character->force_swing_foot()[i]).length()>0){
+            swing_foot_contact=true;
+        }
+    }
+
+
+    //First I need the leafs of the character
+    //as explaned before we do not count the foots if they are in contact with the ground
+    std::vector<int> leaf_joints;
+    for (int i=0;i<character->getJointCount();++i){
+        ArticulatedRigidBody* arb=character->getJoint(i)->child();
+        if (arb->child_joints().empty()){
+            if (!((arb==character->stance_foot()->child_joints()[0]->child())&&stance_foot_contact)&&
+                    !((arb==character->swing_foot()->child_joints()[0]->child())&&swing_foot_contact)){
+                leaf_joints.push_back(i);
+            }
+        }
+    }
+
+    ////////////////////////////////
+    //   GRAVITY
+    ////////////////////////////////
+    std::vector<bool> mass_already_considered;
+    for (int i=0;i<result_ptr.size();++i){mass_already_considered.push_back(false);}
+
+    //first the normal bodies
+    //also compute the sum of the forsces and application pt to be able to handle the legs in contact with the ground
+    Vector3d F_all=Vector3d(0,0,0);
+    double sum_norms=0;
+    Point3d pt_all=Point3d(0,0,0);
+    for (int i=0;i<leaf_joints.size();++i){
+        Joint* cur_joint=character->getJoint(leaf_joints[i]);
+
+
+        while(cur_joint!=NULL){
+            if (mass_already_considered[cur_joint->idx()]){
+                //advance to next joint
+                cur_joint=cur_joint->parent()->parent_joint();
+                continue;
+            }
+            mass_already_considered[cur_joint->idx()]=true;
+
+
+            Vector3d fGlobal=force_field[cur_joint->idx()].F;
+            //if the force is null just skip it
+            if (fGlobal.isZeroVector()){
+                continue;
+            }
+
+            Point3d pGlobal=force_field[cur_joint->idx()].pt;
+
+
+            Joint* affected_joint=cur_joint;
+            while(affected_joint!=NULL){
+                result_ptr[affected_joint->idx()]-=compute_joint_torques_equivalent_to_force(affected_joint,pGlobal,fGlobal);
+                affected_joint=affected_joint->parent()->parent_joint();
+            }
+
+            //compute the sum
+            pt_all+=pGlobal*fGlobal.length();
+            sum_norms+=fGlobal.length();
+            F_all+=fGlobal;
+
+            //advance to next joint
+            cur_joint=cur_joint->parent()->parent_joint();
+
+        }
+    }
+
+
+    //now the legs in contact with the ground
+    //I calc the influence of each leg and only continue if one of the two touche the ground
+    if (stance_foot_contact||swing_foot_contact){
+        std::vector<double> vect_influence;
+        std::vector<Joint*> vect_hip_joint;
+
+        if (stance_foot_contact&&swing_foot_contact){
+            double stanceHipToSwingHipRatio=character->get_stance_foot_weight_ratio();
+
+            vect_influence.push_back(stanceHipToSwingHipRatio);
+            vect_hip_joint.push_back(character->stance_hip());
+            vect_influence.push_back(1-stanceHipToSwingHipRatio);
+            vect_hip_joint.push_back(character->swing_hip());
+        }else{
+            if (stance_foot_contact){
+                vect_influence.push_back(1);
+                vect_hip_joint.push_back(character->stance_hip());
+            }else{
+                vect_influence.push_back(1);
+                vect_hip_joint.push_back(character->swing_hip());
+            }
+        }
+
+
+        //First I need to end the sum of applied forces by adding the root
+        //add the root weight
+        {
+            Vector3d F= force_field[force_field.size()-1].F;
+            Point3d pt=force_field[force_field.size()-1].pt;
+
+            pt_all += pt*F.length();
+            sum_norms+=F.length();
+            F_all += F;
+        }
+        if (sum_norms){
+            pt_all=pt_all/sum_norms;
+        }
+
+        //in the stance leg we add the torque because eahc joint support it's parents
+        for (int i=0;i<vect_influence.size();++i){
+            Joint* joint=vect_hip_joint[i];
+
+            Vector3d F_supported=F_all*vect_influence[i];
+
+            //hip
+            if(!F_supported.isZeroVector()){
+                result_ptr[joint->idx()]+=compute_joint_torques_equivalent_to_force(joint,pt_all,F_supported);
+            }
+
+
+            //knee
+            joint=joint->child()->child_joints()[0];
+            //first the global weight
+            if(!F_supported.isZeroVector()){
+                result_ptr[joint->idx()]+=compute_joint_torques_equivalent_to_force(joint,pt_all,F_supported);
+            }
+
+            //then the weight of the upper leg
+            Point3d pt=force_field[joint->idx()].pt;
+            Vector3d F=force_field[joint->idx()].F;
+
+
+            if(!F.isZeroVector()){
+                result_ptr[joint->idx()]+=compute_joint_torques_equivalent_to_force(joint,pt,F);
+            }
+
+        }
+    }
+
+}
+
+Vector3d ExternalForceFieldsCompenser::compute_joint_torques_equivalent_to_force(Joint* joint, const Point3d& pGlobal, const Vector3d& fGlobal){
+    Vector3d tmpV = Vector3d(joint->parent()->getWorldCoordinates(joint->parent_joint_position()), pGlobal);
+    Vector3d tmpT = tmpV.crossProductWith(fGlobal);
+    return tmpT;
+}
+
+
+
+void ExternalForceFieldsCompenser::preprocess_simulation_step(){
+
+}
+
+void ExternalForceFieldsCompenser::simulation_step(){
+
+    for (int i=0;i<_torques3_gravity.size();++i){
+        _torques3_gravity[i]=Vector3d(0,0,0);
+    }
+
+    std::vector<ForceStruct> force_field;
+    //the +1 is in case there is a force applyed on the pelvis I'll put it at the end
+    force_field.resize(_torques3_gravity.size()+1);
+    for (int i=0; i<_torques3_gravity.size();++i){
+        Joint* joint=character->getJoint(i);
+
+        force_field[joint->idx()].pt=joint->child()->getCMPosition();
+        force_field[joint->idx()].F=Vector3d(0,joint->child()->getMass()*9.8,0);
+    }
+
+    force_field[force_field.size()-1].pt=character->getRoot()->getCMPosition();
+    force_field[force_field.size()-1].F=Vector3d(0,character->getRoot()->getMass()*9.8,0);
+
+
+    compute_compensation_v3(force_field,_torques3_gravity);
+}
+
+
+void ExternalForceFieldsCompenser::compute_fluid_impact_compensation(WaterImpact &resulting_impact){
+
+    for (int i=0;i<_torques3_fluid.size();++i){
+        _torques3_fluid[i]=Vector3d(0,0,0);
+    }
+
+
+    std::vector<ForceStruct> force_field;
+    //the +1 is in case there is a force applyed on the pelvis I'll put it at the end
+    bool existing_force_field=false;
+    force_field.resize(_torques3_fluid.size()+1);
+    for (int i=0; i<_torques3_fluid.size();++i){
+        Joint* joint=character->getJoint(i);
+
+        if(!(resulting_impact.impact_boyancy[joint->child()->idx()].F.isZeroVector())){
+            force_field[joint->idx()].pt=resulting_impact.impact_boyancy[joint->child()->idx()].pt;
+            force_field[joint->idx()].F=-resulting_impact.impact_boyancy[joint->child()->idx()].F;
+            existing_force_field=true;
+        }
+    }
+
+
+    if(!(resulting_impact.impact_boyancy[character->getRoot()->idx()].F.isZeroVector())){
+        force_field[force_field.size()-1].pt=resulting_impact.impact_boyancy[character->getRoot()->idx()].pt;
+        force_field[force_field.size()-1].F=-resulting_impact.impact_boyancy[character->getRoot()->idx()].F;
+        existing_force_field=true;
+    }
+
+
+    //only do the computatio if we have a existing force field
+    if (existing_force_field){
+         compute_compensation_v3(force_field,_torques3_fluid);
+    }
+
+
+
 }

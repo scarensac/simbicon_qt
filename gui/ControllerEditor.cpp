@@ -307,12 +307,12 @@ void ControllerEditor::draw(bool shadowMode){
             //draw the desired heading
             Vector3d F=Quaternion::getRotationQuaternion(SimGlobals::desiredHeading,Vector3d(0,1,0)).rotate(Vector3d(0,0,1)*0.5/7);
 
-                    glDisable(GL_LIGHTING);
-                    glColor3d(1.0, 0.3, 0.3);
-                    GLUtils::drawCylinder(0.005*3, F *7 , base);
-                    GLUtils::drawCone(0.015*3, F  , base + F *7);
+            glDisable(GL_LIGHTING);
+            glColor3d(1.0, 0.3, 0.3);
+            GLUtils::drawCylinder(0.005*3, F *7 , base);
+            GLUtils::drawCone(0.015*3, F  , base + F *7);
 
-                    glEnable(GL_LIGHTING);
+            glEnable(GL_LIGHTING);
         }
 
 
@@ -320,12 +320,12 @@ void ControllerEditor::draw(bool shadowMode){
             //draw the desired heading
             Vector3d F=Quaternion::getRotationQuaternion(SimGlobals::desiredHeading_active,Vector3d(0,1,0)).rotate(Vector3d(0,0,1)*0.4/7);
 
-                    glDisable(GL_LIGHTING);
-                    glColor3d(0.3, 0.3, 1);
-                    GLUtils::drawCylinder(0.005*3, F *7 , base);
-                    GLUtils::drawCone(0.015*3, F  , base + F *7);
+            glDisable(GL_LIGHTING);
+            glColor3d(0.3, 0.3, 1);
+            GLUtils::drawCylinder(0.005*3, F *7 , base);
+            GLUtils::drawCone(0.015*3, F  , base + F *7);
 
-                    glEnable(GL_LIGHTING);
+            glEnable(GL_LIGHTING);
         }
 
         if (Globals::drawContactForces){
@@ -353,59 +353,38 @@ void ControllerEditor::draw(bool shadowMode){
                 //*/
             }
 
-            //*
-            ODEWorld* current_world= static_cast<ODEWorld*>(conF->getWorld());
-            for (int j=0;j<(int)current_world->vect_soft_bodies_point_mass.size();++j){
-                SoftBodyPointMass* sbpm=current_world->vect_soft_bodies_point_mass[j];
-                for (int i=0; i<(int)sbpm->discrete_pts_world.size();++i){
-                    GLUtils::drawSphere(sbpm->discrete_pts_world[i],0.005);
-                }
-            }
-            /*
-            for (int i=0;i<4;++i){
-                Point3d pt=current_world->force_pt_reader[i];
-                Vector3d f=current_world->force_reader[i];
-                if (f.length()>0){
-                        GLUtils::drawCylinder(0.005, f * 9 *factor, pt);
-                        GLUtils::drawCone(0.015, f * 1 *factor, pt+f*9*factor);
-                }
-            }
-            //*/
 
             //*/
             //*
             std::vector<ForceStruct> vect = SimGlobals::vect_forces;
             for (uint i = 0; i < vect.size(); ++i){
                 double factor = 0.001;
+                glDisable(GL_LIGHTING);
+                glColor3d(0.0, 0, 1);
+
+                GLUtils::drawSphere( vect[i].pt,0.01);
+                GLUtils::drawCylinder(0.005, vect[i].F * 9*factor, vect[i].pt);
+                GLUtils::drawCone(0.015, vect[i].F * 3 * factor, vect[i].pt + vect[i].F * 9 * factor);
+
+                glEnable(GL_LIGHTING);
+                /*
                 if (std::abs(vect[i].F.y)<0.0001)
                 {
-                                        GLUtils::drawCylinder(0.005, vect[i].F * 9*factor, vect[i].pt);
-                                        GLUtils::drawCone(0.015, vect[i].F * 1 * factor, vect[i].pt + vect[i].F * 9 * factor);
+                    GLUtils::drawCylinder(0.005, vect[i].F * 9*factor, vect[i].pt);
+                    GLUtils::drawCone(0.015, vect[i].F * 1 * factor, vect[i].pt + vect[i].F * 9 * factor);
                 }
                 else{
-                    if (vect[i].pt.y>0.2){
-                        factor*=0.08;
-                        glDisable(GL_LIGHTING);
-                        glColor3d(0.0, 0, 1);
+                    factor*=0.08;
+                    glDisable(GL_LIGHTING);
+                    glColor3d(0.0, 0, 1);
 
-                        GLUtils::drawSphere( vect[i].pt,0.01*4);
-                        GLUtils::drawCylinder(0.005*4, vect[i].F * 9*factor, vect[i].pt);
-                        GLUtils::drawCone(0.015*4, vect[i].F * 3 * factor, vect[i].pt + vect[i].F * 9 * factor);
+                    GLUtils::drawSphere( vect[i].pt,0.01*4);
+                    GLUtils::drawCylinder(0.005*4, vect[i].F * 9*factor, vect[i].pt);
+                    GLUtils::drawCone(0.015*4, vect[i].F * 3 * factor, vect[i].pt + vect[i].F * 9 * factor);
 
-                        glEnable(GL_LIGHTING);
-                    }
-
-                    /*
-                    Vector3d temp=vect[i].F;
-                    temp.x=0;
-                    GLUtils::drawCylinder(0.005, temp * 9*factor, vect[i].pt);
-                    GLUtils::drawCone(0.015, temp * 1 * factor, vect[i].pt + temp * 9 * factor);
-                    temp=vect[i].F;
-                    temp.z=0;
-                    GLUtils::drawCylinder(0.005, temp * 9*factor, vect[i].pt);
-                    GLUtils::drawCone(0.015, temp * 1 * factor, vect[i].pt + temp * 9 * factor);
-                            //*/
+                    glEnable(GL_LIGHTING);
                 }
+                //*/
 
             }
             //*/
@@ -652,6 +631,9 @@ void ControllerEditor::processTask(){
             //*/
 
             try{
+                //clear the vector that's used to show the forces
+                SimGlobals::vect_forces.clear();
+
                 ODEWorld* ode_world = dynamic_cast<ODEWorld*>(world);
                 if (Globals::simulateFluid){
 
@@ -668,15 +650,23 @@ void ControllerEditor::processTask(){
                         continue;
                     }else{
                         //otherwise they are simulated
-                         Interface::handleDynamicBodiesPause(false);
+                        Interface::handleDynamicBodiesPause(false);
 
-                         ode_world->sendDataToParticleFluidEngine();
-                         ode_world->advanceInTimeParticleFluidEngine(SimGlobals::dt);
-                         ode_world->readDataFromParticleFluidEngine();
-                     }
+                        ode_world->sendDataToParticleFluidEngine();
+                        ode_world->advanceInTimeParticleFluidEngine(SimGlobals::dt);
+                        ode_world->readDataFromParticleFluidEngine(conF->resulting_impact);
+                    }
                 }else{
                     //we simulate the effect of the liquid
                     ode_world->compute_water_impact(conF->getCharacter(),SimGlobals::water_level, conF->resulting_impact);
+                }
+
+                for (int i=0;i<conF->resulting_impact.impact_boyancy.size();++i){
+                    //*
+                    //this can be used to show the forces
+                    SimGlobals::vect_forces.push_back(conF->resulting_impact.impact_drag[i]);
+                    SimGlobals::vect_forces.push_back(conF->resulting_impact.impact_boyancy[i]);
+                    //*/
                 }
 
 
@@ -707,17 +697,17 @@ void ControllerEditor::processTask(){
 
             }catch(char* c){
                 std::string msg(c);
-                std::cout<<msg;
+                std::cout<<msg<<std::endl;
                 Globals::animationRunning=0;
 
                 return;
             }catch(const char* c){
                 std::string msg(c);
-                std::cout<<msg;
+                std::cout<<msg<<std::endl;
                 Globals::animationRunning=0;
                 return;
             }catch(...){
-                std::cout<<"failed catching it";
+                std::cout<<"failed catching it"<<std::endl;
                 Globals::animationRunning=0;
                 return;
             }
@@ -749,7 +739,7 @@ void ControllerEditor::processTask(){
                 write_to_report_file(oss.str());
             }//*/
 
-           /*
+            /*
             {
                 std::ostringstream oss;
                 oss<< phi << " ";
@@ -1263,11 +1253,11 @@ void ControllerEditor::processTask(){
                             Globals::avg_speed.z;
                     write_to_report_file(oss.str());
                 }//*/
-                //*
+                /*
                 {
                     std::ostringstream oss;
                     oss<< count_step << " "<<Globals::avg_speed.x<<" "<<Globals::avg_speed.z<< " "<<
-                              SimGlobals::velDCoronal<<" "<<SimGlobals::velDSagittal<<std::endl;
+                          SimGlobals::velDCoronal<<" "<<SimGlobals::velDSagittal<<std::endl;
                     write_to_report_file(oss.str());
                 }//*/
 

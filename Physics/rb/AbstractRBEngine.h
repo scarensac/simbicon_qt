@@ -79,9 +79,14 @@ public:
 
 
     /**
-        This method returns the reference to the articulated rigid body with the given name, or NULL if it is not found
+        This method returns the number of articulated rigid bodies
     */
     int getARBCount(){return (int)ABs.size();}
+
+    /**
+        This method returns the number of rigid bodies
+    */
+    int getRBCount(){return (int)objects.size();}
 
     /**
         This method returns the reference to the articulated rigid body with the given name, or NULL if it is not found

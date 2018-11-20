@@ -95,6 +95,22 @@ void Interface::getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std
     }
 }
 
+
+void Interface::getFluidBoyancyOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Point3d>& pts_appli){
+
+    std::vector<SPH::Vector3d> sph_forces, sph_pts_appli;
+
+    SingletonDFSPHCUDA::getFluid()->getFluidBoyancyOnDynamicBodies(sph_forces,sph_pts_appli);
+
+    forces.clear();
+    pts_appli.clear();
+    for (int i=0;i<sph_forces.size();++i){
+        forces.push_back(vectorSPH3dTo3d(sph_forces[i]));
+        pts_appli.push_back(vectorSPH3dTo3d(sph_pts_appli[i]));
+    }
+
+}
+
 void Interface::fluidSimulationStep(){
     SingletonDFSPHCUDA::getFluid()->step();
 }

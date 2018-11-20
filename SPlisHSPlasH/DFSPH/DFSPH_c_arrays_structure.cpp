@@ -15,6 +15,7 @@
 #include <thread>
 #include <sstream>
 
+
 using namespace SPH;
 using namespace std;
 
@@ -601,6 +602,9 @@ DFSPHCData::DFSPHCData() {
 	vector_dynamic_bodies_data = NULL;
 	vector_dynamic_bodies_data_cuda = NULL;
 	numDynamicBodies=0;
+    neighborsDataSetGroupedDynamicBodies=NULL;
+    neighborsDataSetGroupedDynamicBodies_cuda=NULL;
+    posBufferGroupedDynamicBodies=NULL;
 
 
 	damp_borders=false;
@@ -935,6 +939,10 @@ void DFSPHCData::read_solids_from_file(bool load_velocities) {
 	//init gpu struct
 	allocate_and_copy_UnifiedParticleSet_vector_cuda(&vector_dynamic_bodies_data_cuda, vector_dynamic_bodies_data, numDynamicBodies);
 
+    //allocate the grouped neighbor struct
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+    allocate_grouped_neighbors_struct_cuda(*this);
+#endif
 
 	std::cout << "loading solids end" << std::endl;
 
@@ -1074,6 +1082,15 @@ void DFSPHCData::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_f
         sph_moments.push_back(moment);
     }
 
+}
+
+void DFSPHCData::getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli){
+    for (int i = 0; i < numDynamicBodies; ++i) {
+        Vector3d force, pt_appli;
+        compute_fluid_Boyancy_on_dynamic_body_cuda(vector_dynamic_bodies_data[i],force,pt_appli);
+        forces.push_back(force);
+        pts_appli.push_back(pt_appli);
+    }
 }
 
 

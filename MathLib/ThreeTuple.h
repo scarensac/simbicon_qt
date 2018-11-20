@@ -124,5 +124,11 @@ public:
 
 
     void toArray(double* out){out[0]=x;out[1]=y;out[2]=z;}
+
+    void check_for_undefined(){
+        if ((x!=x)||(y!=y)||(z!=z)){
+            throw("undefined vector");
+        }
+    }
 };
 

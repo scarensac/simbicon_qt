@@ -117,6 +117,7 @@ public:
     void updateTimeStepDuration(RealCuda duration);
     void forceUpdateRigidBodies();
     void getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments);
+    void getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli);
     SPH::Vector3d getSimulationCenter();
 };
 }

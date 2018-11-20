@@ -230,7 +230,7 @@ public:
 
     virtual void sendDataToParticleFluidEngine();
     virtual void advanceInTimeParticleFluidEngine(double deltaT);
-    virtual void readDataFromParticleFluidEngine();
+    virtual void readDataFromParticleFluidEngine(WaterImpact& resulting_impact);
 
     /**
         This method is used to set the state of all the rigid body in the physical world.
@@ -283,9 +283,9 @@ public:
 		this function is a children function of the above one (it prevent mass duplication of code for similar body parts
 		this function handle
 	*/
-	Vector3d compute_liquid_drag_on_toes(Joint* joint, float water_level, double eff_density);
-	Vector3d compute_liquid_drag_on_feet(Joint* joint, float water_level, double eff_density, double friction_coef);
-	Vector3d compute_liquid_drag_on_legs(Joint* joint, float water_level, double eff_density, double friction_coef);
+    ForceStruct compute_liquid_drag_on_toes(RigidBody* body, float water_level, double eff_density);
+    ForceStruct compute_liquid_drag_on_feet(RigidBody* body, float water_level, double eff_density, double friction_coef);
+    ForceStruct compute_liquid_drag_on_legs(RigidBody* body, float water_level, double eff_density, double friction_coef);
 
 	/**
 		this function is an utilitary that is used to compute the liquid forces on a rectangular plane
@@ -299,13 +299,13 @@ public:
 		nbr_interval_x, nbr_interval_x, nbr_interval_x: number of interval in each direction (same logic as the l_*)
 
 	*/
-	Vector3d compute_liquid_drag_on_plane(Joint* joint, double l_x, double l_y, double l_z, Point3d pos,
+    ForceStruct compute_liquid_drag_on_plane(RigidBody* body, double l_x, double l_y, double l_z, Point3d pos,
 		Vector3d normal, float water_level, int nbr_interval_x, int nbr_interval_y, int nbr_interval_z);
 
 	/*
 	the default parameters indicate that the friction does not need to be computed on that plane
 	*/
-	Vector3d compute_liquid_drag_on_planev2(Joint* joint, Point3d pos, Vector3d normal, float water_level,
+    ForceStruct compute_liquid_drag_on_planev2(RigidBody* body, Point3d pos, Vector3d normal, float water_level,
 		Vector3d v1, Vector3d v2, int nbr_interval_v1, int nbr_interval_v2, double density, double friction_coef=0, double l3=0);
 
 
@@ -313,7 +313,7 @@ public:
 	This method compute and apply the forces caused by buoyancy.
 	this version uses the physic representation of the objects to compute the immersed volume
 	*/
-	ForceStruct compute_buoyancy(Joint* joint, float water_level);
+    ForceStruct compute_buoyancy(RigidBody* body, float water_level);
 	ForceStruct compute_buoyancy_on_sphere(RigidBody* body, float water_level, double gravity, double density);
 	ForceStruct compute_buoyancy_on_box(RigidBody* body, float water_level, double gravity, double density);
 	ForceStruct compute_buoyancy_on_capsule(RigidBody* body, float water_level, double gravity, double density);
