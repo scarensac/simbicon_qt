@@ -1010,20 +1010,12 @@ void ODEWorld::advanceInTimeParticleFluidEngine(double deltaT){
     std::vector<Point3d> pts_appli_b;
     Interface::getFluidBoyancyOnDynamicBodies(forces_b,pts_appli_b);
 
-    for (int i=0;i<vect_objects_fluid_interaction.size();++i){
-        RigidBody* body=vect_objects_fluid_interaction[i];
-
-        ForceStruct impact;
-        impact.pt=pts_appli_b[i];
-        impact.F=forces_b[i];
-        impact.M=Vector3d(0,0,0);
-
-        SimGlobals::vect_forces.push_back(impact);
-    }
-
 }
+
 void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact){
 
+    //I'll apply a reduction factor because it is wayyyyyyyyy too high
+    double reduction_factor=0.25;
 
     //resize the data structure
     resulting_impact.init(getRBCount());
@@ -1038,7 +1030,7 @@ void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact){
 
         ForceStruct impact;
         impact.pt=pts_appli_b[i];
-        impact.F=forces_b[i];
+        impact.F=forces_b[i]*reduction_factor;
         impact.M=Vector3d(0,0,0);
         resulting_impact.impact_boyancy[body->idx()]=impact;
     }
@@ -1054,14 +1046,17 @@ void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact){
 
         ForceStruct impact;
         impact.pt=body->getCMPosition();
-        impact.F=forces[i];
-        impact.M=moments[i];
+        impact.F=forces[i]*reduction_factor;
+        impact.M=moments[i]*reduction_factor;
 
-        if (!impact.F.isZeroVector()){
-            applyForceTo(body,impact.F,body->getLocalCoordinates(impact.pt));
-        }
-        if (!impact.M.isZeroVector()){
-            applyTorqueTo(body,impact.M);
+        //only apply the forces if the rigid bodies are animated
+        if (!Globals::simulateOnlyFluid){
+            if (!impact.F.isZeroVector()){
+                applyForceTo(body,impact.F,body->getLocalCoordinates(impact.pt));
+            }
+            if (!impact.M.isZeroVector()){
+                applyTorqueTo(body,impact.M);
+            }
         }
 
         resulting_impact.impact_drag[body->idx()]=impact;

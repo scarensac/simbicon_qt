@@ -43,7 +43,7 @@ int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const 
 //those functions are for the neighbors search
 void cuda_neighborsSearch(SPH::DFSPHCData& data);
 void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet,
-    RealCuda kernel_radius, bool sortBuffers=false);
+    DFSPHCData &data, bool sortBuffers=false);
 void cuda_initNeighborsSearchDataSetGroupedDynamicBodies(SPH::DFSPHCData& data);
 void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id);
 void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet);

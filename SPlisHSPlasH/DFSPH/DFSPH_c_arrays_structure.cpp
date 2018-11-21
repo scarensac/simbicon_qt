@@ -122,7 +122,7 @@ NeighborsSearchDataSet::~NeighborsSearchDataSet() {
 
 
 
-void NeighborsSearchDataSet::initData(UnifiedParticleSet* particleSet, RealCuda kernel_radius, bool sort_data) {
+void NeighborsSearchDataSet::initData(UnifiedParticleSet* particleSet, SPH::DFSPHCData& data, bool sort_data) {
 	//if the computation memory space was released to free memory space
 	//we need to realocate it
 	if (!internal_buffers_allocated) {
@@ -136,7 +136,7 @@ void NeighborsSearchDataSet::initData(UnifiedParticleSet* particleSet, RealCuda 
 	}
 
 	//do the actual init
-	cuda_initNeighborsSearchDataSet(*particleSet,*this, kernel_radius, sort_data);
+    cuda_initNeighborsSearchDataSet(*particleSet,*this, data, sort_data);
 }
 
 void NeighborsSearchDataSet::deleteComputationBuffer() {
@@ -316,8 +316,8 @@ void UnifiedParticleSet::updateDynamicBodiesParticles() {
 	}
 }
 
-void UnifiedParticleSet::initNeighborsSearchData(RealCuda kernel_radius, bool sort_data, bool delete_computation_data) {
-	neighborsDataSet->initData(this, kernel_radius, sort_data);
+void UnifiedParticleSet::initNeighborsSearchData(SPH::DFSPHCData& data, bool sort_data, bool delete_computation_data) {
+    neighborsDataSet->initData(this, data, sort_data);
 
 	if (delete_computation_data) {
 		neighborsDataSet->deleteComputationBuffer();
@@ -433,7 +433,7 @@ void UnifiedParticleSet::write_to_file(std::string file_path) {
 	}
 }
 
-void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocities) {
+void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocities, Vector3d *min_o, Vector3d *max_o) {
     std::cout << "UnifiedParticleSet::load_from_file start: " << file_path << std::endl;
 	
 	//first we clear all the data structure
@@ -451,6 +451,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 	myfile >> has_factor_computation;
 	myfile >> velocity_impacted_by_fluid_solver;
 	myfile >> is_dynamic_object;
+
 
 	//now we can initialise the structure
 	//using the attribute to store the parameter before init shoudl not cause any probelm because
@@ -478,7 +479,9 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 	RealCuda* mass_temp = new RealCuda[numParticles];
 
 
-	for (int i = 0; i < numParticles; ++i) {
+    Vector3d min=Vector3d(1000);
+    Vector3d max=Vector3d(-1000);;
+    for (int i = 0; i < numParticles; ++i) {
 		RealCuda mass;
 		Vector3d pos;
 		Vector3d vel = Vector3d(0, 0, 0);
@@ -489,11 +492,19 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 		if (!load_velocities) {
 			vel = Vector3d(0, 0, 0);
-		}
+        }
 
-		mass_temp[i] = mass;
-		pos_temp[i] = pos;
-		vel_temp[i] = vel;
+        if(!is_dynamic_object&&!velocity_impacted_by_fluid_solver){
+            pos.y-=0.1;
+        }
+
+        mass_temp[i] = mass;
+        pos_temp[i] = pos;
+        vel_temp[i] = vel;
+
+        min.toMin(pos);
+        max.toMax(pos);
+
 	}
 
 	reset(pos_temp, vel_temp, mass_temp);
@@ -504,8 +515,17 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
     updateDynamicBodiesParticles();
 
+    //the min and max do not work for dynamic bodies (well for the dynamic bodies they are the min and max of the local coordinates
+    if (min_o!=NULL){
+        *min_o=min;
+    }
+    if (max_o!=NULL){
+        *max_o=max;
+    }
+
 
     std::cout << "UnifiedParticleSet::load_from_file end: " << file_path << std::endl;
+
 }
 
 void UnifiedParticleSet::write_forces_to_file(std::string file_path) {
@@ -584,6 +604,7 @@ DFSPHCData::DFSPHCData() {
 	density0=0;
 	particleRadius=0;
 	viscosity=0;
+    gridOffset=Vector3i(50);
 
 
 	h = 0.001;
@@ -877,13 +898,28 @@ void DFSPHCData::read_boundaries_from_file(bool load_velocities) {
 	//read the data to cpu pointer
 
 	std::string file_name = fluid_files_folder + "boundaries_file.txt";
-	boundaries_data[0].load_from_file(file_name, load_velocities);
+    Vector3d min,max;
+    boundaries_data[0].load_from_file(file_name, load_velocities, &min, &max);
+
+    Vector3i required_grid_size=((max-min)/getKernelRadius()).toFloor();
+
+    std::cout<<"detected min(x y z): "<<min.x<<" "<<min.y<<" "<<min.z<<
+               "     max:(x y z): "<<max.x<<" "<<max.y<<" "<<max.z <<
+               "     required grid size:(x y z): "<<required_grid_size.x<<" "<<required_grid_size.y<<" "<<required_grid_size.z <<
+               std::endl;
+
+    //compute the offset
+    //just take the id of the min minus 1 (the minus one is just to be safe)
+    //of course you need to take the negative of the result...
+    gridOffset=((min/getKernelRadius()).toFloor()-2)*-1;
+
+    std::cout<<"new grid offset(x y z): "<<gridOffset.x<<" "<<gridOffset.y<<" "<<gridOffset.z<<std::endl;
 
 	//init gpu struct
 	allocate_and_copy_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
 
 	//init the boundaries neighbor searchs
-	boundaries_data[0].initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
+    boundaries_data[0].initNeighborsSearchData(*this, true, false);
 
 	std::cout << "loading boundaries end" << std::endl;
 }
@@ -1107,4 +1143,5 @@ void DFSPHCData::computeRigidBodiesParticlesMass(){
 
     //and for the boundaries
     boundaries_data->computeParticlesMass(this);
+
 }

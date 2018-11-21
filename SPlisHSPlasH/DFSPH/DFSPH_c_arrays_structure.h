@@ -217,7 +217,7 @@ namespace SPH
 				p_id_sorted buffer with the particles index sorted by their cell index
 				cell_start_end with the number of particles at the start and end of each cell
 		*/
-		void initData(UnifiedParticleSet* particleSet, RealCuda kernel_radius, bool sort_data);
+        void initData(UnifiedParticleSet* particleSet, DFSPHCData &data, bool sort_data);
 
 		/**
 			Free computation memory. This cna be called for the boundary as
@@ -328,7 +328,7 @@ namespace SPH
 		void transferForcesToCPU();
 
 		//this does the necessary calls to be able to run the neighbors search later
-		void initNeighborsSearchData(RealCuda kernel_radius, bool sort_data, bool delete_computation_data=false);
+        void initNeighborsSearchData(DFSPHCData &data, bool sort_data, bool delete_computation_data=false);
 
 		//reset the data
 		//also clear the computation buffers 
@@ -339,7 +339,7 @@ namespace SPH
 		//store a unified dataset to a file
 		void write_to_file(std::string file_path);
 		//load a unified dataset from a file
-		void load_from_file(std::string file_path, bool load_velocities);
+        void load_from_file(std::string file_path, bool load_velocities, Vector3d* min_o=NULL, Vector3d* max_o=NULL);
 
 		//store the forces to a file in case of a dynamic body
 		void write_forces_to_file(std::string file_path);
@@ -387,7 +387,7 @@ namespace SPH
 		RealCuda density0;
 		RealCuda particleRadius;
 		RealCuda viscosity;
-		
+        Vector3i gridOffset;
 
 		RealCuda h;
 		RealCuda h_future;

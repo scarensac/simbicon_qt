@@ -360,7 +360,7 @@ void ControllerEditor::draw(bool shadowMode){
             for (uint i = 0; i < vect.size(); ++i){
                 double factor = 0.001;
                 glDisable(GL_LIGHTING);
-                glColor3d(0.0, 0, 1);
+                glColor3d(1, 0, 0);
 
                 GLUtils::drawSphere( vect[i].pt,0.01);
                 GLUtils::drawCylinder(0.005, vect[i].F * 9*factor, vect[i].pt);
@@ -642,9 +642,56 @@ void ControllerEditor::processTask(){
                     }
 
                     if (Globals::simulateOnlyFluid){
+                        WaterImpact current_impact;
+
                         //if we only do the fluid it mean the rb are paused
+                        ode_world->sendDataToParticleFluidEngine();
                         Interface::handleDynamicBodiesPause(true);
                         ode_world->advanceInTimeParticleFluidEngine(SimGlobals::dt);
+                        //show the forces
+
+                        ode_world->readDataFromParticleFluidEngine(current_impact);
+                        static WaterImpact previous_impact;
+                        static bool first_pass=true;
+
+                        if (first_pass){
+                            for (int i=0;i<current_impact.impact_boyancy.size();++i){
+                                SimGlobals::vect_forces.push_back(current_impact.impact_drag[i]);
+                                SimGlobals::vect_forces.push_back(current_impact.impact_boyancy[i]);
+                            }
+                            previous_impact.init(current_impact.impact_boyancy.size());
+                        }else{
+                            for (int i=0;i<current_impact.impact_boyancy.size();++i){
+                                ForceStruct impact;
+
+                                impact.pt=(previous_impact.impact_boyancy[i].pt+current_impact.impact_boyancy[i].pt)/2.0;
+                                impact.F=(previous_impact.impact_boyancy[i].F+current_impact.impact_boyancy[i].F)/2.0;
+                                impact.M=Vector3d(0,0,0);
+
+                                SimGlobals::vect_forces.push_back(impact);
+
+                                impact.pt=(previous_impact.impact_drag[i].pt+current_impact.impact_drag[i].pt)/2.0;
+                                impact.F=(previous_impact.impact_drag[i].F+current_impact.impact_drag[i].F)/2.0;
+                                impact.M=Vector3d(0,0,0);
+
+                                SimGlobals::vect_forces.push_back(impact);
+                            }
+                        }
+
+                        for (int i=0;i<current_impact.impact_boyancy.size();++i){
+                            //SimGlobals::vect_forces.push_back(current_impact.impact_drag[i]);
+                            //SimGlobals::vect_forces.push_back(current_impact.impact_boyancy[i]);
+
+                            previous_impact.impact_boyancy[i]=current_impact.impact_boyancy[i];
+                            previous_impact.impact_drag[i]=current_impact.impact_drag[i];
+                        }
+
+                        first_pass=false;
+
+
+
+
+
 
                         //and since the sim of rb is paused the controler step is done :)
                         continue;
