@@ -391,10 +391,6 @@ void ControllerEditor::draw(bool shadowMode){
 
         }
     }
-    else{
-        glDisable(GL_LIGHTING);
-        glDisable(GL_TEXTURE_2D);
-    }
 
     if (conF == NULL)
         return;
@@ -422,9 +418,6 @@ void ControllerEditor::draw(bool shadowMode){
         }
     }
 
-    if (Globals::simulateFluid){
-        Interface::drawParticles(true,true,false);
-    }
 }
 
 
@@ -638,6 +631,7 @@ void ControllerEditor::processTask(){
                 if (Globals::simulateFluid){
 
                     if (Globals::fluidFollowCharacter){
+                    //    Interface::moveFluidSimulation(Vector3d(0,0,0.15));
                         Interface::moveFluidSimulation(conF->getCharacter()->getCOM());
                     }
 

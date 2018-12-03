@@ -27,6 +27,7 @@
 #include <GLUtils/GLUtils.h>
 #include "Globals.h"
 #include "Core/SimGlobals.h"
+#include "SPlisHSPlasH/Interface.h"
 
 GLWindow::GLWindow(int x, int y, int w, int h){
 	ellapsedTime = 0;
@@ -227,20 +228,32 @@ void GLWindow::draw(){
 
 		glColor3d(1, 1, 1);
 		//and then draw the application stuff
-		if (Globals::app)
-			Globals::app->draw();
+        if (Globals::app){
 
-		if (Globals::drawGroundPlane && Globals::app)
-			Globals::app->drawGround();
+            //draw character
+            Globals::app->draw();
 
-		//no more texture mapping or lighting needed
-		glDisable(GL_LIGHTING);
-		glDisable(GL_TEXTURE_2D);
+            if (Globals::drawGroundPlane){
+                //draw the ground
+                Globals::app->drawGround();
 
+                if (Globals::drawShadows){
+                    //no more texture mapping or lighting for the shadows
+                    glDisable(GL_LIGHTING);
+                    glDisable(GL_TEXTURE_2D);
 
-		if (Globals::drawShadows && Globals::drawGroundPlane && Globals::app)
-			drawShadows();
+                    drawShadows();
 
+                    //reenable them
+                    glEnable(GL_LIGHTING);
+                    glEnable(GL_TEXTURE_2D);
+                }
+            }
+        }
+
+        //no more texture mapping or lighting needed
+        glDisable(GL_LIGHTING);
+        glDisable(GL_TEXTURE_2D);
 		glColor3d(1, 1, 1);
 
 		if (Globals::app)
@@ -275,6 +288,18 @@ void GLWindow::draw(){
 
 			fclose(fp);
 		}
+
+        if (Globals::simulateFluid){
+            // Enable blending
+
+             //glDepthMask(GL_FALSE);
+
+            Interface::drawParticles(true,true,false);
+
+
+            //glDepthMask(GL_TRUE);
+        }
+
 	}
 	glColor3d(1, 1, 1);
 
@@ -285,8 +310,6 @@ void GLWindow::draw(){
 
 	if (Globals::drawFPS){
         drawFPSandPerf(fpsTimer.timeEllapsed(), timeSpentProcessing);
-
-
 	}
 		
 	fpsTimer.restart();

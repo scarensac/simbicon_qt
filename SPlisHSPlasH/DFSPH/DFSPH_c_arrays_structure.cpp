@@ -495,7 +495,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
         }
 
         if(!is_dynamic_object&&!velocity_impacted_by_fluid_solver){
-            pos.y-=0.1;
+            //pos.y-=0.1;
         }
 
         mass_temp[i] = mass;
@@ -626,6 +626,7 @@ DFSPHCData::DFSPHCData() {
     neighborsDataSetGroupedDynamicBodies=NULL;
     neighborsDataSetGroupedDynamicBodies_cuda=NULL;
     posBufferGroupedDynamicBodies=NULL;
+    is_fluid_aggregated=false;
 
 
 	damp_borders=false;
@@ -909,7 +910,7 @@ void DFSPHCData::read_boundaries_from_file(bool load_velocities) {
                std::endl;
 
     //compute the offset
-    //just take the id of the min minus 1 (the minus one is just to be safe)
+    //just take the id of the min minus 1 (the minus 2 is just to be safe ad be compatible when the dynamic area is used)
     //of course you need to take the negative of the result...
     gridOffset=((min/getKernelRadius()).toFloor()-2)*-1;
 

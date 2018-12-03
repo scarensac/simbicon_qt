@@ -46,7 +46,7 @@ public:
 
 void Interface::initFluid(double timeStep){
     //for now I'll init it by loading from file
-    SingletonDFSPHCUDA::getFluid()->handleSimulationLoad(true,false,true,false,true,false);
+    SingletonDFSPHCUDA::getFluid()->handleSimulationLoad(true,false,false,false,true,false);
 
     //also init the shader
      SingletonDFSPHCUDA::getShader();
@@ -133,8 +133,8 @@ void Interface::moveFluidSimulation(Point3d target_Position){
     //get the center
     SPH::Vector3d sim_center=SingletonDFSPHCUDA::getFluid()->getSimulationCenter();
 
-    std::cout<<"Interface::moveFluidSimulation sim center: "<<
-               sim_center.x<<"  "<<sim_center.z<<std::endl;
+    //std::cout<<"Interface::moveFluidSimulation sim center: "<<
+    //           sim_center.x<<"  "<<sim_center.z<<std::endl;
 
 
     SPH::Vector3d delta=vector3dToSPH3d(target_Position)-sim_center;
@@ -147,8 +147,11 @@ void Interface::moveFluidSimulation(Point3d target_Position){
         movement.z=delta.z/std::abs(delta.z);
     }
 
-    std::cout<<"Interface::moveFluidSimulation required movement x,z (actual delta x,z): "<<
-               movement.x<<"  "<<movement.z<<"  ("<<delta.x<<"  "<<delta.z<<")"<<std::endl;
+    if(movement.squaredNorm()>0)
+    {
+        std::cout<<"Interface::moveFluidSimulation required movement x,z (actual delta x,z): "<<
+                   movement.x<<"  "<<movement.z<<"  ("<<delta.x<<"  "<<delta.z<<")"<<std::endl;
+    }
 
     //move the simulation
     if (movement.squaredNorm()>0.5){
@@ -165,7 +168,7 @@ void shaderBegin(const float* col, float particleRadius, float renderMaxVelocity
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
     glUniform1f(m_shader.getUniform("viewport_width"), (float)viewport[2]);
-    glUniform1f(m_shader.getUniform("radius"), (float)particleRadius/16);
+    glUniform1f(m_shader.getUniform("radius"), (float)particleRadius);
     glUniform1f(m_shader.getUniform("max_velocity"), (GLfloat) renderMaxVelocity);
     glUniform3fv(m_shader.getUniform("color"), 1, col);
 

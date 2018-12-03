@@ -423,6 +423,7 @@ namespace SPH
         NeighborsSearchDataSet* neighborsDataSetGroupedDynamicBodies;
         NeighborsSearchDataSet* neighborsDataSetGroupedDynamicBodies_cuda;
         Vector3d* posBufferGroupedDynamicBodies;
+        bool is_fluid_aggregated;
 
 		bool damp_borders;
 		int damp_borders_steps_count;

@@ -106,17 +106,18 @@ void Application::drawGround(){
 	groundTexture->activate();
 	glBegin(GL_QUADS);
 		x = size; z = size;
+        float ground_offset=0.0;
 		glTexCoord2d(x/2, z/2);
-		glVertex3d(x, (-x*Globals::a-z*Globals::c-Globals::d)/Globals::b,z);
+        glVertex3d(x, (-x*Globals::a-z*Globals::c-Globals::d)/Globals::b+ground_offset ,z);
 		z = -size;
 		glTexCoord2d(x/2, z/2);
-		glVertex3d(x, (-x*Globals::a-z*Globals::c-Globals::d)/Globals::b,z);
+        glVertex3d(x, (-x*Globals::a-z*Globals::c-Globals::d)/Globals::b+ground_offset,z);
 		x = -size; z = -size;
 		glTexCoord2d(x/2, z/2);
-		glVertex3d(x, (-x*Globals::a-z*Globals::c-Globals::d)/Globals::b,z);
+        glVertex3d(x, (-x*Globals::a-z*Globals::c-Globals::d)/Globals::b+ground_offset,z);
 		z = size;
 		glTexCoord2d(x/2, z/2);
-		glVertex3d(x, (-x*Globals::a-z*Globals::c-Globals::d)/Globals::b,z);
+        glVertex3d(x, (-x*Globals::a-z*Globals::c-Globals::d)/Globals::b+ground_offset,z);
 	glEnd();
 
 	//I just duplicate it to show the water level (just for the time being)

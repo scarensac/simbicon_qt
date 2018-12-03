@@ -2524,7 +2524,7 @@ void ODEWorld::initParticleFluid(){
 
     //now the problem is that I need ot add the objects that interact witht he fluid in the physics simulation
     //add all the objects
-    //*
+    /*
     //std::string vect_obj_name[]={"pelvis","torso","head","lUpperarm","lLowerarm","rUpperarm","rLowerarm",
     //                             "lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};
 

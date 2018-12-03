@@ -1173,13 +1173,14 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
         m_data.read_boundaries_from_file(load_boundaries_velocities);
     }
 
+    if (load_liquid) {
+        m_data.read_fluid_from_file(load_liquid_velocities);
+    }
+
     if (load_solids) {
         m_data.read_solids_from_file(load_solids_velocities);
     }
 
-    if (load_liquid) {
-        m_data.read_fluid_from_file(load_liquid_velocities);
-    }
 
     //recompute the particle mass for the rigid particles
     if (load_boundaries||load_solids){
