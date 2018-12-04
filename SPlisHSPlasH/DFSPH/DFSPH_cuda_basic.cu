@@ -1965,7 +1965,7 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
     RealCuda affected_distance_sq = data.particleRadius*1.5;
     affected_distance_sq *= affected_distance_sq;
 
-    RealCuda precise_affected_distance_sq = data.particleRadius*1.5;
+    RealCuda precise_affected_distance_sq = data.particleRadius*2;
     precise_affected_distance_sq *= precise_affected_distance_sq;
 
 
@@ -1975,7 +1975,8 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
     Vector3d max=*data.bmax;
 #define max_row 10
     RealCuda p_distance = data.particleRadius * 2;
-    Vector3d plane_unit = data.damp_planes[0].abs() / data.damp_planes[0].norm();
+    Vector3d plane_unit = movement.abs() / movement.norm();
+    bool positive_motion = plane_unit.dot(movement)>0;
     Vector3d plane_unit_perp = (Vector3d(1, 0, 1) - plane_unit);
     //I need to know the width I have
     Vector3d width = (max) - (min);
@@ -2004,111 +2005,142 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
         Vector3d plane = data.damp_planes[k];
         if ((particleSet->pos[i] * plane_unit - plane).squaredNorm() < affected_distance_sq) {
             //let's try to estimate the density to see if there are actual surpression
+            bool distance_too_short=false;
             if (k==0){
                 //we can do a simple distance check in essence
-                bool distance_too_short=false;
 
                 Vector3d cur_particle_pos=particleSet->pos[i];
 
 
                 Vector3i cell_pos=(particleSet->pos[i]/data.getKernelRadius()).toFloor()+data.gridOffset;
-                cell_pos+=Vector3i(-1,-1,0);
+                cell_pos+=Vector3i(0,-1,0);
+                //ok since I want to explore the bottom cell firts I need to move in the plane
+                cell_pos-=plane_unit_perp;
 
-                //if (we are on the right side I need to apply a minus 2) and a plus 2 if we are on the left side
-                if (plane_unit.dot(cur_particle_pos) <= plane_unit.dot(data.damp_planes[0])){
-                    cell_pos += plane_unit*1;//since the particle lower than that have already been moved in the direction once
+                //potential offset
+                Vector3d particle_offset=Vector3d(0,0,0);
+//*
+                if (positive_motion){
+                    //for positive motion the lower plane is on the source
+                    if (plane_unit.dot(cur_particle_pos) <= plane_unit.dot(data.damp_planes[0])){
+                        continue;
+                        cell_pos += plane_unit*1;//since the particle lower than that have already been moved in the direction once
+                    }else{
+                        cell_pos -= plane_unit*2;
+                    }
                 }else{
-                    cell_pos -= plane_unit*2;
+                    //if the motion is negative then the lower plane is the target
+                    if (plane_unit.dot(cur_particle_pos) <= plane_unit.dot(data.damp_planes[0])){
+                        //the cell that need to be explored are on row away from us
+                        cell_pos+=plane_unit;
+                    }else{
+                        //we need to move the particle we are checking toward on rows in the direction of the movement
+                        particle_offset=plane_unit*data.getKernelRadius()*-1;
+                    }
                 }
-
+//*/
 
                 //I only need to check if the other side of the jonction border is too close, no need to check the same side since
                 //it was part of a fluid at rest
                 for (int k=0;k<3;++k){//that's y
+                    for (int l=0;l<3;++l){//that's the coordinate in the plane
 
-                    //now since there was a row that was deleted before the one we consider
-                    //the easy solution is to just put a -2 on the z pos of the cell
-                    int cur_cell_id=COMPUTE_CELL_INDEX(cell_pos.x,cell_pos.y+k,cell_pos.z);
-                    UnifiedParticleSet* body=data.fluid_data_cuda;
-                    NeighborsSearchDataSet* neighborsDataSet=body->neighborsDataSet;
-                    unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + 3];
-                    for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
-                        unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];
-                        if ((cur_particle_pos - body->pos[j]).squaredNorm() < precise_affected_distance_sq) {
-                            distance_too_short=true;
-                            break;
+                        Vector3i cur_cell_pos=cell_pos+plane_unit_perp*l;
+                        int cur_cell_id=COMPUTE_CELL_INDEX(cur_cell_pos.x,cur_cell_pos.y+k,cur_cell_pos.z);
+                        UnifiedParticleSet* body=data.fluid_data_cuda;
+                        NeighborsSearchDataSet* neighborsDataSet=body->neighborsDataSet;
+                        unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id+1];
+                        for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
+                            unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];
+                            if ((cur_particle_pos - (body->pos[j]+particle_offset)).squaredNorm() < precise_affected_distance_sq) {
+                                distance_too_short=true;
+                                break;
+                            }
                         }
                     }
                     if (distance_too_short){break;}
                 }
 
-                if (!distance_too_short){
-                    //that mean this particle is not too close for another and there is no need to handle it
-                    continue;
-                }else{
-                    //just for now I want and easy behaviour to test it
-                    //particleSet->pos[i].y += 2.0f;
-                    //return;
-                }
             }else{
-                //we can do a simple distance check in essence
-                bool distance_too_short=false;
-
                 Vector3d cur_particle_pos=particleSet->pos[i];
 
 
                 Vector3i cell_pos=(particleSet->pos[i]/data.getKernelRadius()).toFloor()+data.gridOffset;
-                cell_pos+=Vector3i(-1,-1,0);
+                cell_pos+=Vector3i(0,-1,0);
+                //ok since I want to explore the bottom cell firts I need to move in the plane
+                cell_pos-=plane_unit_perp;
 
                 //on the target side the cell of the right side are a copy of the left side !
                 // so we have to check the row agaisnt itself
                 //but we will have to translate the particles depending on the side we are on
                 Vector3d particle_offset=Vector3d(0,0,0);
-                //if (we are on the right side I need to apply a minus 2) and a plus 2 if we are on the left side
-                if (plane_unit.dot(cur_particle_pos) > plane_unit.dot(data.damp_planes[1])) {
-                    //no need to check since we are checking on the original row
+
+
+                if (positive_motion){
+                    if (plane_unit.dot(cur_particle_pos) > plane_unit.dot(data.damp_planes[1])) {
+                        //the cell that need to be explored are on row away from us
+                        cell_pos-=plane_unit;
+                    }else{
+                        continue;
+                        //we need to move the particle we are checking toward on rows in the direction of the movement
+                        particle_offset=plane_unit*data.getKernelRadius();
+                    }
                 }else{
-                    //we need to move the particle we are checking toward on rows in the direction of the movement
-                    particle_offset=plane_unit*data.getKernelRadius();
+                    if (plane_unit.dot(cur_particle_pos) > plane_unit.dot(data.damp_planes[1])) {
+                        cell_pos -= plane_unit*1;//since the particle lower than that have already been moved in the direction once
+                    }else{
+                        cell_pos += plane_unit*2;
+                    }
+
                 }
 
 
                 //I only need to check if the other side of the jonction border is too close, no need to check the same side since
                 //it was part of a fluid at rest
                 for (int k=0;k<3;++k){//that's y
+                    for (int l=0;l<3;++l){//that's the coordinate in the plane
 
-                    //now since there was a row that was deleted before the one we consider
-                    //the easy solution is to just put a -2 on the z pos of the cell
-                    int cur_cell_id=COMPUTE_CELL_INDEX(cell_pos.x,cell_pos.y+k,cell_pos.z);
-                    UnifiedParticleSet* body=data.fluid_data_cuda;
-                    NeighborsSearchDataSet* neighborsDataSet=body->neighborsDataSet;
-                    unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + 3];
-                    for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
-                        unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];
-                        if ((cur_particle_pos - (body->pos[j]+particle_offset)).squaredNorm() < precise_affected_distance_sq) {
-                            distance_too_short=true;
-                            break;
+                        Vector3i cur_cell_pos=cell_pos+plane_unit_perp*l;
+                        int cur_cell_id=COMPUTE_CELL_INDEX(cur_cell_pos.x,cur_cell_pos.y+k,cur_cell_pos.z);
+                        UnifiedParticleSet* body=data.fluid_data_cuda;
+                        NeighborsSearchDataSet* neighborsDataSet=body->neighborsDataSet;
+                        unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + 1];
+                        for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
+                            unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];
+                            if ((cur_particle_pos - (body->pos[j]+particle_offset)).squaredNorm() < precise_affected_distance_sq) {
+                                distance_too_short=true;
+                                break;
+                            }
                         }
+                        if (distance_too_short){break;}
                     }
-                    if (distance_too_short){break;}
                 }
 
-                if (!distance_too_short){
-                    //that mean this particle is not too close for another and there is no need to handle it
-                    continue;
-                }else{
-                    //just for now I want and easy behaviour to test it
-                    //particleSet->pos[i].y += 2.0f;
-                    //return;
-                }
+            }
+
+            if (!distance_too_short){
+                //that mean this particle is not too close for another and there is no need to handle it
+                continue;
+            }else{
+                //for testing purposes
+                //particleSet->pos[i].y+=2.0f;
+                //return;
             }
 
 
 
-
+            bool near_min=true;
             //get a unique id to compute the position
-            //int id = atomicAdd((k==0)?count_moved_particles: count_possible_particles, 1);
-            int id = atomicAdd((k==0)? moved_particles_min_plane : moved_particles_max_plane, 1);
+            //int id = atomicAdd((k==0)? moved_particles_min_plane : moved_particles_max_plane, 1);
+            int id = atomicAdd(moved_particles_max_plane, 1);
+            /*
+            if ((id%3)!=0){
+                id/=3;
+                near_min=false;
+            }else{
+                id = atomicAdd(moved_particles_min_plane, 1);
+            }
+            //*/
 
             //and compute the particle position
             int row_count = id / max_count_width;
@@ -2117,15 +2149,15 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
             Vector3d pos_local = Vector3d(0, 0, 0);
             pos_local.y += level_count*(p_distance*0.80);
             //the 1 or -1 at the end is because the second iter start at the max and it need to go reverse
-            pos_local += (plane_unit*p_distance*(row_count - level_count*max_row) + plane_unit_perp*p_distance*(id - row_count*max_count_width))*((k == 0) ? 1 : -1);
+            pos_local += (plane_unit*p_distance*(row_count - level_count*max_row) + plane_unit_perp*p_distance*(id - row_count*max_count_width))*((near_min) ? 1 : -1);
             //just a simple interleave on y
             if (level_count & 1 != 0) {
-                pos_local += (Vector3d(1,0,1)*(p_distance / 2.0f))*((k == 0) ? 1 : -1);
+                pos_local += (Vector3d(1,0,1)*(p_distance / 2.0f))*((near_min) ? 1 : -1);
             }
 
             //now I need to find the first possible position
             //it depends if we are close to the min of to the max
-            Vector3d pos_f = (k == 0) ? min : max;
+            Vector3d pos_f = (near_min) ? min : max;
 
             //and for the height we need to find the column
             Vector3d pos_temp = (pos_f + pos_local);
@@ -2134,7 +2166,7 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
             //so from the id I have here I need to know the corresponding id before any particle movement
             //the easiest way is to notivce that anything before the first plane and after the secodn plane have been moved
             //anything else is still the same
-            if (k==0){
+            if (near_min){
                 //0 is the min plane
                 if (plane_unit.dot(pos_temp) < plane_unit.dot(data.damp_planes[0])){
                     pos_temp -= (movement*data.getKernelRadius());
@@ -2310,7 +2342,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 
         //trigger the damping mechanism
         data.damp_borders = false;
-        data.damp_borders_steps_count = 10;
+        data.damp_borders_steps_count = 5;
 
         //add_border_to_damp_planes_cuda(data);
 

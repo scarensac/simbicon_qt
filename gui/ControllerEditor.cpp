@@ -631,8 +631,8 @@ void ControllerEditor::processTask(){
                 if (Globals::simulateFluid){
 
                     if (Globals::fluidFollowCharacter){
-                    //    Interface::moveFluidSimulation(Vector3d(0,0,0.15));
                         Interface::moveFluidSimulation(conF->getCharacter()->getCOM());
+                        //Interface::moveFluidSimulation(Vector3d(-conF->getCharacter()->getCOM().x,0,-conF->getCharacter()->getCOM().z));
                     }
 
                     if (Globals::simulateOnlyFluid){
