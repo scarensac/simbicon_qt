@@ -604,6 +604,7 @@ DFSPHCData::DFSPHCData() {
 	density0=0;
 	particleRadius=0;
 	viscosity=0;
+    m_surfaceTension=0.05;
     gridOffset=Vector3i(50);
 
 
@@ -626,7 +627,7 @@ DFSPHCData::DFSPHCData() {
     neighborsDataSetGroupedDynamicBodies=NULL;
     neighborsDataSetGroupedDynamicBodies_cuda=NULL;
     posBufferGroupedDynamicBodies=NULL;
-    is_fluid_aggregated=false;
+    is_fluid_aggregated=true;
 
 
 	damp_borders=false;
@@ -649,10 +650,15 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
     particleRadius = model->getParticleRadius();
     m_kernel.setRadius(model->m_supportRadius);
     m_kernel_precomp.setRadius(model->m_supportRadius);
+
+    m_kernel_adhesion.setRadius(model->m_supportRadius);
+    m_kernel_cohesion.setRadius(model->m_supportRadius);
 #else
     particleRadius = 0.025;
     m_kernel.setRadius(particleRadius*4);
     m_kernel_precomp.setRadius(particleRadius*4);
+    m_kernel_adhesion.setRadius(particleRadius*4);
+    m_kernel_cohesion.setRadius(particleRadius*4);
 #endif //SPLISHSPLASH_FRAMEWORK
     //W_zero = m_kernel.W_zero();
 	W_zero = m_kernel_precomp.W_zero();
@@ -874,7 +880,13 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	damp_borders_steps_count = 5;
 	add_border_to_damp_planes_cuda(*this);
 
-	std::cout << "loading fluid end" << std::endl;
+
+    //allocate the grouped neighbor struct
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+    allocate_grouped_neighbors_struct_cuda(*this);
+#endif
+
+    std::cout << "loading fluid end" << std::endl;
 }
 
 void DFSPHCData::write_boundaries_to_file() {
@@ -976,10 +988,7 @@ void DFSPHCData::read_solids_from_file(bool load_velocities) {
 	//init gpu struct
 	allocate_and_copy_UnifiedParticleSet_vector_cuda(&vector_dynamic_bodies_data_cuda, vector_dynamic_bodies_data, numDynamicBodies);
 
-    //allocate the grouped neighbor struct
-#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
-    allocate_grouped_neighbors_struct_cuda(*this);
-#endif
+
 
 	std::cout << "loading solids end" << std::endl;
 

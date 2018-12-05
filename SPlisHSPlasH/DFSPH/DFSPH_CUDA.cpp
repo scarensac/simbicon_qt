@@ -114,7 +114,7 @@ void DFSPHCUDA::step()
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
-        cuda_viscosityXSPH(m_data);
+        cuda_externalForces(m_data);
 
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
@@ -1177,15 +1177,17 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
         m_data.read_fluid_from_file(load_liquid_velocities);
     }
 
+    //recompute the particle mass for the rigid particles
+    if (load_boundaries||load_solids){
+        m_data.computeRigidBodiesParticlesMass();
+    }
+
+
     if (load_solids) {
         m_data.read_solids_from_file(load_solids_velocities);
     }
 
 
-    //recompute the particle mass for the rigid particles
-    if (load_boundaries||load_solids){
-        m_data.computeRigidBodiesParticlesMass();
-    }
 }
 
 

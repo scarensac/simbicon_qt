@@ -24,7 +24,7 @@ template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data);
 void cuda_divergence_init(SPH::DFSPHCData& data);//also compute densities and factors
 RealCuda cuda_divergence_loop_end(SPH::DFSPHCData& data);//reinit the densityadv and calc the error
 
-void cuda_viscosityXSPH(SPH::DFSPHCData& data);
+void cuda_externalForces(SPH::DFSPHCData& data);
 
 void cuda_CFL(SPH::DFSPHCData& data, const RealCuda minTimeStepSize, RealCuda m_cflFactor, RealCuda m_cflMaxTimeStepSize);
 
@@ -105,6 +105,12 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet);
 void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool keep_result_buffers);
 
 
+//MATH FUNCTIONS (should be moved)
+FUNCTION inline float gpu_pow(float val, float exp){return powf(val,exp);}
+
+
+
+//BASIC TEST SECTION
 
 void compare_vector3_struct_speed();
 int test_cuda();

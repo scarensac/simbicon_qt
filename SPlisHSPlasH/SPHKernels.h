@@ -339,7 +339,7 @@ namespace SPH
 
 	/** \brief Adhesion kernel used for the surface tension method of Akinci el al. \cite Akinci:2013.
 	*/
-	class AdhesionKernel
+    class AdhesionKernel
 	{
 	protected:
 		static Real m_radius;
