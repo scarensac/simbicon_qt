@@ -27,6 +27,7 @@
 #include <GL/freeglut.h>
 #include <sstream>
 #include <algorithm>
+#include <iostream>
 
 #define CAN_EDIT_POSITION
 #define CAN_EDIT_VIEW_POSITION
@@ -39,8 +40,8 @@ CurveEditor::CurveEditor( int posX, int posY, int sizeX, int sizeY ) :
 {
     minX = 0;
     maxX = 1;
-    minY = -0.4;
-    maxY = 0.4;
+    minY = -0.3;
+    maxY = 0.3;
     trajectory = NULL;
     holdMouse = false;
     pointHeldIdx = -1;
@@ -158,7 +159,7 @@ void CurveEditor::draw() {
 
 
         // Draw control points along the trajectory
-        glPointSize( 8.0f );
+        glPointSize( 6.0f );
         glBegin( GL_POINTS );
         for( int i=0; i<trajectory->getKnotCount(); ++i ) {
             if( pointHeldIdx == i ) glColor3d(1,1,0); else glColor3d(1,1,1);
@@ -199,7 +200,10 @@ void CurveEditor::draw() {
     //    glPushMatrix();
     //    glLoadIdentity();
     //    glTranslatef(maxX,minY,0);
-    glRasterPos2f(maxX-(maxX-minX)/10*2,maxY-(maxY-minY)/7);
+    float axis_pos_x=maxX-0.0-pixelXToViewport(56);
+    float axis_pos_y=maxY-0.0-pixelXToViewport(27);
+    glRasterPos2f(axis_pos_x,axis_pos_y);
+    //glRasterPos2f(maxX-(maxX-minX)/10*2,maxY-(maxY-minY)/7);
 
     glColor3d(1.0,0.0,0.0);
     //	glRasterPos2f(0.3f, 0.4f);

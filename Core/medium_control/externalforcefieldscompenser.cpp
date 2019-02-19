@@ -13,6 +13,8 @@ ExternalForceFieldsCompenser::ExternalForceFieldsCompenser(Character* c)
     _torques2.resize(character->getJointCount());
     _torques3_gravity.resize(character->getJointCount());
     _torques3_fluid.resize(character->getJointCount());
+    _torques4_gravity.resize(character->getJointCount());
+    _torques4_fluid.resize(character->getJointCount());
 }
 
 ExternalForceFieldsCompenser::~ExternalForceFieldsCompenser()
@@ -23,6 +25,9 @@ ExternalForceFieldsCompenser::~ExternalForceFieldsCompenser()
 
     _torques3_gravity.clear();
     _torques3_fluid.clear();
+
+    _torques4_gravity.clear();
+    _torques4_fluid.clear();
 }
 
 
@@ -183,7 +188,7 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(WaterImpact &resultin
                 leaf_joints.push_back(i);
             }
         }
-//        vect_action_needed[arb->parent_joint()->idx()]=true;
+        //        vect_action_needed[arb->parent_joint()->idx()]=true;
     }
 
     //Now from each leaf up to the root we compute the visible weight
@@ -417,10 +422,10 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(WaterImpact &resultin
             Vector3d tmpT = tmpV.crossProductWith(fGlobal)*-1;
             _torques2[j->idx()] = tmpT*vect_torque_sign[j->idx()];
         }else{
-//            std::cout<<j->name();
+            //            std::cout<<j->name();
         }
     }
-//*/
+    //*/
 }
 
 
@@ -539,21 +544,23 @@ void ExternalForceFieldsCompenser::compute_compensation_v3(std::vector<ForceStru
             Vector3d F= force_field[force_field.size()-1].F;
             Point3d pt=force_field[force_field.size()-1].pt;
 
+
             pt_all += pt*F.length();
             sum_norms+=F.length();
             F_all += F;
-        }
-        if (sum_norms){
-            pt_all=pt_all/sum_norms;
+
+            if (sum_norms){
+                pt_all=pt_all/sum_norms;
+            }
         }
 
         //in the stance leg we add the torque because eahc joint support it's parents
         for (int i=0;i<vect_influence.size();++i){
-            Joint* joint=vect_hip_joint[i];
 
             Vector3d F_supported=F_all*vect_influence[i];
 
             //hip
+            Joint* joint=vect_hip_joint[i];
             if(!F_supported.isZeroVector()){
                 result_ptr[joint->idx()]+=compute_joint_torques_equivalent_to_force(joint,pt_all,F_supported);
             }
@@ -566,9 +573,10 @@ void ExternalForceFieldsCompenser::compute_compensation_v3(std::vector<ForceStru
                 result_ptr[joint->idx()]+=compute_joint_torques_equivalent_to_force(joint,pt_all,F_supported);
             }
 
+
             //then the weight of the upper leg
-            Point3d pt=force_field[joint->idx()].pt;
-            Vector3d F=force_field[joint->idx()].F;
+            Point3d pt=force_field[vect_hip_joint[i]->idx()].pt;
+            Vector3d F=force_field[vect_hip_joint[i]->idx()].F;
 
 
             if(!F.isZeroVector()){
@@ -577,6 +585,141 @@ void ExternalForceFieldsCompenser::compute_compensation_v3(std::vector<ForceStru
 
         }
     }
+
+}
+
+
+
+
+void ExternalForceFieldsCompenser::compute_compensation_v4(std::vector<ForceStruct> &force_field, std::vector<Vector3d> &result_ptr,
+                                                           bool ankle_compensate_foot){
+    //before anything we need to know which off the leg are in a support phase
+    bool swing_foot_contact=false;
+    bool stance_foot_contact=false;
+    std::vector<Joint*> vect_support_hip;
+    std::vector<Joint*> vect_support_ankle;
+    std::vector<float> vect_influence;
+    for (int i=0;i<4;++i){
+        if ((character->force_stance_foot()[i]).length()>0){
+            stance_foot_contact=true;
+        }
+
+        if ((character->force_swing_foot()[i]).length()>0){
+            swing_foot_contact=true;
+        }
+    }
+
+    if (stance_foot_contact){
+        vect_support_hip.push_back(character->stance_hip());
+        vect_support_ankle.push_back(character->stance_foot()->parent_joint());
+        vect_influence.push_back(1);
+    }
+
+    if (swing_foot_contact){
+        vect_support_hip.push_back(character->swing_hip());
+        vect_support_ankle.push_back(character->swing_foot()->parent_joint());
+        vect_influence.push_back(1);
+    }
+
+    if (stance_foot_contact&&swing_foot_contact){
+        float stanceHipToSwingHipRatio=character->get_stance_foot_weight_ratio();
+
+        vect_influence.clear();
+
+        vect_influence.push_back(stanceHipToSwingHipRatio);
+        vect_influence.push_back(1-stanceHipToSwingHipRatio);
+    }
+
+
+    //now I need the leafs
+    //as explaned before we do not count the foots if they are in contact with the ground
+    std::vector<int> leaf_joints;
+    for (int i=0;i<character->getJointCount();++i){
+        ArticulatedRigidBody* arb=character->getJoint(i)->child();
+        if (arb->child_joints().empty()){
+            if (!((arb==character->stance_foot()->child_joints()[0]->child())&&stance_foot_contact)&&
+                    !((arb==character->swing_foot()->child_joints()[0]->child())&&swing_foot_contact)){
+                leaf_joints.push_back(i);
+            }
+        }
+    }
+
+
+    //this is just to make sure we don't compensate multiple time the same force
+    std::vector<bool> force_already_compensated;
+    for (int i=0;i<result_ptr.size();++i){force_already_compensated.push_back(false);}
+
+    //compute the compensation for the forces assossiated with a body part that is not inside a support leg
+    for (int i=0;i<leaf_joints.size();++i){
+        Joint* cur_joint=character->getJoint(leaf_joints[i]);
+
+        while(cur_joint!=NULL){
+            if (force_already_compensated[cur_joint->idx()]){
+                //advance to next joint
+                cur_joint=cur_joint->parent()->parent_joint();
+                continue;
+            }
+            force_already_compensated[cur_joint->idx()]=true;
+
+            //get the force associated with the child of this joint
+            ForceStruct force=force_field[cur_joint->idx()];
+
+            //compensate the force up to the root
+            Joint* iter_joint=cur_joint;
+            while(iter_joint!=NULL){
+                result_ptr[iter_joint->idx()]-=compute_joint_torques_equivalent_to_force(iter_joint,force.pt,force.F);
+                iter_joint=iter_joint->parent()->parent_joint();
+            }
+
+            //now propagate the compensation in the support leg(s)
+            for (int j=0;j<vect_support_hip.size();++j){
+                iter_joint=vect_support_hip[j];
+                Joint* ankle=vect_support_ankle[j];
+
+                while(iter_joint!=ankle){
+                    result_ptr[iter_joint->idx()]+=compute_joint_torques_equivalent_to_force(iter_joint,force.pt,force.F*vect_influence[j]);
+                    iter_joint=iter_joint->child()->child_joints().front();
+                }
+            }
+
+            cur_joint=cur_joint->parent()->parent_joint();
+        }
+    }
+
+    //now compute the compensation for body parts that are in support legs
+    for (int i=0;i<vect_support_hip.size();++i){
+        Joint* cur_joint=vect_support_hip[i];
+        Joint* ankle=vect_support_ankle[i];
+
+        //set the force to the root force
+        ForceStruct force=force_field[force_field.size()-1];
+
+
+        while(cur_joint!=ankle){
+
+            //and compensate up to the ankle
+            Joint* iter_joint=cur_joint;
+            while(iter_joint!=ankle){
+                result_ptr[iter_joint->idx()]+=compute_joint_torques_equivalent_to_force(iter_joint,force.pt,force.F*vect_influence[i]);
+                iter_joint=iter_joint->child()->child_joints().front();
+            }
+
+            //now read the force for th child body
+            force=force_field[cur_joint->idx()];
+            //and advance to the next joint
+            cur_joint=cur_joint->child()->child_joints().front();
+        }
+
+        //and the ankle compensate the foot forces if required
+        if(ankle_compensate_foot){
+            //get the force associated with the child of this joint
+            ForceStruct force=force_field[ankle->idx()];
+
+            result_ptr[ankle->idx()]-=compute_joint_torques_equivalent_to_force(ankle,force.pt,force.F);
+        }
+    }
+
+
 
 }
 
@@ -590,18 +733,21 @@ Vector3d ExternalForceFieldsCompenser::compute_joint_torques_equivalent_to_force
 
 void ExternalForceFieldsCompenser::preprocess_simulation_step(){
 
+    for (int i=0;i<_torques3_gravity.size();++i){
+        _torques3_gravity[i]=Vector3d(0,0,0);
+        _torques4_gravity[i]=Vector3d(0,0,0);
+        _torques3_fluid[i]=Vector3d(0,0,0);
+        _torques4_fluid[i]=Vector3d(0,0,0);
+    }
 }
 
 void ExternalForceFieldsCompenser::simulation_step(){
 
-    for (int i=0;i<_torques3_gravity.size();++i){
-        _torques3_gravity[i]=Vector3d(0,0,0);
-    }
 
     std::vector<ForceStruct> force_field;
     //the +1 is in case there is a force applyed on the pelvis I'll put it at the end
-    force_field.resize(_torques3_gravity.size()+1);
-    for (int i=0; i<_torques3_gravity.size();++i){
+    force_field.resize(character->getJointCount()+1);
+    for (int i=0; i<character->getJointCount();++i){
         Joint* joint=character->getJoint(i);
 
         force_field[joint->idx()].pt=joint->child()->getCMPosition();
@@ -612,44 +758,52 @@ void ExternalForceFieldsCompenser::simulation_step(){
     force_field[force_field.size()-1].F=Vector3d(0,character->getRoot()->getMass()*9.8,0);
 
 
-    compute_compensation_v3(force_field,_torques3_gravity);
+    //compute_compensation_v3(force_field,_torques3_gravity);
+    compute_compensation_v4(force_field,_torques4_gravity);
+
+    /*
+    for (int i=0; i<character->getJointCount();++i){
+        if ((_torques3_gravity[i]-_torques4_gravity[i]).length()>0.0001)
+        {
+            std::cout<<"forces not the same for : "<<character->getJoint(i)->name()<<" alodforce // new "<<
+                       _torques3_gravity[i].x<<"  "<<_torques3_gravity[i].y<<"  "<<_torques3_gravity[i].z<<" // "<<
+                       _torques4_gravity[i].x<<"  "<<_torques4_gravity[i].y<<"  "<<_torques4_gravity[i].z<<std::endl;
+        }
+    }//*/
 }
 
 
-void ExternalForceFieldsCompenser::compute_fluid_impact_compensation(WaterImpact &resulting_impact){
+void ExternalForceFieldsCompenser::compute_fluid_impact_compensation(WaterImpact &resulting_impact, int type){
 
-    for (int i=0;i<_torques3_fluid.size();++i){
-        _torques3_fluid[i]=Vector3d(0,0,0);
-    }
-
-
+    std::vector<ForceStruct>& impact=(type==0)?resulting_impact.impact_boyancy:resulting_impact.impact_drag;
     std::vector<ForceStruct> force_field;
     //the +1 is in case there is a force applyed on the pelvis I'll put it at the end
     bool existing_force_field=false;
-    force_field.resize(_torques3_fluid.size()+1);
-    for (int i=0; i<_torques3_fluid.size();++i){
+    force_field.resize(character->getJointCount()+1);
+    for (int i=0; i<character->getJointCount();++i){
         Joint* joint=character->getJoint(i);
 
-        if(!(resulting_impact.impact_boyancy[joint->child()->idx()].F.isZeroVector())){
-            force_field[joint->idx()].pt=resulting_impact.impact_boyancy[joint->child()->idx()].pt;
-            force_field[joint->idx()].F=-resulting_impact.impact_boyancy[joint->child()->idx()].F;
+        ForceStruct force=impact[joint->child()->idx()];
+
+        if(!(force.F.isZeroVector())){
+            force_field[joint->idx()].pt=force.pt;
+            force_field[joint->idx()].F=-force.F;
             existing_force_field=true;
         }
     }
 
+    ForceStruct force=impact[character->getRoot()->idx()];
 
-    if(!(resulting_impact.impact_boyancy[character->getRoot()->idx()].F.isZeroVector())){
-        force_field[force_field.size()-1].pt=resulting_impact.impact_boyancy[character->getRoot()->idx()].pt;
-        force_field[force_field.size()-1].F=-resulting_impact.impact_boyancy[character->getRoot()->idx()].F;
+    if(!(force.F.isZeroVector())){
+        force_field[force_field.size()-1].pt=force.pt;
+        force_field[force_field.size()-1].F=-force.F;
         existing_force_field=true;
     }
 
 
     //only do the computatio if we have a existing force field
     if (existing_force_field){
-         compute_compensation_v3(force_field,_torques3_fluid);
+        //compute_compensation_v3(force_field,_torques3_fluid);
+        compute_compensation_v4(force_field,_torques4_fluid);
     }
-
-
-
 }

@@ -402,7 +402,7 @@
            <bool>false</bool>
           </property>
           <property name="maximum">
-           <double>1.250000000000000</double>
+           <double>2.000000000000000</double>
           </property>
           <property name="singleStep">
            <double>0.050000000000000</double>
@@ -412,7 +412,7 @@
         <item>
          <widget class="QSlider" name="slider_liquid_level">
           <property name="maximum">
-           <number>125</number>
+           <number>200</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -531,25 +531,32 @@
          </spacer>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_9">
-          <item>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="0">
            <widget class="QCheckBox" name="check_box_fluid_follow_character">
             <property name="text">
              <string>follow character</string>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="0" column="1">
            <widget class="QCheckBox" name="check_box_simulate_only_fluid">
             <property name="text">
              <string>simulate only fluid</string>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="0" column="2">
            <widget class="QPushButton" name="btn_zero_fluid_velocities">
             <property name="text">
              <string>Zero fluid velocities</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="check_box_fluid_control_level">
+            <property name="text">
+             <string>control fluid level</string>
             </property>
            </widget>
           </item>

@@ -344,6 +344,8 @@ void launch_gl(){
 
 void stop_gl()
 {
+    std::cout<<"stoping opengl context"<<std::endl;
+    core_close();
     //glutDestroyWindow(Globals::glut_window_id);
     glutLeaveMainLoop();
 }

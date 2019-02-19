@@ -84,6 +84,19 @@ void VelocityController::init_velD_trajectory(Trajectory *new_traj, double sagit
     initial_velD_traj= new Trajectory();
     initial_velD_traj->cpy(velD_traj);
 
+    //*
+    //divide by 2 the initial values for some tests
+    for( uint i = 0; i < velD_traj->components.size(); ++i ) {
+        if (velD_traj->components[i]->rotationAxis!=Vector3d(0,0,1)){
+            continue;
+        }
+
+        for (int k=0;k<velD_traj->components[i]->baseTraj.getKnotCount();++k){
+            velD_traj->components[i]->baseTraj.setKnotValue(k,velD_traj->components[i]->baseTraj.getKnotValue(k)/2);
+        }
+    }
+    //*/
+
     //this is a hard reset of all the curve, just don't worry about it ...
     //it is needed if you want to learn from zero
     /*
@@ -632,7 +645,7 @@ void VelocityController::has_evolved_during_last_step(bool &coronal, bool &sagit
     coronal=false;
     if (last_virt_force_signed.z<previous_virt_force_signed.z-20||
             previous_virt_force_signed.z+20<last_virt_force_signed.z){
-            sagittal=true;
+        sagittal=true;
     }
 
     //I don't handle the coronal axis yet (since I don't neeed it and it would be a lot of work
@@ -663,6 +676,21 @@ int VelocityController::adapt_learning_component(TrajectoryComponent *affected_c
 
 
     int nbr_values_original = vel_vector.size();
+
+    /*
+    //specialbloc for an imageforthe paper
+    for (int i = 0; i < nbr_values_original; ++i){
+        //we affect the variation
+        double new_val = vel_vector[i]+0.2;
+        affected_component->baseTraj.setKnotValue(i, new_val);
+    }
+    int remove_count=affected_component->baseTraj.getKnotCount()-nbr_values_original;
+    for (int i = 0; i < remove_count; ++i){
+        //we affect the variation
+        affected_component->baseTraj.removeKnot(nbr_values_original);
+    }
+    return 0;
+    //*/
 
     //first I need to center the values on their "0" value
     //instead of doing it relative to a zero value
@@ -717,6 +745,15 @@ int VelocityController::adapt_learning_component(TrajectoryComponent *affected_c
         }
     }
 
+    /*
+    //specialbloc for an imageforthe paper
+    for (int i = 0; i < vel_vector.size(); ++i){
+        //we affect the variation
+        double new_val = vel_vector[i];
+        affected_component->baseTraj.setKnotValue(i, new_val);
+    }
+    return 0;
+    //*/
 
     //So we calculate the moy variation
     double variation_moy = 0;

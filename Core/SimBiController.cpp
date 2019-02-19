@@ -314,9 +314,13 @@ void SimBiController::computeTorques(WaterImpact &resulting_impact){
 
     //we'll also compute the torques that cancel out the effects of gravity, for better tracking purposes
     external_force_fields_compenser->simulation_step();
-    external_force_fields_compenser->compute_fluid_impact_compensation(resulting_impact);
-    std::vector<Vector3d>& buff_vec2=external_force_fields_compenser->torques3_gravity();
-    std::vector<Vector3d>& buff_vec3=external_force_fields_compenser->torques3_fluid();
+    if (!Globals::simulateFluid){
+        external_force_fields_compenser->compute_fluid_impact_compensation(resulting_impact,0);
+    }
+    //external_force_fields_compenser->compute_fluid_impact_compensation(resulting_impact,1);
+    std::vector<Vector3d>& buff_vec2=external_force_fields_compenser->torques4_gravity();
+    std::vector<Vector3d>& buff_vec3=external_force_fields_compenser->torques4_fluid();
+
 
 
     //this system check if the computed torque opose the one computed by the rest of the controller
@@ -325,6 +329,8 @@ void SimBiController::computeTorques(WaterImpact &resulting_impact){
     double reduction_factor=0;
     for (int i = 0; i<(int)character->getJointCount(); i++){
         buff_vec2[i]+=buff_vec3[i];
+
+
 
         Vector3d calc=torques[i]*buff_vec2[i];
         if (calc.x<0){
@@ -340,6 +346,7 @@ void SimBiController::computeTorques(WaterImpact &resulting_impact){
         //and apply the torque
         torques[i] += buff_vec2[i];
     }
+
 
 
     //here I'l start the stance foot control system

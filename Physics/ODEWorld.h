@@ -230,7 +230,7 @@ public:
 
     virtual void sendDataToParticleFluidEngine();
     virtual void advanceInTimeParticleFluidEngine(double deltaT);
-    virtual void readDataFromParticleFluidEngine(WaterImpact& resulting_impact);
+    virtual void readDataFromParticleFluidEngine(WaterImpact& resulting_impact, Character *c);
 
     /**
         This method is used to set the state of all the rigid body in the physical world.

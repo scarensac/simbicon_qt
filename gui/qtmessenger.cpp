@@ -20,3 +20,7 @@ void QtMessenger::emit_new_phase(double phi)
     emit new_phase(phi*10000000);
 }
 
+void QtMessenger::emit_fluid_level(double level){
+    fluid_level(level);
+}
+

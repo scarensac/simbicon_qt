@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <iomanip>
 #include <math.h>
 #include "Physics/softbodypointmass.h"
@@ -89,6 +90,7 @@ ODEWorld::~ODEWorld(void){
     dWorldDestroy(worldID);
     dCloseODE();
 
+    Interface::releaseFluid();
 }
 
 /**
@@ -892,6 +894,25 @@ void ODEWorld::sendDataToEngine(RigidBody *root_bdy, Vector3d sup_root_torque){
         applyForceTo(rb,Vector3d(0,-SimGlobals::gravity,0),Point3d(0,0,0));
     }
     //*/
+
+    if(false){
+        RigidBody* body=vect_objects_fluid_interaction[0];
+        static float direction=1;
+        float amplitude=50;
+        if(body->getCMPosition().z>4){
+            direction=-1;
+            amplitude*=1;
+        }else if(body->getCMPosition().z<-4){
+            direction=1;
+            amplitude*=1;
+        }
+        if(body->getCMVelocity().z*direction<0){
+            amplitude*=10;
+        }
+
+        applyForceTo(body,Vector3d(0,0,direction*amplitude),Vector3d(0,0,0));
+
+    }
 }
 
 dBodyID ODEWorld::get_body_id(RigidBody *rb)
@@ -1012,28 +1033,16 @@ void ODEWorld::advanceInTimeParticleFluidEngine(double deltaT){
 
 }
 
-void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact){
+void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact, Character* c){
 
-    //I'll apply a reduction factor because it is wayyyyyyyyy too high
-    double reduction_factor=0.25;
+    //thise are the reductionfact for the leg parts
+    //std::vector<double> reduction_factors = {0.38,0.38,0.38,0.38,0.18,0.18}; //when particle on msh
+    //std::vector<double> reduction_factors = {0,0,0,0,0,0}; //reduce to zero
+    std::vector<double> reduction_factors = {1,1,1,1,1,1}; //for particles inside the mesh
 
     //resize the data structure
     resulting_impact.init(getRBCount());
 
-    //now Ill get other values that will represent the boyant force
-    std::vector<Vector3d> forces_b;
-    std::vector<Point3d> pts_appli_b;
-    Interface::getFluidBoyancyOnDynamicBodies(forces_b,pts_appli_b);
-
-    for (int i=0;i<vect_objects_fluid_interaction.size();++i){
-        RigidBody* body=vect_objects_fluid_interaction[i];
-
-        ForceStruct impact;
-        impact.pt=pts_appli_b[i];
-        impact.F=forces_b[i]*reduction_factor;
-        impact.M=Vector3d(0,0,0);
-        resulting_impact.impact_boyancy[body->idx()]=impact;
-    }
 
 
 
@@ -1044,25 +1053,65 @@ void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact){
     for (int i=0;i<vect_objects_fluid_interaction.size();++i){
         RigidBody* body=vect_objects_fluid_interaction[i];
 
-        ForceStruct impact;
-        impact.pt=body->getCMPosition();
-        impact.F=forces[i]*reduction_factor;
-        impact.M=moments[i]*reduction_factor;
 
-        //only apply the forces if the rigid bodies are animated
-        if (!Globals::simulateOnlyFluid){
-            if (!impact.F.isZeroVector()){
-                applyForceTo(body,impact.F,body->getLocalCoordinates(impact.pt));
-            }
-            if (!impact.M.isZeroVector()){
-                applyTorqueTo(body,impact.M);
-            }
+        if (body==c->stance_hip()->child()||body==c->stance_foot()||body==c->stance_foot()->parent_joint()->parent()){
+            //reduction_factors[i]=0;
         }
 
+        ForceStruct impact;
+        impact.pt=body->getCMPosition();
+        impact.F=forces[i]*reduction_factors[i];
+        impact.M=moments[i]*reduction_factors[i];
         resulting_impact.impact_drag[body->idx()]=impact;
 
+        /*
+        std::cout<<body->name()<< "   reduc factor: "<<reduction_factors[i]<<
+                   "  force: "<<impact.F.x<<"  "<<impact.F.y<<"  "<<impact.F.z<<
+                   "  moment: "<<impact.M.x<<"  "<<impact.M.y<<"  "<<impact.M.z<<std::endl;
+        //*/
+
+
+        if (false){
+            static bool first_time=true;
+            if (first_time){
+                first_time=false;
+
+                std::remove("force_in_motion.csv");
+            }
+
+            std::ofstream myfile;
+            std::string filename="force_in_motion.csv";
+            myfile.open(filename,std::ios_base::app);
+            if (myfile.is_open()) {
+                myfile<<body->getCMVelocity().z<<"  "<<impact.F.x<<"  "<<impact.F.y<<"  "<<impact.F.z<<std::endl;
+                myfile.close();
+            }
+            else {
+                std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+            }
+        }
     }
 
+
+    //now Ill get other values that will represent the boyant force
+    //forgetthe boyant force for now maybe at some point it could be good
+    //to try to make the external compensator work with simulated fluids
+    //but fornow I'll do without
+    if (false){
+        std::vector<Vector3d> forces_b;
+        std::vector<Point3d> pts_appli_b;
+        Interface::getFluidBoyancyOnDynamicBodies(forces_b,pts_appli_b);
+
+        for (int i=0;i<vect_objects_fluid_interaction.size();++i){
+            RigidBody* body=vect_objects_fluid_interaction[i];
+
+            ForceStruct impact;
+            impact.pt=pts_appli_b[i];
+            impact.F=forces_b[i]*reduction_factors[i];
+            impact.M=Vector3d(0,0,0);
+            resulting_impact.impact_boyancy[body->idx()]=impact;
+        }
+    }
 
 
     //std::cout<<"sum force automatic : "<<forces[0].x<<" "<<forces[0].y<<" "<<forces[0].z<<std::endl;
@@ -1171,7 +1220,7 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
     resulting_impact.init(getRBCount());
 
     //first I check if the water have any density (if not it's useless to try anything)
-    if (IS_ZERO(SimGlobals::liquid_density)||IS_ZERO(SimGlobals::water_level)){
+    if (IS_ZERO(SimGlobals::liquid_density)||IS_ZERO(water_level)){
         return;
     }
 
@@ -1242,7 +1291,7 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
             impact_drag.modifyApplicationPoint(body->getCMPosition());
             impact_boyancy.modifyApplicationPoint(body->getCMPosition());
 
-            //*
+            /*
             applyForceTo(body, impact_drag.F, body->getLocalCoordinates(impact_drag.pt));
             if (!impact_drag.M.isZeroVector()){
                 //applyTorqueTo(body,impact_drag.M);
@@ -2519,16 +2568,18 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
 
 void ODEWorld::initParticleFluid(){
     //create the fluid and load everything
-    Interface::initFluid(SimGlobals::dt);
+    Interface::loadFluid();
 
 
     //now the problem is that I need ot add the objects that interact witht he fluid in the physics simulation
     //add all the objects
-    /*
+    //*
     //std::string vect_obj_name[]={"pelvis","torso","head","lUpperarm","lLowerarm","rUpperarm","rLowerarm",
     //                             "lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};
 
-    std::string vect_obj_name[]={"lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};
+    std::string vect_obj_name[]={"lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};// full legs
+    //std::string vect_obj_name[]={"lUpperleg","lLowerleg","rLowerleg","lFoot"};//left leg en right lowerleg
+    //std::string vect_obj_name[]={"rLowerleg"};//right lowerleg
     int numObj=6;
 
     for(int i=0;i<numObj;++i){
@@ -2543,10 +2594,12 @@ void ODEWorld::initParticleFluid(){
     //*/
 
 
-    /*
-    //this is a test with a sphere
-    //std::string objs_models[]={"configuration_data/fluid_data/objects/boxTest.rbs"};
-    std::string objs_models[]={"configuration_data/fluid_data/objects/ballTest.rbs"};
+   /*
+    //this is a test with basic objects
+    std::string objs_models[]={"configuration_data/fluid_data/objects/boxTest.rbs"};
+    //std::string objs_models[]={"configuration_data/fluid_data/objects/ballTest.rbs"};
+
+    bool use_two=false;
 
     //1.5,3.0,0.5
     int index = objects.size();
@@ -2565,21 +2618,71 @@ void ODEWorld::initParticleFluid(){
         AbstractRBEngine::loadRBsFromFile(effective_path);
 
         vect_objects_fluid_interaction.push_back(objects.back());
+
+        if(use_two){
+            //second object
+            AbstractRBEngine::loadRBsFromFile(effective_path);
+
+            vect_objects_fluid_interaction.push_back(objects.back());
+        }
     }
 
     //so this is my test sphere
     //I'll set it's position manually for now// in the end the objects will be the one that
     //are part of the character so this problem will not exists
-    RigidBody* body=vect_objects_fluid_interaction[0];
-    body->setCMPosition(Point3d(1,1,0.5));
-    body->setOrientation(Quaternion::getRotationQuaternion(0.7,Vector3d(0,0,1)));
+    {
+        RigidBody* body=vect_objects_fluid_interaction[0];
+        body->setCMPosition(Point3d(0.25,0.4,0));//0.89   2.3
+        //body->setOrientation(Quaternion::getRotationQuaternion(3.14/2.0,Vector3d(0,0,1)));
 
-    //and actually create the objects in ODE
-    initODEStruct(index,index_afs);
+        //and actually create the objects in ODE
+        initODEStruct(index,index_afs);
+
+        //lock the rb in place
+        if (false){
+            dBodyID inter_id= odeToRbs[(int)(body->idx())].id;
+            dJointID j =dJointCreateSlider(worldID,0);
+            dJointAttach(j, inter_id, odeToRbs[(int)(objects[0]->idx())].id);
+            dJointSetSliderAxis (j,0,1,0);
+        }
+        if (true){
+            dBodyID inter_id= odeToRbs[(int)(body->idx())].id;
+            dJointID j =dJointCreateSlider(worldID,0);
+            dJointAttach(j, inter_id, odeToRbs[(int)(objects[0]->idx())].id);
+            dJointSetSliderAxis (j,0,0,1);
+        }
+    }
+
+    //now the secodn object if needed
+    if(use_two){
+        RigidBody* body=vect_objects_fluid_interaction[1];
+        body->setCMPosition(Point3d(0,0.30,-0.25));//0.89   2.3
+        body->setOrientation(Quaternion::getRotationQuaternion(3.14/2,Vector3d(0,0,1)));
+
+        //and actually create the objects in ODE
+        initODEStruct(index,index_afs);
+
+        //lock the rb in place
+        if (true){
+            dBodyID inter_id= odeToRbs[(int)(body->idx())].id;
+            dJointID j =dJointCreateSlider(worldID,0);
+            dJointAttach(j, inter_id, odeToRbs[(int)(objects[0]->idx())].id);
+            dJointSetSliderAxis (j,0,1,0);
+        }
+        if (false){
+            dBodyID inter_id= odeToRbs[(int)(body->idx())].id;
+            dJointID j =dJointCreateSlider(worldID,0);
+            dJointAttach(j, inter_id, odeToRbs[(int)(objects[0]->idx())].id);
+            dJointSetSliderAxis (j,1,0,0);
+        }
+    }
 
     sendDataToParticleFluidEngine();
     Interface::forceUpdateDynamicBodies();
     //*/
+
+    //init the fluid in case the timestep is not 1ms
+    Interface::initFluid(SimGlobals::dt);
 }
 
 void ODEWorld::create_cubes()

@@ -292,10 +292,12 @@ void ControllerEditor::draw(bool shadowMode){
 
         glEnable(GL_LIGHTING);
         glDisable(GL_TEXTURE_2D);
-        if (Globals::drawCollisionPrimitives)
+        if (Globals::drawCollisionPrimitives){
             flags |= SHOW_CD_PRIMITIVES | SHOW_FRICTION_PARTICLES;
+            Globals::drawJoints=1;
+        }
         if (Globals::drawJoints){
-            flags |= SHOW_JOINTS | SHOW_BODY_FRAME;
+            flags |= SHOW_JOINTS;// | SHOW_BODY_FRAME;
         }
 
 
@@ -358,7 +360,7 @@ void ControllerEditor::draw(bool shadowMode){
             //*
             std::vector<ForceStruct> vect = SimGlobals::vect_forces;
             for (uint i = 0; i < vect.size(); ++i){
-                double factor = 0.001;
+                double factor = 0.005;
                 glDisable(GL_LIGHTING);
                 glColor3d(1, 0, 0);
 
@@ -630,9 +632,18 @@ void ControllerEditor::processTask(){
                 ODEWorld* ode_world = dynamic_cast<ODEWorld*>(world);
                 if (Globals::simulateFluid){
 
+                    if (!Globals::fluidControlLevel){
+                        signal_messenger.emit_fluid_level(Interface::getFluidLevel());
+                    }else{
+                        Interface::handleFLuidLevelControl(SimGlobals::water_level);
+                    }
+
                     if (Globals::fluidFollowCharacter){
-                        Interface::moveFluidSimulation(conF->getCharacter()->getCOM());
+                        bool moved=Interface::moveFluidSimulation(conF->getCharacter()->getCOM());
                         //Interface::moveFluidSimulation(Vector3d(-conF->getCharacter()->getCOM().x,0,-conF->getCharacter()->getCOM().z));
+                        if (moved){
+                            //Globals::animationRunning=0;
+                        }
                     }
 
                     if (Globals::simulateOnlyFluid){
@@ -644,47 +655,13 @@ void ControllerEditor::processTask(){
                         ode_world->advanceInTimeParticleFluidEngine(SimGlobals::dt);
                         //show the forces
 
-                        ode_world->readDataFromParticleFluidEngine(current_impact);
-                        static WaterImpact previous_impact;
-                        static bool first_pass=true;
+                        ode_world->readDataFromParticleFluidEngine(current_impact,conF->getCharacter());
 
-                        if (first_pass){
-                            for (int i=0;i<current_impact.impact_boyancy.size();++i){
-                                SimGlobals::vect_forces.push_back(current_impact.impact_drag[i]);
-                                SimGlobals::vect_forces.push_back(current_impact.impact_boyancy[i]);
-                            }
-                            previous_impact.init(current_impact.impact_boyancy.size());
-                        }else{
-                            for (int i=0;i<current_impact.impact_boyancy.size();++i){
-                                ForceStruct impact;
-
-                                impact.pt=(previous_impact.impact_boyancy[i].pt+current_impact.impact_boyancy[i].pt)/2.0;
-                                impact.F=(previous_impact.impact_boyancy[i].F+current_impact.impact_boyancy[i].F)/2.0;
-                                impact.M=Vector3d(0,0,0);
-
-                                SimGlobals::vect_forces.push_back(impact);
-
-                                impact.pt=(previous_impact.impact_drag[i].pt+current_impact.impact_drag[i].pt)/2.0;
-                                impact.F=(previous_impact.impact_drag[i].F+current_impact.impact_drag[i].F)/2.0;
-                                impact.M=Vector3d(0,0,0);
-
-                                SimGlobals::vect_forces.push_back(impact);
-                            }
-                        }
 
                         for (int i=0;i<current_impact.impact_boyancy.size();++i){
-                            //SimGlobals::vect_forces.push_back(current_impact.impact_drag[i]);
-                            //SimGlobals::vect_forces.push_back(current_impact.impact_boyancy[i]);
-
-                            previous_impact.impact_boyancy[i]=current_impact.impact_boyancy[i];
-                            previous_impact.impact_drag[i]=current_impact.impact_drag[i];
+                            SimGlobals::vect_forces.push_back(current_impact.impact_boyancy[i]);
+                            SimGlobals::vect_forces.push_back(current_impact.impact_drag[i]);
                         }
-
-                        first_pass=false;
-
-
-
-
 
 
                         //and since the sim of rb is paused the controler step is done :)
@@ -695,21 +672,201 @@ void ControllerEditor::processTask(){
 
                         ode_world->sendDataToParticleFluidEngine();
                         ode_world->advanceInTimeParticleFluidEngine(SimGlobals::dt);
-                        ode_world->readDataFromParticleFluidEngine(conF->resulting_impact);
+                        ode_world->readDataFromParticleFluidEngine(conF->resulting_impact,conF->getCharacter());
+
+                        {
+                            ForceStruct impact=conF->resulting_impact.impact_drag[conF->getCharacter()->stance_foot()->idx()];
+                            //SimGlobals::vect_forces.push_back(impact_sim);
+                            std::cout<<"  "<<impact.F.x<<"  "<<impact.F.y<<"  "<<impact.F.z<<std::endl;
+                        }
+                        int starting_step=10;
+                        bool run_comparison=false;
+                        if (run_comparison&&count_step>=starting_step){
+                            if (count_step==starting_step+50){
+                                Globals::animationRunning=0;
+                            }
+
+                            ForceStruct impact_sim=conF->resulting_impact.impact_drag[conF->getCharacter()->getARBByName("rLowerleg")->idx()];
+                            SimGlobals::vect_forces.push_back(impact_sim);
+
+
+                            ode_world->compute_water_impact(conF->getCharacter(),1.0, conF->resulting_impact);
+
+                            ForceStruct impact_reduced_drag=conF->resulting_impact.impact_drag[conF->getCharacter()->getARBByName("rLowerleg")->idx()];
+                            ForceStruct impact_reduced_boy=conF->resulting_impact.impact_boyancy[conF->getCharacter()->getARBByName("rLowerleg")->idx()];
+                            ForceStruct impact_reduced;
+                            impact_reduced.F=impact_reduced_boy.F+impact_reduced_drag.F;
+                            impact_reduced.M=impact_reduced_boy.M+impact_reduced_drag.M;
+
+
+                            static std::vector<std::vector<ForceStruct> > even_steps_simu;
+                            static std::vector<std::vector<ForceStruct> > even_steps_esti;
+                            static std::vector<std::vector<ForceStruct> > odd_steps_simu;
+                            static std::vector<std::vector<ForceStruct> > odd_steps_esti;
+
+
+                            static std::vector<ForceStruct> cur_step_simu;
+                            static std::vector<ForceStruct> cur_step_esti;
+
+                            static int old_count_step=starting_step;
+                            if (old_count_step!=count_step){
+                                std::vector<std::string> filenames;
+                                std::vector<std::vector<std::vector<ForceStruct> >* > vect_steps_data;
+                                if((old_count_step%2)==0){
+                                    even_steps_simu.push_back(cur_step_simu);
+                                    even_steps_esti.push_back(cur_step_esti);
+                                    filenames.push_back("fluid_impact_even_simu.csv");
+                                    vect_steps_data.push_back(&even_steps_simu);
+                                    filenames.push_back("fluid_impact_even_esti.csv");
+                                    vect_steps_data.push_back(&even_steps_esti);
+
+                                }else{
+                                    odd_steps_simu.push_back(cur_step_simu);
+                                    odd_steps_esti.push_back(cur_step_esti);
+                                    filenames.push_back("fluid_impact_odd_simu.csv");
+                                    vect_steps_data.push_back(&odd_steps_simu);
+                                    filenames.push_back("fluid_impact_odd_esti.csv");
+                                    vect_steps_data.push_back(&odd_steps_esti);
+                                }
+
+                                cur_step_simu.clear();
+                                cur_step_esti.clear();
+                                //writte to file
+
+
+                                for (int l=0;l<2;++l){
+                                    std::string filename = filenames[l];
+                                    std::vector<std::vector<ForceStruct> >& steps_data=*(vect_steps_data[l]);
+
+                                    std::remove(filename.c_str());
+
+                                    //we need to look the the min number of iter in a step
+                                    int min_count=steps_data[0].size();
+                                    for (int i=1;i<steps_data.size();++i){
+                                        min_count=((min_count<=steps_data[i].size())?min_count:steps_data[i].size());
+                                    }
+
+                                    std::ostringstream oss;
+                                    for(int i=0;i<min_count;++i){
+                                        oss<<i;
+                                        for (int k=0;k<steps_data.size();++k){
+                                            ForceStruct impact=steps_data[k][i];
+                                            oss<<"  "<<impact.F.x<<"  "<<impact.F.y<<"  "<<impact.F.z;
+                                        }
+                                        oss<<std::endl;
+                                    }
+
+                                    //and now we can writte
+                                    std::ofstream myfile;
+                                    myfile.open(filename);
+                                    if (myfile.is_open()) {
+                                        myfile<<oss.str();
+                                        myfile.close();
+                                    }
+                                    else {
+                                        std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+                                    }
+                                }
+                            }
+                            old_count_step=count_step;
+
+                            //here Ijust have to store the information in the vector
+
+                            cur_step_simu.push_back(impact_sim);
+                            cur_step_esti.push_back(impact_reduced);
+
+                        }
+
                     }
+
+
                 }else{
                     //we simulate the effect of the liquid
                     ode_world->compute_water_impact(conF->getCharacter(),SimGlobals::water_level, conF->resulting_impact);
                 }
 
-                for (int i=0;i<conF->resulting_impact.impact_boyancy.size();++i){
-                    //*
-                    //this can be used to show the forces
-                    SimGlobals::vect_forces.push_back(conF->resulting_impact.impact_drag[i]);
-                    SimGlobals::vect_forces.push_back(conF->resulting_impact.impact_boyancy[i]);
-                    //*/
-                }
+                if (!Globals::simulateOnlyFluid){
 
+                    std::vector<ForceStruct>& impact_boyancy=conF->resulting_impact.impact_boyancy;
+                    std::vector<ForceStruct>& impact_drag=conF->resulting_impact.impact_drag;
+                    for (int i=0;i<ode_world->getRBCount();++i){
+                        RigidBody* body=ode_world->getRBByIdx(i);
+                        if (body==conF->getCharacter()->swing_foot()||
+                                body==conF->getCharacter()->swing_foot()->parent_joint()->parent()||
+                                body==conF->getCharacter()->swing_hip()->child()){
+                            continue;
+                        }
+
+                        //apply the forces and moments
+                        if (!impact_drag[body->idx()].F.isZeroVector()){
+                            ode_world->applyForceTo(body, impact_drag[body->idx()].F, body->getLocalCoordinates(impact_drag[body->idx()].pt));
+                            if (!impact_drag[body->idx()].M.isZeroVector()){
+                                //ode_world->applyTorqueTo(body,impact_drag[body->idx()].M);
+                            }
+                            //std::cout<<"drag force found: "<<body->name()<<std::endl;
+                        }
+
+                        if (!Globals::simulateFluid){
+                            if (!impact_boyancy[body->idx()].F.isZeroVector()){
+                                ode_world->applyForceTo(body, impact_boyancy[body->idx()].F, body->getLocalCoordinates(impact_boyancy[body->idx()].pt));
+                                if (!impact_boyancy[body->idx()].M.isZeroVector()){
+                                    ode_world->applyTorqueTo(body,impact_boyancy[body->idx()].M);
+                                }
+                                //std::cout<<"boyancy force found "<<body->name()<<std::endl;
+                            }
+                        }
+
+
+                        //*
+                        //this can be used to show the forces
+                        SimGlobals::vect_forces.push_back(conF->resulting_impact.impact_drag[i]);
+                        //SimGlobals::vect_forces.push_back(conF->resulting_impact.impact_boyancy[i]);
+                        //*/
+                    }
+
+                    if (false){
+
+                        Vector3d sumForces;
+                        std::vector<ForceStruct>& impact_drag=conF->resulting_impact.impact_drag;
+                        for (int i=0;i<ode_world->getRBCount();++i){
+                            RigidBody* body=ode_world->getRBByIdx(i);
+
+                            //apply the forces and moments
+                            if (!impact_drag[body->idx()].F.isZeroVector()){
+                                sumForces+=impact_drag[body->idx()].F;
+                            }
+                        }
+
+                        Vector3d sumGRF;
+                        for(int i=0;i<4;++i){
+                            sumGRF+=conF->getCharacter()->get_force_on_foot(true,true);
+                            sumGRF+=conF->getCharacter()->get_force_on_foot(false,true);
+                        }
+
+                        std::string filename = "boyancy_and_grf_simu.csv";
+                        static bool first_time=true;
+                        if (first_time){
+                            std::remove(filename.c_str());
+                            first_time=false;
+                        }
+
+
+                        std::ostringstream oss;
+                        oss<<conF->getCharacter()->stance_foot()->getAngularVelocity().y<<" ";
+                        oss<<sumForces.x<<" "<<sumForces.y<<" "<<sumForces.z<<" "<<sumGRF.x<<" "<<sumGRF.y<<" "<<sumGRF.z<<std::endl;
+
+                        //and now we can writte
+                        std::ofstream myfile;
+                        myfile.open(filename,std::ios_base::app);
+                        if (myfile.is_open()) {
+                            myfile<<oss.str();
+                            myfile.close();
+                        }
+                        else {
+                            std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+                        }
+                    }
+                }
 
 
 
@@ -721,9 +878,12 @@ void ControllerEditor::processTask(){
                 //we can now advance the simulation
                 conF->simulation_step(SimGlobals::dt);
 
+
                 //run the simulation of physics bodies
                 ode_world->sendDataToEngine();
+
                 ode_world->advanceInTime(SimGlobals::dt);
+
                 ode_world->readDataFromEngine();
 
 
@@ -745,6 +905,10 @@ void ControllerEditor::processTask(){
             }catch(const char* c){
                 std::string msg(c);
                 std::cout<<msg<<std::endl;
+                Globals::animationRunning=0;
+                return;
+            }catch(std::string s){
+                std::cout<<s<<std::endl;
                 Globals::animationRunning=0;
                 return;
             }catch(...){
@@ -1393,6 +1557,13 @@ int ControllerEditor::trajectoryToEdit(int idx){
 
     clearEditedCurves();
     for( uint i = 0; i < trajectory->components.size(); ++i ) {
+        /*
+        //forimagesforpaper
+        if (trajectory->name()=="velD"&&trajectory->components[i]->rotationAxis!=Vector3d(0,0,1)){
+            continue;
+        }
+        //*/
+
         addEditedCurve( &trajectory->components[i]->baseTraj,trajectory->components[i]->rotationAxis );
     }
     if( trajectory->strengthTraj != NULL ) {

@@ -37,7 +37,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_iterations=0;
     m_maxError=0.01;
     m_maxIterations=100;
-    m_maxErrorV=0.1;
+    m_maxErrorV=0.01;
     m_maxIterationsV=100;
     desired_time_step=m_data.get_current_timestep();
 #endif //SPLISHSPLASH_FRAMEWORK
@@ -92,6 +92,7 @@ void DFSPHCUDA::step()
         if (!is_dynamic_bodies_paused){
             m_data.loadDynamicObjectsData(m_model);
         }
+
 
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
@@ -1173,19 +1174,21 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
         m_data.read_boundaries_from_file(load_boundaries_velocities);
     }
 
-    if (load_liquid) {
-        m_data.read_fluid_from_file(load_liquid_velocities);
+    if (load_solids) {
+        m_data.read_solids_from_file(load_solids_velocities);
     }
 
     //recompute the particle mass for the rigid particles
     if (load_boundaries||load_solids){
         m_data.computeRigidBodiesParticlesMass();
+
+        handleSimulationSave(false, true, true);
     }
 
-
-    if (load_solids) {
-        m_data.read_solids_from_file(load_solids_velocities);
+    if (load_liquid) {
+        m_data.read_fluid_from_file(load_liquid_velocities);
     }
+
 
 
 }
@@ -1204,6 +1207,13 @@ void DFSPHCUDA::handleFLuidLevelControl(RealCuda level) {
         m_data.handleFLuidLevelControl(level);
     }
 }
+
+
+RealCuda DFSPHCUDA::getFluidLevel() {
+    return m_data.computeFluidLevel();
+}
+
+
 
 void DFSPHCUDA::updateRigidBodiesStatefromFile() {
     m_data.update_solids_from_file();

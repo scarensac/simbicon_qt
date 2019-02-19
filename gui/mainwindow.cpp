@@ -210,6 +210,8 @@ void MainWindow::start_click()
                     this->sim_window, SLOT(character_step_ended(double,double)));
             connect(&editor->signal_messenger, SIGNAL(new_phase(int)),
                     this->sim_window, SLOT(slider_phase_changed(int)));
+            connect(&editor->signal_messenger, SIGNAL(fluid_level(double)),
+                    this->sim_window, SLOT(spin_box_liquid_level_changed(double)));
 
             connect(sim_window, SIGNAL(close_signal()), this, SLOT(end_simulation()));
             sim_window->show();
@@ -218,7 +220,6 @@ void MainWindow::start_click()
             //the only way to reach this place it that the simulation has been stoped
             //So I need to delete the structures
             delete sim_window;
-            core_close();
 
             //finaly I show this window
             show();

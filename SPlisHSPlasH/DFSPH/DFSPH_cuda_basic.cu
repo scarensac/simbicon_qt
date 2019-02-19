@@ -8,12 +8,14 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <curand.h>
+#include <curand_kernel.h>
 
 //#define SHOW_MESSAGES_IN_CUDA_FUNCTIONS
 
 #define BLOCKSIZE 256
 #define m_eps 1.0e-5
-#define CELL_ROW_LENGTH 256
+#define CELL_ROW_LENGTH 64
 #define CELL_COUNT CELL_ROW_LENGTH*CELL_ROW_LENGTH*CELL_ROW_LENGTH
 
 #define USE_WARMSTART
@@ -155,6 +157,102 @@ FUNCTION inline unsigned int getNumberOfNeighbourgs(int* numberOfNeighbourgs, in
     //return numberOfNeighbourgs[body_id*numFluidParticles + particle_id];
     return numberOfNeighbourgs[particle_id * 3 + body_id];
 }
+
+#define FREE_PTR(ptr) if(ptr!=NULL){delete ptr; ptr=NULL;};
+#define CUDA_FREE_PTR(ptr) if(ptr!=NULL){cudaFree(ptr); ptr=NULL;};
+
+//Static Variable Structure kernels
+__global__ void initCurand_kernel(curandState *state) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= 1) { return; }
+
+    curand_init(1234, 0, 0, state);
+}
+
+//Static Variable Structure
+class SVS_CU{
+public:
+    static SVS_CU* get(bool free=false){
+        static SVS_CU* v=NULL;
+
+        if(free){
+            if(v!=NULL){
+                delete v; v=NULL;
+            }
+        }else{
+            if (v==NULL){
+                v=new SVS_CU();
+            }
+        }
+
+        return v;
+    }
+
+
+
+    SVS_CU(){
+        cudaMalloc(&(avg_density_err), sizeof(RealCuda));
+        shuffle_index = NULL;
+
+
+        cudaMalloc(&(curand_state), sizeof(curandState));
+        initCurand_kernel << <1, 1 >> > (curand_state);
+        gpuErrchk(cudaDeviceSynchronize());
+
+        cudaMallocManaged(&(count_rmv_particles), sizeof(int));
+        cudaMallocManaged(&(count_possible_particles), sizeof(int));
+        cudaMallocManaged(&(count_moved_particles), sizeof(int));
+        cudaMallocManaged(&(count_invalid_position), sizeof(int));
+
+        cudaMallocManaged(&(column_max_height), CELL_ROW_LENGTH*CELL_ROW_LENGTH * sizeof(RealCuda));
+        cudaMallocManaged(&(tagged_particles_count),sizeof(int));
+        cudaMallocManaged(&(count_created_particles), sizeof(int));
+
+        cudaMallocManaged(&(force_cuda),sizeof(Vector3d));
+        cudaMallocManaged(&(moment_cuda),sizeof(Vector3d));
+        cudaMallocManaged(&(pt_cuda),sizeof(Vector3d));
+    }
+
+    virtual ~SVS_CU(){
+        CUDA_FREE_PTR( avg_density_err);
+        CUDA_FREE_PTR( shuffle_index);
+        CUDA_FREE_PTR(curand_state);
+        CUDA_FREE_PTR(count_rmv_particles);
+        CUDA_FREE_PTR(count_possible_particles);
+        CUDA_FREE_PTR(count_moved_particles);
+        CUDA_FREE_PTR( count_invalid_position);
+        CUDA_FREE_PTR(column_max_height);
+        CUDA_FREE_PTR( tagged_particles_count);
+        CUDA_FREE_PTR( count_created_particles);
+        CUDA_FREE_PTR( force_cuda);
+        CUDA_FREE_PTR( moment_cuda);
+        CUDA_FREE_PTR( pt_cuda);
+    }
+
+    static void particleNumberChanged(){
+        CUDA_FREE_PTR(get()->shuffle_index);
+    }
+
+    //cuda variables
+    RealCuda* avg_density_err;
+    unsigned int* shuffle_index;
+    curandState *curand_state;
+    int* count_rmv_particles;
+    int* count_possible_particles;
+    int* count_moved_particles;
+    int* count_invalid_position;
+    RealCuda* column_max_height;
+    int* tagged_particles_count;
+    int* count_created_particles;
+    Vector3d* force_cuda;
+    Vector3d* moment_cuda;
+    Vector3d* pt_cuda;
+
+
+    //cpu variables
+
+};
+
 
 __global__ void get_min_max_pos_kernel(SPH::UnifiedParticleSet* particleSet, Vector3d* min_o, Vector3d *max_o, RealCuda particle_radius) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -707,10 +805,7 @@ __global__ void DFSPH_divergence_loop_end_kernel(SPH::DFSPHCData m_data, SPH::Un
 
 RealCuda cuda_divergence_loop_end(SPH::DFSPHCData& data) {
     int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-    static RealCuda* avg_density_err = NULL;
-    if (avg_density_err == NULL) {
-        cudaMalloc(&(avg_density_err), sizeof(RealCuda));
-    }
+    RealCuda* avg_density_err = SVS_CU::get()->avg_density_err;
 
     DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
 
@@ -756,7 +851,7 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
     ai -= m_data.invH * m_data.viscosity * (mass_div_density) * (vi - body.vel[neighborIndex]) * m_data.W(xixj);
     ni += mass_div_density * m_data.gradW(xixj);
     )
-//*/
+    //*/
     /*
             //viscosity only
             ITER_NEIGHBORS_FLUID(
@@ -802,24 +897,24 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
                 i,
                 RealCuda K_ij = 2.0*density0 / (rhoi + body.density[neighborIndex]);
 
-                Vector3d accel=Vector3d(0,0,0);
+            Vector3d accel=Vector3d(0,0,0);
 
 
-                // Cohesion force
-                Vector3d xixj = xi - body.pos[neighborIndex];
-                const Real length2 = xixj.squaredNorm();
-                if (length2 > 1.0e-9)
-                {
-                    xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-                    accel -= k * body.mass[neighborIndex] * xixj * m_data.WCohesion(xixj);
-                }
+    // Cohesion force
+    Vector3d xixj = xi - body.pos[neighborIndex];
+    const Real length2 = xixj.squaredNorm();
+    if (length2 > 1.0e-9)
+    {
+        xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
+        accel -= k * body.mass[neighborIndex] * xixj * m_data.WCohesion(xixj);
+    }
 
-                // Curvature
-                accel -= k * supportRadius* (ni - normals[neighborIndex]);
+    // Curvature
+    accel -= k * supportRadius* (ni - normals[neighborIndex]);
 
-                ai += K_ij * accel;
-                //*/
-            );
+    ai += K_ij * accel;
+    //*/
+    );
     //////////////////////////////////////////////////////////////////////////
     // Boundary
     //////////////////////////////////////////////////////////////////////////
@@ -827,13 +922,13 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
                 i,
                 // adhesion force
                 Vector3d xixj = (xi - body.pos[neighborIndex]);
-                const Real length2 = xixj.squaredNorm();
-                if (length2 > 1.0e-9)
-                {
-                    xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-                    ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
-                }
-            );
+            const Real length2 = xixj.squaredNorm();
+    if (length2 > 1.0e-9)
+    {
+        xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
+        ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
+    }
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // Dynamic Bodies
@@ -842,15 +937,15 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
                 i,
                 // adhesion force
                 Vector3d xixj = (xi - body.pos[neighborIndex]);
-                const Real length2 = xixj.squaredNorm();
-                if (length2 > 1.0e-9)
-                {
-                    xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-                    ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
-                }
-            );
+            const Real length2 = xixj.squaredNorm();
+    if (length2 > 1.0e-9)
+    {
+        xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
+        ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
+    }
+    );
 
-                particleSet->acc[i]+=ai;
+    particleSet->acc[i]+=ai;
 }
 
 
@@ -1129,10 +1224,8 @@ RealCuda cuda_pressure_loop_end(SPH::DFSPHCData& data) {
 
     std::chrono::steady_clock::time_point p0 = std::chrono::steady_clock::now();
 
-    static RealCuda* avg_density_err = NULL;
-    if (avg_density_err == NULL) {
-        cudaMalloc(&(avg_density_err), sizeof(RealCuda));
-    }
+    RealCuda* avg_density_err = SVS_CU::get()->avg_density_err;
+
     {
         int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
         DFSPH_pressure_loop_end_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
@@ -1195,17 +1288,47 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
         for (int k = 0; k < data.damp_planes_count; ++k) {
             Vector3d plane = data.damp_planes[k];
             if ((particleSet->pos[i] * plane.abs() / plane.norm() - plane).squaredNorm() < affected_distance_sq) {
-                RealCuda max_vel_sq = (data.particleRadius / 25.0f) / data.h;
-                max_vel_sq *= max_vel_sq;
-                RealCuda cur_vel_sq = particleSet->vel[i].squaredNorm();
-                if (cur_vel_sq> max_vel_sq)
-                {
-                    particleSet->vel[i] *= max_vel_sq / cur_vel_sq;
+                if (data.damp_borders_steps_count>1){
+                    RealCuda max_vel_sq = (data.particleRadius / 25.0f) / data.h;
+                    max_vel_sq *= max_vel_sq;
+                    RealCuda cur_vel_sq = particleSet->vel[i].squaredNorm();
+                    if (cur_vel_sq> max_vel_sq)
+                    {
+                        particleSet->vel[i] *= max_vel_sq / cur_vel_sq;
+                    }
+                    //if we triggered once no need to check for the other planes
+                    break;
+                }else{
+                    particleSet->vel[i] *= 0.1;
                 }
-                //if we triggered once no need to check for the other planes
-                break;
             }
         }
+    }
+
+    if (data.cancel_wave){
+        RealCuda affected_distance_sq= data.getKernelRadius();
+        affected_distance_sq *= affected_distance_sq;
+        for (int k = 0; k < 2; ++k) {
+            Vector3i plane = data.cancel_wave_planes[k];
+            if ((particleSet->pos[i] * plane.abs() / plane.norm() - plane).squaredNorm() < affected_distance_sq) {
+                //particleSet->vel[i]=Vector3d(0,1,0);
+            }
+        }
+        Vector3d axis=data.cancel_wave_planes[0].abs()/data.cancel_wave_planes[0].norm();
+        if(particleSet->pos[i].y>data.cancel_wave_lowest_point){
+            if((particleSet->pos[i].dot(axis))<(data.cancel_wave_planes[0].dot(axis))){
+                if((particleSet->vel[i].dot(axis))<0){
+                    particleSet->vel[i]-=particleSet->vel[i]*axis;
+                }
+            }
+
+            if((particleSet->pos[i].dot(axis))>(data.cancel_wave_planes[1].dot(axis))){
+                if((particleSet->vel[i].dot(axis))>0){
+                    particleSet->vel[i]-=particleSet->vel[i]*axis;
+                }
+            }
+        }
+
     }
 
 
@@ -1215,26 +1338,42 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 
 
 void cuda_update_pos(SPH::DFSPHCData& data) {
-    if (data.damp_borders) {
-        for (int k = 0; k < data.damp_planes_count; ++k) {
-            Vector3d plane = data.damp_planes[k];
-            std::cout << "damping plane: " << plane.x << "  " << plane.y << "  " << plane.z << std::endl;
-        }
-    }
+
 
     int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
     DFSPH_update_pos_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 
-    data.damp_borders_steps_count--;
-    if (data.damp_borders_steps_count == 0) {
-        data.damp_borders = false;
-    }
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cuda_update_pos failed: %d\n", (int)cudaStatus);
         exit(1598);
     }
+
+    if (data.damp_borders){
+        for (int k = 0; k < data.damp_planes_count; ++k) {
+            Vector3d plane = data.damp_planes[k];
+            std::cout << "damping plane: " << plane.x << "  " << plane.y << "  " << plane.z << std::endl;
+        }
+        data.damp_borders_steps_count--;
+        if (data.damp_borders_steps_count == 0) {
+            data.damp_borders = false;
+        }
+    }
+    if (data.cancel_wave){
+        //*
+
+        for (int k = 0; k < 2; ++k) {
+            Vector3d plane = data.cancel_wave_planes[k];
+            std::cout << "cancel wave plane: " << plane.x << "  " << plane.y << "  " << plane.z << std::endl;
+        }
+        data.cancel_wave_steps_count--;
+        if (data.cancel_wave_steps_count == 0) {
+            data.cancel_wave = false;
+        }
+        //*/
+    }
+
 }
 
 
@@ -1277,7 +1416,7 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
     float time_3_1 = 0;
     float time_3_2 = 0;
     RealCuda avg_density_err = 0.0;
-    while (((avg_density_err > eta) || (m_iterationsV < 1)) && (m_iterationsV < maxIter))
+    while (((avg_density_err > eta) || (m_iterationsV < 3)) && (m_iterationsV < maxIter))
     {
 
         //////////////////////////////////////////////////////////////////////////
@@ -1326,7 +1465,6 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 #ifdef USE_WARMSTART		
     cuda_pressure_compute<true>(m_data);
 #endif
-
 
     std::chrono::steady_clock::time_point m1 = std::chrono::steady_clock::now();
 
@@ -1794,8 +1932,7 @@ void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id)
 
 
 
-#include <curand.h>
-#include <curand_kernel.h>
+
 
 
 __global__ void generateShuffleIndex_kernel(unsigned int *shuffle_index, unsigned int nbElements, curandState *state) {
@@ -1837,27 +1974,17 @@ __global__ void fillRandom_kernel(unsigned int *buff, unsigned int nbElements, T
     *state = localState;
 }
 
-//*
-__global__ void initCurand_kernel(curandState *state) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= 1) { return; }
-
-    curand_init(1234, 0, 0, state);
-}
-//*/
 
 void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet) {
     unsigned int numParticles = particleSet.numParticles;
     int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
 
     //create a random sorting index
-    static unsigned int* shuffle_index = NULL;
-    static curandState *state;
+    unsigned int* shuffle_index = SVS_CU::get()->shuffle_index;
+    curandState *state= SVS_CU::get()->curand_state;
     if (shuffle_index == NULL) {
-        cudaMallocManaged(&(shuffle_index), particleSet.numParticlesMax * sizeof(unsigned int));
-        cudaMalloc(&(state), sizeof(curandState));
-        initCurand_kernel << <1, 1 >> > (state);
-
+        cudaMallocManaged(&(SVS_CU::get()->shuffle_index), particleSet.numParticlesMax * sizeof(unsigned int));
+        shuffle_index = SVS_CU::get()->shuffle_index;
         gpuErrchk(cudaDeviceSynchronize());
     }
 
@@ -2020,7 +2147,7 @@ __global__ void adapt_inserted_particles_position_kernel(SPH::UnifiedParticleSet
         if (id < (*count_possible_particles)) {
             int ref_particle_id = particleSet->neighborsDataSet->p_id_sorted[id];
             particleSet->pos[i] = particleSet->pos[ref_particle_id] + mov_pos;
-            particleSet->vel[i] = Vector3d(0,0,0); //particleSet->vel[ref_particle_id];
+            particleSet->vel[i] = particleSet->vel[ref_particle_id];
             particleSet->kappa[i] = particleSet->kappa[ref_particle_id];
             particleSet->kappaV[i] = particleSet->kappaV[ref_particle_id];
 
@@ -2062,7 +2189,10 @@ __global__ void find_column_max_height_kernel(SPH::UnifiedParticleSet* particleS
 }
 
 __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height,
-                                                      int* moved_particles_min_plane, int* moved_particles_max_plane, Vector3d movement) {
+                                                      int* count_moved_particles,
+                                                      int* moved_particles_min, int* moved_particles_max, int* count_invalid_position,
+                                                      Vector3d movement, int count_possible_pos, int count_remaining_pos,
+                                                      RealCuda start_height_min,  RealCuda start_height_max) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= particleSet->numParticles) { return; }
 
@@ -2077,7 +2207,6 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
     //compute tsome constants
     Vector3d min=*data.bmin;
     Vector3d max=*data.bmax;
-#define max_row 10
     RealCuda p_distance = data.particleRadius * 2;
     Vector3d plane_unit = movement.abs() / movement.norm();
     bool positive_motion = plane_unit.dot(movement)>0;
@@ -2085,10 +2214,11 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
     //I need to know the width I have
     Vector3d width = (max) - (min);
     //and only kee the component oriented perpendicular with the plane
-    width = width * plane_unit_perp;
-    int max_count_width = width.norm() / p_distance;
+    int max_count_width =  width.dot(plane_unit_perp) / p_distance;
     //idk why but with that computation it's missing one particle so I'll add it
     max_count_width ++;
+
+    int max_row=(width.dot(plane_unit)/5)/p_distance;
 
 
     //just basic one that move the particle above for testing putposes
@@ -2245,74 +2375,117 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
             }
 
 
-
-            bool near_min=true;
             //get a unique id to compute the position
-            //int id = atomicAdd((k==0)? moved_particles_min_plane : moved_particles_max_plane, 1);
-            int id = atomicAdd(moved_particles_max_plane, 1);
+            //int id = atomicAdd((k==0)? moved_particles_back : moved_particles_front, 1);
+            int id = atomicAdd(count_moved_particles, 1);
+
+
+            //before trying to position it above the surface, if we sill have palce in front of the fluid we will put it there
+            if (count_remaining_pos>0){
+                id-= count_remaining_pos;
+                if (id<0){
+                    id+=count_possible_pos;
+                    //so so it means we have to put that paricle in the new layer
+                    int ref_particle_id = particleSet->neighborsDataSet->p_id_sorted[id];
+                    particleSet->pos[i] = particleSet->pos[ref_particle_id] + movement*data.getKernelRadius();
+                    particleSet->vel[i] = particleSet->vel[ref_particle_id];
+                    particleSet->kappa[i] = particleSet->kappa[ref_particle_id];
+                    particleSet->kappaV[i] = particleSet->kappaV[ref_particle_id];
+
+                    particleSet->neighborsDataSet->cell_id[i] = 0;
+
+                    //andwe have to reexecute the loop since that new pos may be next to a border
+                    k=-1;
+                    continue;
+                }
+            }
+
+
+
+
             //*
-            if ((id%3)==0){
-                id/=3;
-                near_min=false;
-            }else{
-                id = atomicAdd(moved_particles_min_plane, 1);
-            }
-            //*/
-
-            //and compute the particle position
-            int row_count = id / max_count_width;
-            int level_count = row_count / max_row;
-
-            Vector3d pos_local = Vector3d(0, 0, 0);
-            pos_local.y += level_count*(p_distance*0.80);
-            //the 1 or -1 at the end is because the second iter start at the max and it need to go reverse
-            pos_local += (plane_unit*p_distance*(row_count - level_count*max_row) + plane_unit_perp*p_distance*(id - row_count*max_count_width))*((near_min) ? 1 : -1);
-            //just a simple interleave on y
-            if (level_count & 1 != 0) {
-                pos_local += (Vector3d(1,0,1)*(p_distance / 2.0f))*((near_min) ? 1 : -1);
+            //we place one third of the particles in the front the rest is placed in the back
+            bool near_min=(positive_motion)? true : false;
+            if ((id%10)==0){
+                near_min=!near_min;
             }
 
-            //now I need to find the first possible position
-            //it depends if we are close to the min of to the max
-            Vector3d pos_f = (near_min) ? min : max;
+            //we repeat until the particle is placed
+            for(;;){
 
-            //and for the height we need to find the column
-            Vector3d pos_temp = (pos_f + pos_local);
-
-            //now the problem is that the column id wontains the height befoore any particle movement;
-            //so from the id I have here I need to know the corresponding id before any particle movement
-            //the easiest way is to notivce that anything before the first plane and after the secodn plane have been moved
-            //anything else is still the same
-            if (near_min){
-                //0 is the min plane
-                if (plane_unit.dot(pos_temp) < plane_unit.dot(data.damp_planes[0])){
-                    pos_temp -= (movement*data.getKernelRadius());
+                if (near_min){
+                    id = atomicAdd(moved_particles_min, 1);
+                }else{
+                    id = atomicAdd(moved_particles_max, 1);
                 }
-            }else{
-                //1 is the max plane
-                if (plane_unit.dot(pos_temp) > plane_unit.dot(data.damp_planes[1])) {
-                    pos_temp -= (movement*data.getKernelRadius());
+                //*/
+
+
+
+                //and compute the particle position
+                int row_count = id / max_count_width;
+                int level_count = row_count / max_row;
+
+                Vector3d pos_local = Vector3d(0, 0, 0);
+                pos_local.y += level_count*(p_distance*0.80);
+                //the 1 or -1 at the end is because the second iter start at the max and it need to go reverse
+                pos_local += (plane_unit*p_distance*(row_count - level_count*max_row) + plane_unit_perp*p_distance*(id - row_count*max_count_width))*((near_min) ? 1 : -1);
+                //just a simple interleave on y
+                if (level_count & 1 != 0) {
+                    pos_local += (Vector3d(1,0,1)*(p_distance / 2.0f))*((near_min) ? 1 : -1);
                 }
+
+                //now I need to find the first possible position
+                //it depends if we are close to the min of to the max
+                Vector3d pos_f = (near_min) ? min : max;
+
+                //and for the height we need to find the column
+                Vector3d pos_temp = (pos_f + pos_local);
+
+                //now the problem is that the column id wontains the height befoore any particle movement;
+                //so from the id I have here I need to know the corresponding id before any particle movement
+                //the easiest way is to notivce that anything before the first plane and after the secodn plane have been moved
+                //anything else is still the same
+                if (near_min){
+                    //0 is the min plane
+                    if (plane_unit.dot(pos_temp) < plane_unit.dot(data.damp_planes[0])){
+                        pos_temp -= (movement*data.getKernelRadius());
+                    }
+                }else{
+                    //1 is the max plane
+                    if (plane_unit.dot(pos_temp) > plane_unit.dot(data.damp_planes[1])) {
+                        pos_temp -= (movement*data.getKernelRadius());
+                    }
+                }
+
+                pos_temp= pos_temp / data.getKernelRadius() + data.gridOffset;
+                pos_temp.toFloor();
+
+                //read the actual height
+                int column_id = pos_temp.x + pos_temp.z*CELL_ROW_LENGTH;
+
+                RealCuda start_height=((near_min) ? start_height_min : start_height_max) + p_distance;
+                RealCuda min_height= column_max_height[column_id] + p_distance;
+
+                if((start_height+pos_local.y)<min_height){
+                    //this means we can't place a particle here so I need to get another
+                    atomicAdd(count_invalid_position, 1);
+                    continue;
+                }
+
+                pos_f.y = start_height;
+                pos_f += pos_local;
+
+
+                particleSet->pos[i] = pos_f;
+                particleSet->vel[i] = Vector3d(0,0,0);
+                particleSet->kappa[i] = 0;
+                particleSet->kappaV[i] = 0;
+
+                //if he particle was moved we are done
+                return;
+
             }
-
-            pos_temp= pos_temp / data.getKernelRadius() + data.gridOffset;
-            pos_temp.toFloor();
-
-            //read the actual height
-            int column_id = pos_temp.x + pos_temp.z*CELL_ROW_LENGTH;
-            pos_f.y =  column_max_height[column_id] + p_distance;
-
-
-            pos_f += pos_local;
-
-
-            particleSet->pos[i] = pos_f;
-            particleSet->vel[i] = Vector3d(0,0,0);
-            particleSet->kappa[i] = 0;
-            particleSet->kappaV[i] = 0;
-
-            //if he particle was moved we are done
-            return;
         }
     }
 }
@@ -2386,12 +2559,10 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 
         //to remove the particles the easiest way is to attribute a huge id to the particles I want to rmv and them to
         //sort the particles but that id followed by lowering the particle number
-        static int* count_rmv_particles = NULL;
-        static int* count_possible_particles = NULL;
-        if (count_rmv_particles == NULL) {
-            cudaMallocManaged(&(count_rmv_particles), sizeof(int));
-            cudaMallocManaged(&(count_possible_particles), sizeof(int));
-        }
+        int* count_rmv_particles = SVS_CU::get()->count_rmv_particles;
+        int* count_possible_particles = SVS_CU::get()->count_possible_particles;
+        int* count_moved_particles = SVS_CU::get()->count_moved_particles; //this is for later
+        int* count_invalid_position = SVS_CU::get()->count_invalid_position; //this is for later
         gpuErrchk(cudaMemset(count_rmv_particles, 0, sizeof(int)));
         gpuErrchk(cudaMemset(count_possible_particles, 0, sizeof(int)));
 
@@ -2461,19 +2632,72 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 
         //trigger the damping mechanism
         data.damp_borders = true;
-        data.damp_borders_steps_count = 5;
+        if (data.damp_borders){
+            data.damp_borders_steps_count = 10;
+            add_border_to_damp_planes_cuda(data);
+        }
 
-        //add_border_to_damp_planes_cuda(data);
+
+        //what I what here is the minimum height in the area where the article will be placed near the surface
+        //for both the min side and the max side
+        int min_mov_dir=((*data.bmin/data.getKernelRadius()+data.gridOffset)*mov_axis).toFloor().norm();
+        int max_mov_dir=((*data.bmax/data.getKernelRadius()+data.gridOffset)*mov_axis).toFloor().norm();
+
+        Vector3d width = (*data.bmax) - (*data.bmin);
+        int placement_row=(width.dot(mov_axis)/5)/data.getKernelRadius();
+
+        RealCuda height_near_min=100000;
+        RealCuda height_near_max=100000;
+
+        for (int j=0;j<CELL_ROW_LENGTH;++j){
+            for (int i=0;i<CELL_ROW_LENGTH;++i){
+                int column_id = i + j*CELL_ROW_LENGTH;
+                if (column_max_height[column_id]<=0){
+                    continue;
+                }
+
+
+                int id_mov_dir=Vector3d(i,0,j).dot(mov_axis);
+
+
+                if (abs(id_mov_dir-min_mov_dir)<placement_row){
+                    height_near_min=MIN_MACRO(height_near_min,column_max_height[column_id]);
+                }
+
+                if (abs(id_mov_dir-max_mov_dir)<placement_row){
+                    height_near_max=MIN_MACRO(height_near_max,column_max_height[column_id]);
+                }
+            }
+        }
+
+        std::cout<<"check start positon (front back): "<<height_near_max<<"   "<<height_near_min<<std::endl;
+
+
+
+
 
 
         //transate the particles that are too close to the jonction planes
+        int count_possible_pos=*count_possible_particles;
+        int count_remaining_pos=MAX_MACRO(count_possible_pos-(*count_rmv_particles),0);
+
         gpuErrchk(cudaMemset(count_rmv_particles, 0, sizeof(int)));
         gpuErrchk(cudaMemset(count_possible_particles, 0, sizeof(int)));
+        gpuErrchk(cudaMemset(count_moved_particles, 0, sizeof(int)));
+        gpuErrchk(cudaMemset(count_invalid_position, 0, sizeof(int)));
         data.destructor_activated = false;
         translate_borderline_particles_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height,
-                                                                             count_rmv_particles, count_possible_particles, movement);
+                                                                             count_moved_particles,
+                                                                             count_rmv_particles, count_possible_particles, count_invalid_position,
+                                                                             movement, count_possible_pos, count_remaining_pos,
+                                                                             height_near_min, height_near_max);
         gpuErrchk(cudaDeviceSynchronize());
         data.destructor_activated = true;
+
+
+        std::cout<<"number of particles displaced: "<<*count_moved_particles-*count_invalid_position<<"  with "<<
+                   *count_rmv_particles+*count_possible_particles <<" at the surface and "<<
+                   *count_invalid_position<<" rerolled positions"<<std::endl;
 
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -2484,6 +2708,27 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 #endif
 
 
+        //add the wave canceler
+        //do nnot use it it do not works properly
+        data.cancel_wave = false;
+        if (data.cancel_wave){
+            data.damp_borders_steps_count = 10;
+            //fix the height at chich I have to start stoping the wave
+            RealCuda global_height = 0;
+            int count_existing_columns = 0;
+            for (int i = 0; i < CELL_ROW_LENGTH*CELL_ROW_LENGTH; ++i) {
+                if (column_max_height[i] > 0) {
+                    global_height += column_max_height[i];
+                    count_existing_columns++;
+                }
+            }
+            global_height /= count_existing_columns;
+            data.cancel_wave_lowest_point=global_height/2.0;
+
+            //and now fix the 2plane where the wave needs to be stoped
+            data.cancel_wave_planes[0]=(*data.bmin)*mov_axis + mov_axis*placement_row*data.getKernelRadius();
+            data.cancel_wave_planes[1]=(*data.bmax)*mov_axis - mov_axis*placement_row*data.getKernelRadius();
+        }
 
     }
 
@@ -2507,7 +2752,7 @@ void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data) {
     data.damp_planes[data.damp_planes_count ++] = Vector3d((abs(data.bmax->x) > min_plane_precision) ? data.bmax->x : min_plane_precision, 0, 0);
     data.damp_planes[data.damp_planes_count ++] = Vector3d(0, 0, (abs(data.bmin->z) > min_plane_precision) ? data.bmin->z : min_plane_precision);
     data.damp_planes[data.damp_planes_count ++] = Vector3d(0, 0, (abs(data.bmax->z) > min_plane_precision) ? data.bmax->z : min_plane_precision);
-    //data.damp_planes[data.damp_planes_count ++] = Vector3d(0, (abs(data.bmin->y) > min_plane_precision) ? data.bmin->y : min_plane_precision, 0);
+    data.damp_planes[data.damp_planes_count ++] = Vector3d(0, (abs(data.bmin->y) > min_plane_precision) ? data.bmin->y : min_plane_precision, 0);
 
 }
 
@@ -2551,7 +2796,9 @@ __global__ void find_splashless_column_max_height_kernel(SPH::UnifiedParticleSet
                     max_height[is_superior] = cur_height;
                 }
             }
-            break;
+            if (count_actual_values>4){
+                break;
+            }
         }
     }
 
@@ -2572,7 +2819,7 @@ __global__ void tag_particles_above_limit_hight_kernel(SPH::UnifiedParticleSet* 
 }
 
 __global__ void place_additional_particles_right_above_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height,
-                                                              int count_new_particles, int border_range, int* count_created_particles) {
+                                                              int count_new_particles, Vector3d border_range, int* count_created_particles) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     if (id >= count_new_particles) { return; }
 
@@ -2608,16 +2855,12 @@ __global__ void place_additional_particles_right_above_kernel(SPH::DFSPHCData da
 
     //and for the height we need to find the column
     Vector3d pos_temp = (pos_f + pos_local);
-    pos_temp = pos_temp / data.getKernelRadius() + data.gridOffset;
-    pos_temp.toFloor();
 
     //now if required check if the particle is near enougth from the border
     int effective_id = 0;
-    if (border_range > 0) {
-        min = min / data.getKernelRadius() + data.gridOffset + border_range;
-        min.toFloor();
-        max = max / data.getKernelRadius() + data.gridOffset - border_range;
-        max.toFloor();
+    if (border_range.squaredNorm() > 0) {
+        min += border_range;
+        max -= border_range;
         //
         if (!(pos_temp.x<min.x || pos_temp.z<min.z || pos_temp.x>max.x || pos_temp.z>max.z)) {
             return;
@@ -2630,12 +2873,15 @@ __global__ void place_additional_particles_right_above_kernel(SPH::DFSPHCData da
 
 
     //read the actual height
+    pos_temp = pos_temp / data.getKernelRadius() + data.gridOffset;
+    pos_temp.toFloor();
     int column_id = pos_temp.x + pos_temp.z*CELL_ROW_LENGTH;
     pos_f.y = column_max_height[column_id] + p_distance;
 
     pos_f += pos_local;
 
     int global_id = effective_id + particleSet->numParticles;
+    particleSet->mass[global_id] = particleSet->mass[0];
     particleSet->pos[global_id] = pos_f;
     particleSet->vel[global_id] = Vector3d(0, 0, 0);
     particleSet->kappa[global_id] = 0;
@@ -2643,11 +2889,7 @@ __global__ void place_additional_particles_right_above_kernel(SPH::DFSPHCData da
 }
 
 
-void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
-#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
-    std::cout << "start fluid level control" << std::endl;
-#endif 
-
+RealCuda find_fluid_height_cuda(SPH::DFSPHCData& data){
     SPH::UnifiedParticleSet* particleSet = data.fluid_data;
 
 
@@ -2660,10 +2902,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
     //the main problem is that I don't want to consider splash particles
     //so I need a special kernel for that
     //first I need the highest particle for each cell
-    static RealCuda* column_max_height = NULL;
-    if (column_max_height == NULL) {
-        cudaMallocManaged(&(column_max_height), CELL_ROW_LENGTH*CELL_ROW_LENGTH * sizeof(RealCuda));
-    }
+    RealCuda* column_max_height = SVS_CU::get()->column_max_height;
     {
         int numBlocks = (CELL_ROW_LENGTH*CELL_ROW_LENGTH + BLOCKSIZE - 1) / BLOCKSIZE;
         //find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
@@ -2682,11 +2921,26 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
             count_existing_columns++;
         }
     }
-
     global_height /= count_existing_columns;
+
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
     std::cout << "global height detected: " << global_height << "  over column count " << count_existing_columns << std::endl;
+#endif
+
+    return global_height;
+}
+
+
+
+void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+    std::cout << "start fluid level control" << std::endl;
 #endif 
+
+    SPH::UnifiedParticleSet* particleSet = data.fluid_data;
+
+    RealCuda global_height = find_fluid_height_cuda(data);
+
 
     //I'll take an error margin of 5 cm for now
     if (abs(global_height - target_height) < 0.05) {
@@ -2699,10 +2953,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
     if (global_height > target_height) {
         //so we have to many particles
         //to rmv them, I'll flag the particles above the limit
-        static int* tagged_particles_count = NULL;
-        if (tagged_particles_count == NULL) {
-            cudaMallocManaged(&(tagged_particles_count),sizeof(int));
-        }
+        int* tagged_particles_count = SVS_CU::get()->tagged_particles_count;
         *tagged_particles_count = 0;
 
         unsigned int numParticles = particleSet->numParticles;
@@ -2722,7 +2973,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
         //and now you can update the number of particles
         int new_num_particles = particleSet->numParticles - *tagged_particles_count;
-        particleSet->update_active_particle_number(new_num_particles);
+        particleSet->updateActiveParticleNumber(new_num_particles);
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
         std::cout << "new number of particles: " << particleSet->numParticles << std::endl;
 #endif
@@ -2738,6 +2989,8 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
         //so first I need to have the min max and the max height for each column (the actual one even taking the plash into consideration
         get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, data.bmin, data.bmax, data.particleRadius);
         gpuErrchk(cudaDeviceSynchronize());
+
+        RealCuda* column_max_height = SVS_CU::get()->column_max_height;
 
         {
             int numBlocks = (CELL_ROW_LENGTH*CELL_ROW_LENGTH + BLOCKSIZE - 1) / BLOCKSIZE;
@@ -2768,44 +3021,58 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
         int count_new_particles = max_count_width.x*max_count_width.y*max_count_width.z;
 
-
-        //check that we don't go over the maximum number of particles ...
-        if ((particleSet->numParticles + count_new_particles) > particleSet->numParticlesMax) {
-            count_new_particles = particleSet->numParticlesMax - particleSet->numParticles;
-        }
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
         std::cout << "num particles to be added: " << count_new_particles << std::endl;
 #endif
 
+        if(count_new_particles==0){
+            throw("asked creating 0 particles, I can just skip it and return but for now it'll stop the program because it should not happen");
+        }
+
+
+
+        //if we need more than the max number of particles then we have to reallocate everything
+        if ((particleSet->numParticles + count_new_particles) > particleSet->numParticlesMax) {
+            change_fluid_max_particle_number(data,(particleSet->numParticles + count_new_particles)*1.5);
+        }
+
+
 
         int numBlocks= (count_new_particles + BLOCKSIZE - 1) / BLOCKSIZE;
         data.destructor_activated = false;
-        int border_range = 2;
+        Vector3d border_range =width/3;
+        border_range.y=0;
 
-        static int* count_created_particles = NULL;
-        if (count_created_particles == NULL) {
-            cudaMallocManaged(&(count_created_particles), sizeof(int));
-        }
+        std::cout<<"border_range: "<<border_range.x<<" "<<border_range.y<<" "<<border_range.z<<std::endl;
+
+        int* count_created_particles = SVS_CU::get()->count_created_particles;
         *count_created_particles = 0;
         //and place the particles in the simulation
         place_additional_particles_right_above_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height,
-                                                                                     count_new_particles, border_range, (border_range>0) ? count_created_particles : NULL);
+                                                                                     count_new_particles, border_range,
+                                                                                     (border_range.squaredNorm()>0) ? count_created_particles : NULL);
 
 
         gpuErrchk(cudaDeviceSynchronize());
         data.destructor_activated = true;
 
+
         //and now you can update the number of particles
-        int new_num_particles = particleSet->numParticles + ((border_range>0)? (*count_created_particles) :count_new_particles);
-        particleSet->update_active_particle_number(new_num_particles);
+        int added_particles=((border_range.squaredNorm()>0)? (*count_created_particles) :count_new_particles);
+        int new_num_particles = particleSet->numParticles + added_particles;
+        particleSet->updateActiveParticleNumber(new_num_particles);
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
-        std::cout << "new number of particles: " << particleSet->numParticles << std::endl;
+        std::cout << "new number of particles: " << particleSet->numParticles << "with num added particles: "<<added_particles<< std::endl;
 #endif
     }
 
-
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+    std::cout << "end fluid level control" << std::endl;
+#endif
 
 }
+
+
 
 
 Vector3d get_simulation_center_cuda(SPH::DFSPHCData& data){
@@ -2891,7 +3158,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
     }
     //*/
 
-    bool need_sort = true;//((time_count%15)==0);
+    bool need_sort = ((time_count%15)==0);
 
     if (need_sort){
         std::cout<<"doing full neighbor search"<<std::endl;
@@ -2902,7 +3169,6 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
     if (true){
         if (need_sort&&data.is_fluid_aggregated){
             data.is_fluid_aggregated=false;
-            data.neighborsDataSetGroupedDynamicBodies->numParticles-=data.fluid_data->numParticles;
         }
 
 
@@ -2942,7 +3208,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
         }
 
-        //*
+        /*
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         float time0;
@@ -2996,7 +3262,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
             exit(1598);
         }
 
-        //*
+        /*
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         time = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() / 1000000.0f;
 
@@ -3053,7 +3319,6 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
     //reactive the aggragation if we desactivated it because a sort was required
     if (need_sort&&old_fluid_aggregated){
         data.is_fluid_aggregated=true;
-        data.neighborsDataSetGroupedDynamicBodies->numParticles+=data.fluid_data->numParticles;
     }
 
     /*
@@ -3130,6 +3395,23 @@ void cuda_initNeighborsSearchDataSetGroupedDynamicBodies(SPH::DFSPHCData& data){
 
     SPH::NeighborsSearchDataSet& dataSet=*(data.neighborsDataSetGroupedDynamicBodies);
 
+
+    //before anything I need to update the number of active particles
+    int numParticles=(data.is_fluid_aggregated)?data.fluid_data[0].numParticles:0;
+    for(int i=0;i<data.numDynamicBodies;++i){
+        numParticles+=data.vector_dynamic_bodies_data[i].numParticles;
+    }
+
+    if (dataSet.numParticles!=numParticles){
+        if(numParticles<=dataSet.numParticlesMax){
+            dataSet.updateActiveParticleNumber(numParticles);
+        }else{
+            std::ostringstream oss;
+            oss<<"TODO::I need to add particles to the grouped data struct when the number of particle goes above the max"<<
+                 " current max: "<<dataSet.numParticlesMax<<"  number of particles: "<<numParticles<<std::endl;
+            throw(oss.str());
+        }
+    }
 
     // now fill itr
     int numBlocks = (dataSet.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
@@ -3279,11 +3561,30 @@ void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
     if (data.damp_planes == NULL) {
         cudaMallocManaged(&(data.damp_planes), sizeof(Vector3d) * 10);
     }
+    if (data.cancel_wave_planes == NULL) {
+        cudaMallocManaged(&(data.cancel_wave_planes), sizeof(Vector3i) * 2);
+    }
+
     if (data.bmin == NULL) {
 
         cudaMallocManaged(&(data.bmin), sizeof(Vector3d));
         cudaMallocManaged(&(data.bmax), sizeof(Vector3d));
     }
+
+    //alloc static variables
+    SVS_CU::get();
+}
+
+void free_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
+    CUDA_FREE_PTR(data.damp_planes);
+    CUDA_FREE_PTR(data.cancel_wave_planes);
+
+
+    CUDA_FREE_PTR(data.bmin);
+    CUDA_FREE_PTR(data.bmax);
+
+    //free static variables
+    SVS_CU::get(true);
 }
 
 
@@ -3311,8 +3612,7 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 
             //I need the allocate the memory cub need to compute the reduction
             //I need the avg pointer because cub require it (but i'll clear after the cub call)
-            RealCuda* avg_density_err = NULL;
-            cudaMalloc(&(avg_density_err), sizeof(RealCuda));
+            RealCuda* avg_density_err = SVS_CU::get()->avg_density_err;
 
             container.d_temp_storage=NULL;
             container.temp_storage_bytes=0;
@@ -3321,7 +3621,6 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
             // Allocate temporary storage
             cudaMalloc(&(container.d_temp_storage), container.temp_storage_bytes);
 
-            cudaFree(avg_density_err);
         }
         //*/
 
@@ -3337,26 +3636,23 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 
 void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 
-    //cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
-    //cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
-    cudaFree(container.mass); container.mass = NULL;
-
+    CUDA_FREE_PTR(container.mass);
 
     if (container.has_factor_computation) {
         //*
-        cudaFree(container.numberOfNeighbourgs); container.numberOfNeighbourgs = NULL;
-        cudaFree(container.neighbourgs); container.neighbourgs = NULL;
+        CUDA_FREE_PTR(container.numberOfNeighbourgs);
+        CUDA_FREE_PTR(container.neighbourgs);
 
-        cudaFree(container.density); container.density = NULL;
-        cudaFree(container.factor); container.factor = NULL;
-        cudaFree(container.densityAdv); container.densityAdv = NULL;
+        CUDA_FREE_PTR(container.density);
+        CUDA_FREE_PTR(container.factor);
+        CUDA_FREE_PTR(container.densityAdv);
 
         if (container.velocity_impacted_by_fluid_solver) {
-            cudaFree(container.acc); container.acc = NULL;
-            cudaFree(container.kappa); container.kappa = NULL;
-            cudaFree(container.kappaV); container.kappaV = NULL;
+            CUDA_FREE_PTR(container.acc);
+            CUDA_FREE_PTR(container.kappa);
+            CUDA_FREE_PTR(container.kappaV);
 
-            cudaFree(container.d_temp_storage); container.d_temp_storage = NULL;
+            CUDA_FREE_PTR(container.d_temp_storage);
             container.temp_storage_bytes = 0;
         }
         //*/
@@ -3364,7 +3660,12 @@ void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
     }
 
     if (container.is_dynamic_object) {
-        cudaFree(container.F); container.F = NULL;
+        CUDA_FREE_PTR(container.F);
+    }
+
+    //delete the cpu buffers if there are some
+    if (container.is_dynamic_object) {
+        FREE_PTR(container.F_cpu);
     }
 
 }
@@ -3439,12 +3740,8 @@ __global__ void compute_fluid_impact_on_dynamic_body_kernel(SPH::UnifiedParticle
 }
 
 void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& moment){
-    static Vector3d* force_cuda = NULL;
-    static Vector3d* moment_cuda = NULL;
-    if (force_cuda == NULL) {
-        cudaMallocManaged(&(force_cuda),sizeof(Vector3d));
-        cudaMallocManaged(&(moment_cuda),sizeof(Vector3d));
-    }
+    Vector3d* force_cuda = SVS_CU::get()->force_cuda;
+    Vector3d* moment_cuda = SVS_CU::get()->moment_cuda;
     *force_cuda=Vector3d(0,0,0);
     *moment_cuda=Vector3d(0,0,0);
 
@@ -3481,12 +3778,8 @@ __global__ void compute_fluid_boyancy_on_dynamic_body_kernel(SPH::UnifiedParticl
 }
 
 void compute_fluid_Boyancy_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& pt_appli){
-    static Vector3d* force_cuda = NULL;
-    static Vector3d* pt_cuda = NULL;
-    if (force_cuda == NULL) {
-        cudaMallocManaged(&(force_cuda),sizeof(Vector3d));
-        cudaMallocManaged(&(pt_cuda),sizeof(Vector3d));
-    }
+    Vector3d* force_cuda = SVS_CU::get()->force_cuda;
+    Vector3d* pt_cuda = SVS_CU::get()->pt_cuda;
     *force_cuda=Vector3d(0,0,0);
     *pt_cuda=Vector3d(0,0,0);
 
@@ -3518,8 +3811,6 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
         in_vector[i].gpu_ptr = *out_vector + i;
     }
 
-
-
     //before being able to fill the gpu array we need to make a copy of the data structure since
     //we will have to change the neighborsdataset from the cpu to the gpu
     //*
@@ -3534,68 +3825,60 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
         //since it's the cpu version that clear the memory buffers that are common to the two structures
         body.releaseDataOnDestruction = false;
 
-        //duplicate the neighbor dataset to the gpu
-        bool copy_neighbor_struct=true;
-
-#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
-        //copy_neighbor_struct=false;
-#endif
-
-        if (copy_neighbor_struct){
-            gpuErrchk(cudaMalloc(&(body.neighborsDataSet), sizeof(SPH::NeighborsSearchDataSet)));
-
-            gpuErrchk(cudaMemcpy(body.neighborsDataSet, in_vector[i].neighborsDataSet,
-                                 sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
-        }else{
-            body.neighborsDataSet=NULL;
-        }
-
+        //the gpu unified particle set has a irect pointer to the gpu neughbor dataset
+        body.neighborsDataSet=body.neighborsDataSet->gpu_ptr;
     }
     //*/
 
-
     gpuErrchk(cudaMemcpy(*out_vector, temp, numSets * sizeof(SPH::UnifiedParticleSet), cudaMemcpyHostToDevice));
-
 
     //Now I have to update the pointer of the cpu set so that it point to the gpu structure
     delete[] temp;
-
-
 
 }
 
 
 
 void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data){
-    int numParticles=0;
     std::cout<<"initialising aggregated structure"<<std::endl;
 
+
+    if (data.neighborsDataSetGroupedDynamicBodies!=NULL||data.posBufferGroupedDynamicBodies!=NULL){
+        throw("allocate_grouped_neighbors_struct_cuda already allocated");
+    }
+
+    int numParticles=0;
+    int numParticlesMax=0;
     if (data.is_fluid_aggregated){
         numParticles+=data.fluid_data->numParticles;
+        numParticlesMax+=data.fluid_data->numParticlesMax;
     }
 
     for(int i=0;i<data.numDynamicBodies;++i){
         numParticles+= data.vector_dynamic_bodies_data[i].numParticles;
+        numParticlesMax+=data.vector_dynamic_bodies_data[i].numParticlesMax;
     }
 
     //allocate the dataset
-    if (data.neighborsDataSetGroupedDynamicBodies==NULL){
-        data.neighborsDataSetGroupedDynamicBodies=new SPH::NeighborsSearchDataSet(numParticles,numParticles);
+    data.neighborsDataSetGroupedDynamicBodies=new SPH::NeighborsSearchDataSet(numParticles,numParticlesMax);
 
-        //duplicate the neighbor dataset to the gpu
-        gpuErrchk(cudaMalloc(&(data.neighborsDataSetGroupedDynamicBodies_cuda), sizeof(SPH::NeighborsSearchDataSet)));
+    //read gpu ptr
+    data.neighborsDataSetGroupedDynamicBodies_cuda=data.neighborsDataSetGroupedDynamicBodies->gpu_ptr;
 
-        gpuErrchk(cudaMemcpy(data.neighborsDataSetGroupedDynamicBodies_cuda, data.neighborsDataSetGroupedDynamicBodies,
-                             sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
-    }
 
     //now it's like the normal neighbor search excapt that we have to iterate on all the solid particles
     //instead of just one buffer
-    //the easiest way is to build a new pos array that contains all the solid particles
-    if (data.posBufferGroupedDynamicBodies==NULL){
-        cudaMalloc(&(data.posBufferGroupedDynamicBodies), numParticles * sizeof(Vector3d));
-    }
+    //the easiest way is to build a new pos array that contains all the dynamic particles
+    cudaMalloc(&(data.posBufferGroupedDynamicBodies), numParticlesMax * sizeof(Vector3d));
 
+
+}
+
+
+void free_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data){
+    FREE_PTR(data.neighborsDataSetGroupedDynamicBodies);
+
+    CUDA_FREE_PTR(data.posBufferGroupedDynamicBodies);
 }
 
 void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets) {
@@ -3645,11 +3928,6 @@ void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, in
 
 
 
-void release_cudaPtr_cuda(void** ptr) {
-    cudaFree(*ptr); *ptr = NULL;
-}
-
-
 template<class T> __global__ void cuda_setBufferToValue_kernel(T* buff, T value, unsigned int buff_size) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= buff_size) { return; }
@@ -3657,22 +3935,107 @@ template<class T> __global__ void cuda_setBufferToValue_kernel(T* buff, T value,
     buff[i] = value;
 }
 
-__global__ void cuda_updateParticleCount_kernel(SPH::UnifiedParticleSet* container, unsigned int numParticles) {
+template<class T> __global__ void cuda_updateParticleCount_kernel(T* container, unsigned int numParticles) {
     //that kernel wil only ever use one thread so I sould noteven need that
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= 1) { return; }
 
     container->numParticles = numParticles;
-    container->neighborsDataSet->numParticles = numParticles;
 }
 
 
 
-void update_active_particle_number_cuda(SPH::UnifiedParticleSet& container) {
+template<class T> void update_active_particle_number_cuda(T& container) {
     //And now I need to update the particle count in the gpu structures
     //the easiest way is to use a kernel with just one thread used
     //the other way would be to copy the data back to the cpu then update the value before sending it back to the cpu
-    cuda_updateParticleCount_kernel << <1, 1 >> > (container.gpu_ptr, container.numParticles);
+    cuda_updateParticleCount_kernel<T> << <1, 1 >> > (container.gpu_ptr, container.numParticles);
+
+    gpuErrchk(cudaDeviceSynchronize());
+}
+
+void change_fluid_max_particle_number(SPH::DFSPHCData& data, int numParticlesMax){
+    //update the fluid dataset
+    data.fluid_data[0].changeMaxParticleNumber(numParticlesMax);
+
+    //and update the aggregated neighbor search if it is used
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+        free_grouped_neighbors_struct_cuda(data);
+
+        allocate_grouped_neighbors_struct_cuda(data);
+#endif
+
+
+}
+
+
+void change_max_particle_number(SPH::UnifiedParticleSet& container, int numParticlesMax){
+    //we need to copy the existing data so let's start in order.
+    //first disactivate the destructor
+    bool old_release_on_destruct=container.releaseDataOnDestruction;
+    container.releaseDataOnDestruction=false;
+
+    //the easy way is to create a dummy, backup the existing buffers inside
+    //alloc the new buffers
+    //do the copy
+    //delete the temps storage
+
+    SPH::UnifiedParticleSet dummy;
+    dummy=container;
+    //remove the pointer on the neighbor search data since it is handled separately
+    dummy.neighborsDataSet=NULL;
+    dummy.gpu_ptr=NULL;
+
+
+    //*
+    //now change the number of particle
+    container.numParticlesMax=numParticlesMax;
+
+    //the rendering data
+
+    //allocate new
+    container.renderingData=new ParticleSetRenderingData();
+    cuda_opengl_initParticleRendering(*container.renderingData,numParticlesMax,&container.pos,&container.vel);
+
+    //now we need to copy the data
+    gpuErrchk(cudaMemcpy(container.pos, dummy.pos, dummy.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+    gpuErrchk(cudaMemcpy(container.vel, dummy.vel, dummy.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+
+    //and the rest of the data
+    allocate_UnifiedParticleSet_cuda(container);
+
+    //and fill it with the old data for buffers that need to be kept
+    gpuErrchk(cudaMemcpy(container.mass, dummy.mass, dummy.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+    gpuErrchk(cudaMemcpy(container.kappa, dummy.kappa, dummy.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+    gpuErrchk(cudaMemcpy(container.kappaV, dummy.kappaV, dummy.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+
+    //*/
+    //finaly we need to update the data that is stored on the gpu
+    //hopefully ne need for more allocation I can just copy the new ptr addresses
+    SPH::NeighborsSearchDataSet* back_up=container.neighborsDataSet;
+    container.neighborsDataSet=container.neighborsDataSet->gpu_ptr;
+    gpuErrchk(cudaMemcpy(container.gpu_ptr, &container, sizeof(SPH::UnifiedParticleSet), cudaMemcpyHostToDevice));
+    container.neighborsDataSet=back_up;
+    //and free the data from the dummy
+    dummy.clear();
+
+
+    container.releaseDataOnDestruction=old_release_on_destruct;
+}
+
+
+void change_max_particle_number(SPH::NeighborsSearchDataSet& dataSet, int numParticlesMax){
+    if (!dataSet.internal_buffers_allocated){
+        throw("only consider fully allocated dataset for now");
+    }
+
+
+    release_neighbors_search_data_set(dataSet,false,true,true);
+
+    //and allocate it back
+    dataSet.numParticlesMax=numParticlesMax;
+
+    allocate_neighbors_search_data_set(dataSet,false,true,false);
 }
 
 void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, const Vector3d* pos, const Vector3d* vel) {
@@ -3691,7 +4054,7 @@ void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_p
     gpuErrchk(cudaMemset(container.kappaV + container.numParticles, 0, num_additional_particles * sizeof(RealCuda)));
 
     //update the particle count
-    container.update_active_particle_number(container.numParticles + num_additional_particles);
+    container.updateActiveParticleNumber(container.numParticles + num_additional_particles);
 
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -3730,6 +4093,11 @@ void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kerne
     }
 }
 
+void free_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel) {
+    CUDA_FREE_PTR(kernel.m_W);
+    CUDA_FREE_PTR(kernel.m_gradW);
+}
+
 
 void init_precomputed_kernel_from_values(SPH::PrecomputedCubicKernelPerso& kernel, RealCuda* w, RealCuda* grad_W) {
     cudaError_t cudaStatus;
@@ -3758,89 +4126,110 @@ void init_precomputed_kernel_from_values(SPH::PrecomputedCubicKernelPerso& kerne
 }
 
 
-void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet) {
+void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool result_buffers_only, bool particle_related_only,
+                                        bool allocate_gpu) {
 
-
-
-    //allocatethe mme for fluid particles
-    cudaMallocManaged(&(dataSet.cell_id), dataSet.numParticlesMax * sizeof(unsigned int));
-    cudaMallocManaged(&(dataSet.cell_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
-    cudaMallocManaged(&(dataSet.local_id), dataSet.numParticlesMax * sizeof(unsigned int));
-    cudaMallocManaged(&(dataSet.p_id), dataSet.numParticlesMax * sizeof(unsigned int));
-    cudaMallocManaged(&(dataSet.hist), (CELL_COUNT + 1) * sizeof(unsigned int));
-
+    //result buffers
     cudaMallocManaged(&(dataSet.p_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
-    cudaMallocManaged(&(dataSet.cell_start_end), (CELL_COUNT + 1) * sizeof(unsigned int));
+    if (!particle_related_only){
+        cudaMallocManaged(&(dataSet.cell_start_end), (CELL_COUNT + 1) * sizeof(unsigned int));
+    }
 
-    cudaMalloc(&(dataSet.intermediate_buffer_v3d), dataSet.numParticlesMax * sizeof(Vector3d));
-    cudaMalloc(&(dataSet.intermediate_buffer_real), dataSet.numParticlesMax * sizeof(RealCuda));
+    //allocate the mem for fluid particles
+    if(!result_buffers_only){
+        cudaMallocManaged(&(dataSet.cell_id), dataSet.numParticlesMax * sizeof(unsigned int));
+        cudaMallocManaged(&(dataSet.cell_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
+        cudaMallocManaged(&(dataSet.local_id), dataSet.numParticlesMax * sizeof(unsigned int));
+        cudaMallocManaged(&(dataSet.p_id), dataSet.numParticlesMax * sizeof(unsigned int));
 
+        cudaMalloc(&(dataSet.intermediate_buffer_v3d), dataSet.numParticlesMax * sizeof(Vector3d));
+        cudaMalloc(&(dataSet.intermediate_buffer_real), dataSet.numParticlesMax * sizeof(RealCuda));
 
-    //reset the particle id
-    {
-        int numBlocks = (dataSet.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+        //reset the particle id
+        int numBlocks = (dataSet.numParticlesMax + BLOCKSIZE - 1) / BLOCKSIZE;
         DFSPH_setBufferValueToItself_kernel << <numBlocks, BLOCKSIZE >> > (dataSet.p_id, dataSet.numParticlesMax);
         DFSPH_setBufferValueToItself_kernel << <numBlocks, BLOCKSIZE >> > (dataSet.p_id_sorted, dataSet.numParticlesMax);
+        gpuErrchk(cudaDeviceSynchronize());
+
+
+        //cub pair sort
+        dataSet.temp_storage_bytes_pair_sort = 0;
+        dataSet.d_temp_storage_pair_sort = NULL;
+        cub::DeviceRadixSort::SortPairs(dataSet.d_temp_storage_pair_sort, dataSet.temp_storage_bytes_pair_sort,
+                                        dataSet.cell_id, dataSet.cell_id_sorted, dataSet.p_id, dataSet.p_id_sorted, dataSet.numParticlesMax);
+        gpuErrchk(cudaDeviceSynchronize());
+        cudaMalloc(&(dataSet.d_temp_storage_pair_sort), dataSet.temp_storage_bytes_pair_sort);
+
+
+        if (!particle_related_only){
+            cudaMallocManaged(&(dataSet.hist), (CELL_COUNT + 1) * sizeof(unsigned int));
+
+            //cub histogram
+            dataSet.temp_storage_bytes_cumul_hist = 0;
+            dataSet.d_temp_storage_cumul_hist = NULL;
+            cub::DeviceScan::ExclusiveSum(dataSet.d_temp_storage_cumul_hist, dataSet.temp_storage_bytes_cumul_hist,
+                                          dataSet.hist, dataSet.cell_start_end, (CELL_COUNT + 1));
+            gpuErrchk(cudaDeviceSynchronize());
+            cudaMalloc(&(dataSet.d_temp_storage_cumul_hist), dataSet.temp_storage_bytes_cumul_hist);
+        }
     }
 
-    cudaError_t cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "allocation neighbors structure failed: %d\n", (int)cudaStatus);
-        exit(1598);
-    }
 
-    //init variables for cub calls
-    dataSet.temp_storage_bytes_pair_sort = 0;
-    dataSet.d_temp_storage_pair_sort = NULL;
-    cub::DeviceRadixSort::SortPairs(dataSet.d_temp_storage_pair_sort, dataSet.temp_storage_bytes_pair_sort,
-                                    dataSet.cell_id, dataSet.cell_id_sorted, dataSet.p_id, dataSet.p_id_sorted, dataSet.numParticlesMax);
-    gpuErrchk(cudaDeviceSynchronize());
-    cudaMalloc(&(dataSet.d_temp_storage_pair_sort), dataSet.temp_storage_bytes_pair_sort);
-
-    dataSet.temp_storage_bytes_cumul_hist = 0;
-    dataSet.d_temp_storage_cumul_hist = NULL;
-    cub::DeviceScan::ExclusiveSum(dataSet.d_temp_storage_cumul_hist, dataSet.temp_storage_bytes_cumul_hist,
-                                  dataSet.hist, dataSet.cell_start_end, (CELL_COUNT + 1));
-    gpuErrchk(cudaDeviceSynchronize());
-    cudaMalloc(&(dataSet.d_temp_storage_cumul_hist), dataSet.temp_storage_bytes_cumul_hist);
-
-
+    /*
     std::cout << "neighbors struct num byte allocated cub (numParticlesMax pair_sort cumul_hist)" << dataSet.numParticlesMax << "  " <<
                  dataSet.temp_storage_bytes_pair_sort << "  " << dataSet.temp_storage_bytes_cumul_hist << std::endl;
+    //*/
 
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "allocation neighbors structure cub part failed: %d\n", (int)cudaStatus);
-        exit(1598);
-    }
 
     dataSet.internal_buffers_allocated = true;
+
+    if (allocate_gpu){
+        //duplicate the neighbor dataset to the gpu
+        gpuErrchk(cudaMalloc(&(dataSet.gpu_ptr), sizeof(SPH::NeighborsSearchDataSet)));
+    }
+    //and copy the gpu data if the buffer exists
+    if (dataSet.gpu_ptr!=NULL){
+        gpuErrchk(cudaMemcpy(dataSet.gpu_ptr, &dataSet,
+                             sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+    }
+
+    gpuErrchk(cudaDeviceSynchronize());
+
 }
 
 
-void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool keep_result_buffers) {
+void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool keep_result_buffers, bool keep_grid_related,
+                                       bool keep_gpu) {
     //allocatethe mme for fluid particles
     cudaFree(dataSet.cell_id); dataSet.cell_id = NULL;
     cudaFree(dataSet.local_id); dataSet.local_id = NULL;
     cudaFree(dataSet.p_id); dataSet.p_id = NULL;
     cudaFree(dataSet.cell_id_sorted); dataSet.cell_id_sorted = NULL;
-    cudaFree(dataSet.hist); dataSet.hist = NULL;
 
-    //init variables for cub calls
     cudaFree(dataSet.d_temp_storage_pair_sort); dataSet.d_temp_storage_pair_sort = NULL;
     dataSet.temp_storage_bytes_pair_sort = 0;
-    cudaFree(dataSet.d_temp_storage_cumul_hist); dataSet.d_temp_storage_cumul_hist = NULL;
-    dataSet.temp_storage_bytes_cumul_hist = 0;
-
 
     cudaFree(dataSet.intermediate_buffer_v3d); dataSet.intermediate_buffer_v3d = NULL;
     cudaFree(dataSet.intermediate_buffer_real); dataSet.intermediate_buffer_real = NULL;
+
+    if(!keep_grid_related){
+        cudaFree(dataSet.hist); dataSet.hist = NULL;
+        cudaFree(dataSet.d_temp_storage_cumul_hist); dataSet.d_temp_storage_cumul_hist = NULL;
+        dataSet.temp_storage_bytes_cumul_hist = 0;
+    }
 
     dataSet.internal_buffers_allocated = false;
 
     if (!keep_result_buffers) {
         cudaFree(dataSet.p_id_sorted); dataSet.p_id_sorted = NULL;
-        cudaFree(dataSet.cell_start_end); dataSet.cell_start_end = NULL;
+
+        if(!keep_grid_related){
+            cudaFree(dataSet.cell_start_end); dataSet.cell_start_end = NULL;
+        }
+    }
+
+    if(!keep_gpu){
+        CUDA_FREE_PTR(dataSet.gpu_ptr);
     }
 }
 

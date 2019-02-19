@@ -38,7 +38,7 @@ int Globals::drawGlobalAxes = 0;
 int Globals::drawShadows = 1;
 int Globals::drawCollisionPrimitives = 0;
 int Globals::drawGroundPlane = 0;
-int Globals::followCharacter = 1;
+int Globals::followCharacter = 0;
 int Globals::drawJoints = 0;
 int Globals::drawContactForces = 0;
 int Globals::drawDesiredPose = 0;
@@ -98,6 +98,7 @@ bool Globals::simulateFluid = true;
 bool Globals::zeroFluidVelocities = false;
 bool Globals::simulateOnlyFluid = false;
 bool Globals::fluidFollowCharacter = false;
+bool Globals::fluidControlLevel=false;
 
 Globals::Globals(void){
 }

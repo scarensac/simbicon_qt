@@ -132,8 +132,14 @@ void ArticulatedRigidBody::draw(int flags){
     if (flags & SHOW_JOINTS){
         //we will draw a little sphere at the location of the joint (we'll do it twice - once for the parent and one for the child. They should coincide
 		//if the joint constraint is properly satisfied
+        GLboolean lighting = glIsEnabled(GL_LIGHTING);
+        glDisable(GL_LIGHTING);
+        glColor3d(0.8, 0, 0.0);
         GLUtils::drawSphere(this->getWorldCoordinates(_parent_joint->child_joint_position()), 0.02, 4);
         GLUtils::drawSphere(_parent_joint->parent()->getWorldCoordinates(_parent_joint->parent_joint_position()), 0.02, 4);
+        if (lighting){
+            glEnable(GL_LIGHTING);
+        }
 	}
 }
 

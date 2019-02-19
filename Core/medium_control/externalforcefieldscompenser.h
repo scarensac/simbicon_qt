@@ -22,6 +22,9 @@ protected:
     std::vector<Vector3d> _torques3_gravity;
     std::vector<Vector3d> _torques3_fluid;
 
+    std::vector<Vector3d> _torques4_gravity;
+    std::vector<Vector3d> _torques4_fluid;
+
     ///Internal members
     std::vector<int> stance_leg_idxs;
 
@@ -33,6 +36,8 @@ public:
     std::vector<Vector3d>& torques2(){return _torques2;}
     std::vector<Vector3d>& torques3_gravity(){return _torques3_gravity;}
     std::vector<Vector3d>& torques3_fluid(){return _torques3_fluid;}
+    std::vector<Vector3d>& torques4_gravity(){return _torques4_gravity;}
+    std::vector<Vector3d>& torques4_fluid(){return _torques4_fluid;}
 
     /**
     This method computes the torques that cancel out the effects of gravity,
@@ -49,14 +54,27 @@ public:
     /**
     This version treat the gravity and the fluid separately
     uses the same leaf consideration as v2
+    this version uses the sum of the force and propagate it. it only works if all the forces are in the same direction
     */
     void compute_compensation_v3(std::vector<ForceStruct> &force_field, std::vector<Vector3d> &result_ptr);
+
+    /**
+    This version treat the gravity and the fluid separately
+    same as v3 but do propagate each force separately
+    also has an option to have the ankle compensate the foot force for the support leg(s)
+    */
+    void compute_compensation_v4(std::vector<ForceStruct> &force_field, std::vector<Vector3d> &result_ptr, bool ankle_compensate_foot=false);
 
 
     void preprocess_simulation_step();
 
     void simulation_step();
-    void compute_fluid_impact_compensation(WaterImpact &resulting_impact);
+
+    /**
+     * @brief compute_fluid_impact_compensation
+     * @param type 0 only boyancy, 1 only drag
+     */
+    void compute_fluid_impact_compensation(WaterImpact &resulting_impact, int type=0);
 
 
 protected:

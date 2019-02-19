@@ -1,14 +1,14 @@
 RigidBody
 	name fillerObj
-	mass 25
+	mass 4.5
 	moi 1 1 1
 	colour 0 0 1 1
 	position 1 1 1
 	
-	CDP_Box -0.25 -0.1 -0.15 0.25 0.1 0.15 
+	CDP_Box -0.1 -0.1 -0.1 0.1 0.1 0.1
 	
 	frictionCoefficient 0.000008
-	restitutionCoefficient 0.8	
+	restitutionCoefficient 0	
 	
 	ODEGroundParameters 0.0005 0.5
 

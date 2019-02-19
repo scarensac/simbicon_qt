@@ -24,7 +24,9 @@ public:
 
 #ifdef FLUID_COMPIL
 
+    static void loadFluid();
     static void initFluid(double timeStep);
+    static void releaseFluid();
     static void forceUpdateDynamicBodies();
     static void updateDynamicBodies(const std::vector<SPH::DynamicBody> &vect_new_info);
     static void getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Vector3d>& moments);
@@ -33,10 +35,14 @@ public:
     static void updateTimeStepDuration(double duration);
     static void handleDynamicBodiesPause(bool pause);
     static void zeroFluidVelocities();
-    static void moveFluidSimulation(Point3d target_Position);
+    static bool moveFluidSimulation(Point3d target_Position);
     static void drawParticles(bool drawFluid, bool drawBodies, bool drawBoundaries);
+    static void handleFLuidLevelControl(float level);
+    static float getFluidLevel();
 #else
-    static inline void initFluid(double timeStep){}
+    static void loadFluid(){}
+    static void initFluid(double timeStep){}
+    static void releaseFluid(){}
     static inline void forceUpdateDynamicBodies(){}
     static inline void updateDynamicBodies(const std::vector<SPH::DynamicBody> &vect_new_info){}
     static inline void getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Vector3d>& moments){}
@@ -46,6 +52,8 @@ public:
     static inline void zeroFluidVelocities(){}
     static inline void moveFluidSimulation(Point3d target_Position){}
     static inline void drawParticles(bool drawFluid, bool drawBodies, bool drawBoundaries){}
+    static void handleFLuidLevelControl(float level){}
+    static float getFluidLevel(){}
 
 #endif
 

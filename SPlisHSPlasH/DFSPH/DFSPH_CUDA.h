@@ -106,6 +106,7 @@ public:
     void handleSimulationMovement(Vector3d movement);
 
     void handleFLuidLevelControl(RealCuda level);
+    RealCuda getFluidLevel();
 
     void updateRigidBodiesStatefromFile();
     void updateRigidBodiesStateToFile();

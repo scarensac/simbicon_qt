@@ -292,12 +292,10 @@ void GLWindow::draw(){
         if (Globals::simulateFluid){
             // Enable blending
 
-             //glDepthMask(GL_FALSE);
-
             Interface::drawParticles(true,true,false);
 
 
-            //glDepthMask(GL_TRUE);
+
         }
 
 	}

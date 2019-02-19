@@ -156,6 +156,7 @@ void SimulationWindow::link_signals()
     connect(ui->check_box_fluid_follow_character, SIGNAL(toggled(bool)), this, SLOT(check_box_fluid_follow_character_changed(bool)));
     connect(ui->check_box_simulate_only_fluid, SIGNAL(toggled(bool)), this, SLOT(check_box_simulate_only_fluid_changed(bool)));
     connect(ui->btn_zero_fluid_velocities, SIGNAL(clicked(bool)), this, SLOT(click_zero_fluid_velocities()));
+    connect(ui->check_box_fluid_control_level, SIGNAL(toggled(bool)), this, SLOT(check_box_fluid_control_level_changed(bool)));
 
 
     //Options tab
@@ -405,6 +406,11 @@ void SimulationWindow::check_box_simulate_only_fluid_changed(bool val){
 
 void SimulationWindow::click_zero_fluid_velocities(){
     Globals::zeroFluidVelocities = true;
+}
+
+
+void SimulationWindow::check_box_fluid_control_level_changed(bool val){
+    Globals::fluidControlLevel=val;
 }
 
 

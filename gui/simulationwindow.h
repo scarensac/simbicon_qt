@@ -72,6 +72,8 @@ protected slots:
     void check_box_fluid_follow_character_changed(bool val);
     void check_box_simulate_only_fluid_changed(bool val);
     void click_zero_fluid_velocities();
+    void check_box_fluid_control_level_changed(bool val);
+
 
     //Options tab
     void check_box_show_target_pose_changed(bool val);

@@ -160,6 +160,7 @@ public:
     static bool zeroFluidVelocities;
     static bool simulateOnlyFluid;
     static bool fluidFollowCharacter;
+    static bool fluidControlLevel;
 
     Globals(void);
     ~Globals(void);
