@@ -1,0 +1,15 @@
+RigidBody
+	name fillerObj
+	mass 4.5
+	moi 1 1 1
+	colour 0 1 0 1
+	position 1 1 1
+	
+	CDP_Capsule 0 0.12 0.0 0 -0.2 0 0.05
+	
+	frictionCoefficient 0.000008
+	restitutionCoefficient 0.8	
+	
+	ODEGroundParameters 0.0005 0.5
+
+/End

@@ -102,6 +102,7 @@ public:
     //those booleans are used to activate or disactivate the tk and gl interfaces (for evolution)
     static bool use_qt_interface;
     static bool use_gl_interface;
+    static bool limitfps;
 
     //this bollean specify that we are in the evolution mode
     static bool evolution_mode;
@@ -161,6 +162,15 @@ public:
     static bool simulateOnlyFluid;
     static bool fluidFollowCharacter;
     static bool fluidControlLevel;
+    static bool parralelFluidAndControl;
+
+
+    static bool manualFPSRefresh;
+    static bool refreshFPS;
+
+    static int video_index;
+
+    static bool gamepad;
 
     Globals(void);
     ~Globals(void);

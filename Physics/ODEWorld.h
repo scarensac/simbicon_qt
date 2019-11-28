@@ -76,9 +76,11 @@ protected:
 
     std::vector<TimeCube> vect_container_cubes;
 
+public:
     //this is a list of all the objects in the world
     std::vector<RigidBody*> vect_objects_fluid_interaction;
 
+protected:
     int nb_collisions_cumul;
     double time_counter;
 
@@ -272,10 +274,15 @@ public:
 
 
 
-	/**
-		this method is used to compute the effect of water (it convert a level of water into the induced forces
-	*/
+    /**
+        this method is used to compute the effect of water (it convert a level of water into the induced forces
+    */
     void compute_water_impact(Character* character,float water_level,   WaterImpact& resulting_impact);
+
+    /**
+        this function estimate the fluid inmpact with simplified model on every objets that have associated particles
+    */
+    void estimate_water_impact_on_particle_objects(float water_level,   WaterImpact& resulting_impact);
 
 
 
@@ -283,7 +290,7 @@ public:
 		this function is a children function of the above one (it prevent mass duplication of code for similar body parts
 		this function handle
 	*/
-    ForceStruct compute_liquid_drag_on_toes(RigidBody* body, float water_level, double eff_density);
+    ForceStruct compute_liquid_drag_on_sphere(RigidBody* body, float water_level, double eff_density);
     ForceStruct compute_liquid_drag_on_feet(RigidBody* body, float water_level, double eff_density, double friction_coef);
     ForceStruct compute_liquid_drag_on_legs(RigidBody* body, float water_level, double eff_density, double friction_coef);
 

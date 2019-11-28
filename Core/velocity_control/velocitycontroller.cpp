@@ -640,6 +640,11 @@ void VelocityController::virtual_force_near_limit(bool &coronal, bool &sagittal,
     //*/
 }
 
+
+float VelocityController::get_force_limit_ratio(){
+    return last_virt_force_signed.length() / virt_force_limit;
+}
+
 void VelocityController::has_evolved_during_last_step(bool &coronal, bool &sagittal, double limit){
     sagittal=false;
     coronal=false;

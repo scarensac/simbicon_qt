@@ -176,6 +176,9 @@ void SimulationWindow::link_signals()
     //save tab
     connect(ui->btn_schedule_save, SIGNAL(clicked(bool)), this, SLOT(click_schedule_save()));
 
+    //other control tab
+    connect(ui->btn_refresh_fps, SIGNAL(clicked(bool)), this, SLOT(click_refresh_fps()));
+
 }
 
 void SimulationWindow::closeEvent(QCloseEvent *event)
@@ -550,3 +553,10 @@ void SimulationWindow::character_step_ended(double vz,double vx)
     }
 
 }
+
+
+void SimulationWindow::click_refresh_fps()
+{
+   Globals::refreshFPS=true;
+}
+

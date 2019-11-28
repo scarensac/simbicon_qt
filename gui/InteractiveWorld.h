@@ -73,4 +73,6 @@ public:
      */
 	uint renderToObjFile(FILE* fp, uint vertexIdxOffset);
 
+    AbstractRBEngine* getWorld(){return world;}
+
 };

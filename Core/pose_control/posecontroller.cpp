@@ -34,6 +34,7 @@ PoseController::PoseController(Character *c)
     desired_heading_swing_foot=0;
     start_phi_change_heading=0.0f;
     target_heading_mitigation_coefficient=1.0;
+    first_pass_this_char_step=true;
 
     //PoseController::simulation_step
     old_swing_foot_is_relative=false;
@@ -156,6 +157,12 @@ void PoseController::init_character_step(VelocityController *vel_control)
         character->getJoint(i)->controlled(controlParams[i].controlled);
     }
     //*/
+
+    //at the start of the step is the character has not reached the target yet we fix the target to the current orientation
+    if (desired_heading_pelvis!=SimGlobals::desiredHeading){
+        desired_heading_pelvis=character->getHeadingAngle();
+    }
+    first_pass_this_char_step=true;
 }
 
 void PoseController::preprocess_simulation_step(double phase, Vector3d v_com)
@@ -176,7 +183,7 @@ void PoseController::preprocess_simulation_step(double phase, Vector3d v_com)
 void PoseController::simulation_step(double phase)
 {
     //*
-
+    SimGlobals::desiredHeading_active=desired_heading_pelvis;
     Quaternion desired_swing_foot_heading_quat=Quaternion::getRotationQuaternion(desired_heading_swing_foot, SimGlobals::up);
     Quaternion desired_pelvis_heading_quat=Quaternion::getRotationQuaternion(desired_heading_pelvis, SimGlobals::up);
     SimBiConState* curState=_states[_state_idx];
@@ -1056,6 +1063,12 @@ void PoseController::control_desired_heading(double phase)
         return;
     }
 
+    if(first_pass_this_char_step){
+        old_heading=character->getHeadingAngle();//in case the heading moved during the wait time
+        first_pass_this_char_step=false;
+        std::cout<<"trig"<<std::endl;
+    }
+
     if (target_heading!=SimGlobals::desiredHeading){
         //this if allow to only register orientations changes after the start of the us of the ipm
         if (!swing_foot_controller->is_early_step(0.1)){
@@ -1088,7 +1101,7 @@ void PoseController::control_desired_heading(double phase)
     desired_heading_swing_foot=desired_heading_pelvis;
 
 
-    SimGlobals::desiredHeading_active=desired_heading_pelvis;
+
 }
 
 

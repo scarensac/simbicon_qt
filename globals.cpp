@@ -37,8 +37,8 @@ int Globals::drawCubeMap = 0;
 int Globals::drawGlobalAxes = 0;
 int Globals::drawShadows = 1;
 int Globals::drawCollisionPrimitives = 0;
-int Globals::drawGroundPlane = 0;
-int Globals::followCharacter = 0;
+int Globals::drawGroundPlane = 1;
+int Globals::followCharacter = 1;
 int Globals::drawJoints = 0;
 int Globals::drawContactForces = 0;
 int Globals::drawDesiredPose = 0;
@@ -58,6 +58,7 @@ std::string Globals::data_folder_path = "../configuration_data/";
 std::string Globals::binaries_folder_path = "../Binaries/";
 bool Globals::use_qt_interface = true;
 bool Globals::use_gl_interface = true;
+bool Globals::limitfps= true;
 bool Globals::evolution_mode = false;
 int Globals::evolution_type = 0;
 int Globals::evolution_push_type = 0;
@@ -94,11 +95,21 @@ bool Globals::use_fluid_heading=true;
 int Globals::motion_cycle_type=0;
 
 
-bool Globals::simulateFluid = true;
+bool Globals::simulateFluid = false;
 bool Globals::zeroFluidVelocities = false;
 bool Globals::simulateOnlyFluid = false;
 bool Globals::fluidFollowCharacter = false;
 bool Globals::fluidControlLevel=false;
+bool Globals::parralelFluidAndControl=true;
+
+
+bool Globals::manualFPSRefresh=false;
+bool Globals::refreshFPS=false;
+
+int Globals::video_index=0;
+
+
+bool Globals::gamepad=true;
 
 Globals::Globals(void){
 }

@@ -34,6 +34,7 @@ double SimGlobals::desiredHeading_active = 0;
 double SimGlobals::dt = 1.0/(300.0);
 AbstractRBEngine* SimGlobals::activeRbEngine = NULL;
 AbstractRBEngine* SimGlobals::stanceFootWorld = NULL;
+double SimGlobals::simu_time=0;
 
 double SimGlobals::conInterpolationValue;
 double SimGlobals::bipDesiredVelocity;

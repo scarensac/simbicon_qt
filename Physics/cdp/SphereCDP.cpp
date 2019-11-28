@@ -24,7 +24,7 @@ CollisionDetectionPrimitive *SphereCDP::cpy()
 	Draw an outline of the sphere
 */
 void SphereCDP::draw(){
-	GLUtils::drawSphere(s.pos, s.radius, 5);
+    GLUtils::drawSphere(s.pos, s.radius, 50);
 }
 
 /**

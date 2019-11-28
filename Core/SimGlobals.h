@@ -47,6 +47,7 @@ public:
     static double desiredHeading_active;//this is only to be able to show the arrow
     //and this is the desired time interval for each simulation timestep (does not apply to animations that are played back).
     static double dt;
+    static double simu_time;
 
     static AbstractRBEngine* activeRbEngine;
     static AbstractRBEngine* stanceFootWorld;

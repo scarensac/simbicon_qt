@@ -105,7 +105,6 @@ int main(int argc, char *argv[]) {
     if (argc>5){
         w.start_click();
     }
-
     return_val= a.exec();
     //*/
     // Once the app has finished running and has been deleted,

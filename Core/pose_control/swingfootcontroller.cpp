@@ -710,7 +710,7 @@ void SwingFootController::compute_ipm_alteration(VelocityController* vel_control
 {
     static int count=0;
     count++;
-    if (count<10) return;
+    if (count<0) return;
 
 
     if (vel_control==NULL){

@@ -45,6 +45,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_iterationsV = 0;
     m_enableDivergenceSolver = true;
     is_dynamic_bodies_paused = false;
+    show_fluid_timings=false;
 }
 
 DFSPHCUDA::~DFSPHCUDA(void)
@@ -181,9 +182,19 @@ void DFSPHCUDA::step()
         static float iter_divergence_avg = 0;
         iter_pressure_avg += m_iterations;
         iter_divergence_avg += m_iterationsV;
-        std::cout << "timestep total: " << total_time / (count_steps + 1) << "   this step: " << time_iter + time_between << "  (" << time_iter << "  " << time_between << ")" << std::endl;
-        std::cout << "solver iteration avg (current step) density: " <<  iter_pressure_avg / (count_steps + 1) << " ( " << m_iterations << " )   divergence : " <<
-                     iter_divergence_avg / (count_steps + 1) << " ( " << m_iterationsV << " )   divergence : " << std::endl;
+
+        if(show_fluid_timings){
+            std::cout << "timestep total: " << total_time / (count_steps + 1) << "   this step: " << time_iter + time_between << "  (" << time_iter << "  " << time_between << ")" << std::endl;
+            std::cout << "solver iteration avg (current step) density: " <<  iter_pressure_avg / (count_steps + 1) << " ( " << m_iterations << " )   divergence : " <<
+                         iter_divergence_avg / (count_steps + 1) << " ( " << m_iterationsV << " )   divergence : " << std::endl;
+
+
+            for (int i = 0; i < NB_TIME_POINTS; ++i) {
+                float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
+                tab_avg[i] += time;
+                std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
+            }
+        }
 
 
         if (false){
@@ -203,13 +214,6 @@ void DFSPHCUDA::step()
         }
 
 
-        for (int i = 0; i < NB_TIME_POINTS; ++i) {
-            float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
-            tab_avg[i] += time;
-            std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
-
-
-        }
 
         if (count_steps > 1500) {
             count_steps = 0;
@@ -295,8 +299,10 @@ void DFSPHCUDA::step()
 
 
 
-    static int true_count_steps = 0;
-    std::cout << "step finished: " << true_count_steps++<<"  "<< count_steps++ << std::endl;
+    if(show_fluid_timings){
+        static int true_count_steps = 0;
+        std::cout << "step finished: " << true_count_steps++<<"  "<< count_steps++ << std::endl;
+    }
 }
 
 void DFSPHCUDA::reset()
@@ -1241,8 +1247,9 @@ void DFSPHCUDA::forceUpdateRigidBodies(){
     m_data.loadDynamicObjectsData(m_model);
 }
 
-void DFSPHCUDA::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments){
-    m_data.getFluidImpactOnDynamicBodies(sph_forces,sph_moments);
+void DFSPHCUDA::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments,
+                                              const std::vector<SPH::Vector3d>& reduction_factors){
+    m_data.getFluidImpactOnDynamicBodies(sph_forces,sph_moments, reduction_factors);
 }
 
 void DFSPHCUDA::getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli){

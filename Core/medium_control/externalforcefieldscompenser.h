@@ -63,7 +63,8 @@ public:
     same as v3 but do propagate each force separately
     also has an option to have the ankle compensate the foot force for the support leg(s)
     */
-    void compute_compensation_v4(std::vector<ForceStruct> &force_field, std::vector<Vector3d> &result_ptr, bool ankle_compensate_foot=false);
+    void compute_compensation_v4(std::vector<ForceStruct> &force_field, std::vector<Vector3d> &result_ptr, bool ankle_compensate_foot=false,
+                                 bool support_foot_as_root=true);
 
 
     void preprocess_simulation_step();

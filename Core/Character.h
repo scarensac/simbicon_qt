@@ -328,6 +328,10 @@ public:
         return NULL;
     }
 
+    inline ArticulatedRigidBody* getARBByName(std::string jName){
+        return getARBByName(jName.c_str());
+    }
+
     /**
         returns the root of the current articulated figure.
     */

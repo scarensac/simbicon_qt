@@ -336,6 +336,8 @@ public:
 	*/
 	Vector3d rotate(double alpha, const Vector3d &axis);
 
+    bool is_nan(){return x!=x||y!=y||z!=z;}
+
 
 };
 

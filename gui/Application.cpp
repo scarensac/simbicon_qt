@@ -121,7 +121,7 @@ void Application::drawGround(){
 	glEnd();
 
 	//I just duplicate it to show the water level (just for the time being)
-	if (SimGlobals::water_level > 0){
+    if (false&&SimGlobals::water_level > 0){
 		size = 15;
 		glEnable(GL_TEXTURE_2D);
 		waterTexture->activate();

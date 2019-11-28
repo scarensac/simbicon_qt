@@ -1166,14 +1166,17 @@ RealCuda DFSPHCData::computeFluidLevel(){
     return find_fluid_height_cuda(*this);
 }
 
-void DFSPHCData::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments){
+void DFSPHCData::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments,
+                                               const std::vector<SPH::Vector3d> &reduction_factors){
+    //std::cout<<"conputing impact start"<<std::endl;
     for (int i = 0; i < numDynamicBodies; ++i) {
         Vector3d force, moment;
-        compute_fluid_impact_on_dynamic_body_cuda(vector_dynamic_bodies_data[i],force,moment);
+        compute_fluid_impact_on_dynamic_body_cuda(vector_dynamic_bodies_data[i],force,moment, reduction_factors[i]);
         sph_forces.push_back(force);
         sph_moments.push_back(moment);
 
         //std::cout<<"force on body "<<i<<":   "<<force.x<<"  "<<force.y<<"  "<<force.z<<"   ("<<force.norm()<<std::endl;
+        //std::cout<<"reduction factor "<<i<<":   "<<reduction_factors[i].x<<"  "<<reduction_factors[i].y<<"  "<<reduction_factors[i].z<<std::endl;
 
 
     }

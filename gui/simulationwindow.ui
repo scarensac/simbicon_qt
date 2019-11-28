@@ -18,7 +18,7 @@
     <item row="2" column="0">
      <widget class="QTabWidget" name="tab_options">
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_overview">
        <attribute name="title">
@@ -251,7 +251,7 @@
                <double>1.300000000000000</double>
               </property>
               <property name="singleStep">
-               <double>0.050000000000000</double>
+               <double>0.010000000000000</double>
               </property>
              </widget>
             </item>
@@ -298,7 +298,7 @@
                <double>0.400000000000000</double>
               </property>
               <property name="singleStep">
-               <double>0.050000000000000</double>
+               <double>0.010000000000000</double>
               </property>
              </widget>
             </item>
@@ -405,7 +405,7 @@
            <double>2.000000000000000</double>
           </property>
           <property name="singleStep">
-           <double>0.050000000000000</double>
+           <double>0.010000000000000</double>
           </property>
          </widget>
         </item>
@@ -843,6 +843,20 @@
            </widget>
           </item>
          </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>other controls</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_15">
+        <item>
+         <widget class="QPushButton" name="btn_refresh_fps">
+          <property name="text">
+           <string>refresh fps</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>

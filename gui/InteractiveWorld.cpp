@@ -106,19 +106,14 @@ bool InteractiveWorld::onMouseEvent(int eventType, int button, int mouseX, int m
 			return false;
 		}
 
-        std::string name_buff="dodgeBall";
-        RigidBody* dBall = world->getRBByName(name_buff.c_str());
-		if (dBall == NULL){
-            std::cerr<<"Warning: No dodgeBall loaded!"<<std::endl;
-			return false;
-		}
+
 
 
 		bool eventHandled = bInterface->handleMouseEvent(mouseX, mouseY, &input);
 		if (eventHandled ){
 			if (input.length() > 0){
 				//get the object that we will be throwing...
-                //*
+                /*
                 bInterface->handleMouseEvent(mouseX, mouseY, &input);
                 std::cout<<"ball perturbation: "<<mouseX<<"  "<<mouseY<<std::endl;
                 Vector3d f(-input.x,0,input.y);
@@ -127,12 +122,19 @@ bool InteractiveWorld::onMouseEvent(int eventType, int button, int mouseX, int m
                 apply_perturbation(f,true);
                 //*/
                 //*
-                /*
+                //*
+                std::string name_buff="dodgeBall";
+                RigidBody* dBall = world->getRBByName(name_buff.c_str());
+                if (dBall == NULL){
+                    std::cerr<<"Warning: No dodgeBall loaded!"<<std::endl;
+                    return false;
+                }
+
                 getDodgeBallPosAndVel(-input.x, input.y, input.length(), &p, &input);
                 dBall->setCMPosition(p);
 				dBall->setCMVelocity(input);
-                //*/
 //				dBall->updateToWorldTransformation();
+                //*/
 			}
 			return true;
 		}

@@ -18,6 +18,7 @@
 #include <math.h>
 #include "Physics/softbodypointmass.h"
 #include "SPlisHSPlasH/Interface.h"
+#include <locale>
 
 /**
     Default constructor
@@ -149,21 +150,21 @@ void ODEWorld::loadARBsFromList(std::vector<ArticulatedRigidBody *> vect_arbs)
         if (it != vect_arbs.end()){
             Joint* j_new=NULL;
             switch (j->get_joint_type()){
-                case HINGE_JOINT:{
-                    j_new= new HingeJoint(static_cast<HingeJoint*>(j));
-                    break;
-                }
-                case BALL_IN_SOCKET_JOINT:{
-                    j_new=new BallInSocketJoint(static_cast<BallInSocketJoint*>(j));
-                    break;
-                }
-                case UNIVERSAL_JOINT:{
-                    j_new=new UniversalJoint(static_cast<UniversalJoint*>(j));
-                    break;
-                }
-                default:{
-                    throwError("Ooops.... Only BallAndSocket, Hinge and Universal joints are currently supported.\n");
-                }
+            case HINGE_JOINT:{
+                j_new= new HingeJoint(static_cast<HingeJoint*>(j));
+                break;
+            }
+            case BALL_IN_SOCKET_JOINT:{
+                j_new=new BallInSocketJoint(static_cast<BallInSocketJoint*>(j));
+                break;
+            }
+            case UNIVERSAL_JOINT:{
+                j_new=new UniversalJoint(static_cast<UniversalJoint*>(j));
+                break;
+            }
+            default:{
+                throwError("Ooops.... Only BallAndSocket, Hinge and Universal joints are currently supported.\n");
+            }
             }
             //and link it all together
             temp_arbs[std::distance(vect_arbs.begin(),it)]->add_link(j_new,temp_arbs[i]);
@@ -254,17 +255,17 @@ void ODEWorld::initODEStruct(int start_RB, int start_AF)
             //connect the joint to the two bodies
             int jointType = joints[j]->get_joint_type();
             switch (jointType){
-                case BALL_IN_SOCKET_JOINT:
-                    setupODEBallAndSocketJoint((BallInSocketJoint*)joints[j]);
-                    break;
-                case HINGE_JOINT:
-                    setupODEHingeJoint((HingeJoint*)joints[j]);
-                    break;
-                case UNIVERSAL_JOINT:
-                    setupODEUniversalJoint((UniversalJoint*)joints[j]);
-                    break;
-                default:
-                    throwError("Ooops.... Only BallAndSocket, Hinge and Universal joints are currently supported.\n");
+            case BALL_IN_SOCKET_JOINT:
+                setupODEBallAndSocketJoint((BallInSocketJoint*)joints[j]);
+                break;
+            case HINGE_JOINT:
+                setupODEHingeJoint((HingeJoint*)joints[j]);
+                break;
+            case UNIVERSAL_JOINT:
+                setupODEUniversalJoint((UniversalJoint*)joints[j]);
+                break;
+            default:
+                throwError("Ooops.... Only BallAndSocket, Hinge and Universal joints are currently supported.\n");
             }
         }
     }
@@ -599,21 +600,21 @@ void ODEWorld::createODECollisionPrimitives(RigidBody* body){
         dGeomID g;
 
         switch (cdpType){
-            case SPHERE_CDP:
-                g = getSphereGeom((SphereCDP*)body->cdps[j]);
-                break;
-            case CAPSULE_CDP:
-                g = getCapsuleGeom((CapsuleCDP*)body->cdps[j]);
-                break;
-            case BOX_CDP:
-                g = getBoxGeom((BoxCDP*)body->cdps[j]);
-                break;
-            case PLANE_CDP:
-                //NOTE: only static objects can have planes as their collision primitives - if this isn't static, force it!!
-                g = getPlaneGeom((PlaneCDP*)body->cdps[j], body);
-                break;
-            default:
-                throwError("Ooppps... No collision detection primitive was created rb: %s, cdp: %d", body->name(), j);
+        case SPHERE_CDP:
+            g = getSphereGeom((SphereCDP*)body->cdps[j]);
+            break;
+        case CAPSULE_CDP:
+            g = getCapsuleGeom((CapsuleCDP*)body->cdps[j]);
+            break;
+        case BOX_CDP:
+            g = getBoxGeom((BoxCDP*)body->cdps[j]);
+            break;
+        case PLANE_CDP:
+            //NOTE: only static objects can have planes as their collision primitives - if this isn't static, force it!!
+            g = getPlaneGeom((PlaneCDP*)body->cdps[j], body);
+            break;
+        default:
+            throwError("Ooppps... No collision detection primitive was created rb: %s, cdp: %d", body->name(), j);
         }
 
         //now associate the geom to the rigid body that it belongs to, so that we can look up the properties we need later...
@@ -817,6 +818,28 @@ void collisionCallBack(void* odeWorld, dGeomID o1, dGeomID o2){
 
 
 void ODEWorld::sendDataToEngine(RigidBody *root_bdy, Vector3d sup_root_torque){
+    //this is only to make a linear motion to do some test on the fluid
+    if(false){
+        RigidBody* body=vect_objects_fluid_interaction[0];
+        //*
+        static float direction=1;
+        float amplitude=3;
+        if(body->getCMPosition().z>4){
+            direction=-1;
+            amplitude*=1;
+        }else if(body->getCMPosition().z<-4){
+            direction=1;
+            amplitude*=1;
+        }
+        if(body->getCMVelocity().z*direction<0){
+            amplitude*=10;
+        }
+
+        applyForceTo(body,Vector3d(0,0,direction*amplitude),Vector3d(0,0,0));
+        //*/
+        //body->setCMVelocity(Vector3d(0,0,3));
+    }
+
     //make sure that the state of the RB's is synchronized with the engine...
     setEngineStateFromRB();
 
@@ -895,24 +918,7 @@ void ODEWorld::sendDataToEngine(RigidBody *root_bdy, Vector3d sup_root_torque){
     }
     //*/
 
-    if(false){
-        RigidBody* body=vect_objects_fluid_interaction[0];
-        static float direction=1;
-        float amplitude=50;
-        if(body->getCMPosition().z>4){
-            direction=-1;
-            amplitude*=1;
-        }else if(body->getCMPosition().z<-4){
-            direction=1;
-            amplitude*=1;
-        }
-        if(body->getCMVelocity().z*direction<0){
-            amplitude*=10;
-        }
 
-        applyForceTo(body,Vector3d(0,0,direction*amplitude),Vector3d(0,0,0));
-
-    }
 }
 
 dBodyID ODEWorld::get_body_id(RigidBody *rb)
@@ -1008,10 +1014,10 @@ void ODEWorld::sendDataToParticleFluidEngine(){
     for (int i=0;i<vect_objects_fluid_interaction.size();++i){
         RigidBody* body=vect_objects_fluid_interaction[i];
         SPH::DynamicBody arrayInfo;
-         arrayInfo.position=Interface::vector3dToSPH3d(body->getCMPosition());
-         arrayInfo.velocity=Interface::vector3dToSPH3d(body->getCMVelocity());
-         arrayInfo.q=Interface::quaternionToSPHQuaternion(body->getOrientation());
-         arrayInfo.angular_vel=Interface::vector3dToSPH3d(body->getAngularVelocity());
+        arrayInfo.position=Interface::vector3dToSPH3d(body->getCMPosition());
+        arrayInfo.velocity=Interface::vector3dToSPH3d(body->getCMVelocity());
+        arrayInfo.q=Interface::quaternionToSPHQuaternion(body->getOrientation());
+        arrayInfo.angular_vel=Interface::vector3dToSPH3d(body->getAngularVelocity());
 
         vect_dynamic_bodies_info.push_back(arrayInfo);
 
@@ -1043,12 +1049,20 @@ void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact, Ch
     //resize the data structure
     resulting_impact.init(getRBCount());
 
-
-
+    std::vector<Vector3d> reduction_factors_internal;
+    for (int i=0;i<vect_objects_fluid_interaction.size();++i){
+        Vector3d factor(1,1,1);
+        if(vect_objects_fluid_interaction[i]->name().find("leg")!=std::string::npos){
+            factor=Vector3d(0.5,1,0.5);
+        }else if(vect_objects_fluid_interaction[i]->name().find("Foot")!=std::string::npos){
+            factor=Vector3d(0.5,0.5,0.5);
+        }
+        reduction_factors_internal.push_back(factor);
+    }
 
 
     std::vector<Vector3d> forces, moments;
-    Interface::getFluidImpactOnDynamicBodies(forces, moments);
+    Interface::getFluidImpactOnDynamicBodies(forces, moments,reduction_factors_internal);
 
     for (int i=0;i<vect_objects_fluid_interaction.size();++i){
         RigidBody* body=vect_objects_fluid_interaction[i];
@@ -1153,9 +1167,9 @@ void ODEWorld::setEngineStateFromRB(){
         RigidBody* rb=objects[i];
 
 
-       // if (dynamic_cast<ArticulatedRigidBody*>(objects[i])!=NULL){
-            setODEStateFromRB(i);
-       // }
+        // if (dynamic_cast<ArticulatedRigidBody*>(objects[i])!=NULL){
+        setODEStateFromRB(i);
+        // }
     }
 }
 
@@ -1321,19 +1335,92 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
 
 
 
+void ODEWorld::estimate_water_impact_on_particle_objects(float water_level,   WaterImpact& resulting_impact){
+    //resize the data structure
+    resulting_impact.init(getRBCount());
+
+    //first I check if the water have any density (if not it's useless to try anything)
+    if (IS_ZERO(SimGlobals::liquid_density)||IS_ZERO(water_level)){
+        return;
+    }
+
+    double drag_density = SimGlobals::liquid_density*SimGlobals::liquid_viscosity;
+
+    for (uint i = 0; i < vect_objects_fluid_interaction.size(); ++i){
+        RigidBody* body = vect_objects_fluid_interaction[i];
+
+
+        ForceStruct impact_drag;
+        ForceStruct impact_boyancy;
+
+
+        CollisionDetectionPrimitive* cdp = body->cdps.front();
+        SphereCDP* sphere = dynamic_cast<SphereCDP*>(cdp);
+        BoxCDP* box = dynamic_cast<BoxCDP*>(cdp);
+        CapsuleCDP* capsule = dynamic_cast<CapsuleCDP*>(cdp);
+
+        ForceStruct result_force;
+        if (sphere != NULL){
+            impact_drag = compute_liquid_drag_on_sphere(body, water_level, drag_density);
+        }
+        else if (box != NULL){
+            throw("box not yet handle in this function");
+        }
+        else if (capsule != NULL){
+            impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density,0);
+        }else{
+            throw("detected smth other than accepted primitive when computing boyancy");
+        }
+
+
+
+        impact_boyancy = compute_buoyancy(body, water_level);
+
+
+        if (!impact_boyancy.isZero()){
+
+            impact_drag.modifyApplicationPoint(body->getCMPosition());
+            impact_boyancy.modifyApplicationPoint(body->getCMPosition());
+
+            /*
+            applyForceTo(body, impact_drag.F, body->getLocalCoordinates(impact_drag.pt));
+            if (!impact_drag.M.isZeroVector()){
+                //applyTorqueTo(body,impact_drag.M);
+            }
+
+            applyForceTo(body, impact_boyancy.F, body->getLocalCoordinates(impact_boyancy.pt));
+            if (!impact_boyancy.M.isZeroVector()){
+                //applyTorqueTo(body,impact_boyancy.M);
+            }
+            //*/
+
+
+
+            resulting_impact.impact_drag[body->idx()]=impact_drag;
+            resulting_impact.impact_boyancy[body->idx()]=impact_boyancy;
+
+
+
+        }
+
+
+    }
+    //*/
+
+    resulting_impact.check_for_undefined();
+}
+
 /**
 this function is a children function of the above one (it prevent mass duplication of code for similar body parts
 this function handle the toes
 */
-ForceStruct ODEWorld::compute_liquid_drag_on_toes(RigidBody *body, float water_level, double eff_density){
-
-    throw("ODEWorld::compute_liquid_drag_on_toes we don't use a sphere for the toes anymore and so this function must be changed");
+ForceStruct ODEWorld::compute_liquid_drag_on_sphere(RigidBody *body, float water_level, double eff_density){
 
     CollisionDetectionPrimitive* cdp = body->cdps.front();
     SphereCDP* sphere = dynamic_cast<SphereCDP*>(cdp);
 
     if (sphere == NULL){
-        throw("the toes should only have a sphere primitive...");
+        throw("this object is not a sphere...");
         return ForceStruct();
     }
 
@@ -1343,57 +1430,71 @@ ForceStruct ODEWorld::compute_liquid_drag_on_toes(RigidBody *body, float water_l
 
     //we vrify that the water hit the ball before doing anything
     if (dy + sphere->getRadius()>0){
-        //now I want to determine the surface that face the speed
-
-        int nbr_interval_r = 3;
-        double dr = sphere->getRadius() / nbr_interval_r;
-
-        int nbr_interval_t = 10;
-        double dt = 2 * PI / nbr_interval_t;
-
-
         //we need the speed in world coordinates
         //since the sphere is realy small for the toes we approxiate the speed as beeing constant through the object
         ///TODO remove that approximation
         Vector3d V = body->getCMVelocity();
         Vector3d v_norm = V / V.length();
-
-        Vector3d u, v;//those will be the 2 unitary vector of the disc plane
-        v_norm.getOrthogonalVectors(&u, &v);//get the value of the 2 unitary vector
-
-        //since idk if they are normed I'll norm them to be sure
-        u /= u.length();
-        v /= v.length();
-
-        Point3d center = body->getWorldCoordinates(sphere->getCenter());
-
-        double cur_r = dr;
-        double cur_t = 0;
-
         double S = 0;
 
-        for (int i = 0; i < nbr_interval_r; ++i){
-            cur_t = 0;
 
-            //we now calculate the alpha for the current r
-            double alpha = std::sqrt(sphere->getRadius()*sphere->getRadius() - cur_r*cur_r);
-            alpha /= (v_norm.x + v_norm.y + v_norm.z);
+        if (dy>sphere->getRadius()){
+            //the sphere is fully immersed
+
+            //this implementation suposes no rotation of the sphere
+
+            //the cross section area is just the disk at the center of the sphere
+            S = PI * sphere->getRadius() * sphere->getRadius();
+
+        }else{
+            //the sphere is partially immersed
+
+            //now I want to determine the surface that face the speed
+            int nbr_interval_r = 3;
+            double dr = sphere->getRadius() / nbr_interval_r;
+
+            int nbr_interval_t = 10;
+            double dt = 2 * PI / nbr_interval_t;
 
 
-            for (int j = 0; j < nbr_interval_t; ++j){
-                //now we need to test to see if we have to consider this segment for the calculation
 
-                //first we determine the wolrld coordinate of the current point
-                Point3d p = center + u*std::cos(cur_t)*cur_r + v*std::sin(cur_t)*cur_r;
 
-                //now I need to know if the corresponding point on the spere is affected by the water
-                //since the water level only depnds on the y coordinate I only need to compute it (nvm the x and z)
-                double y = p.y + alpha*v_norm.y;
+            Vector3d u, v;//those will be the 2 unitary vector of the disc plane
+            v_norm.getOrthogonalVectors(&u, &v);//get the value of the 2 unitary vector
 
-                if (y < water_level){
-                    //I need to calculate the area and add count it
-                    double ds = cur_r*dr*dt;
-                    S += ds;
+            //since idk if they are normed I'll norm them to be sure
+            u /= u.length();
+            v /= v.length();
+
+            Point3d center = body->getWorldCoordinates(sphere->getCenter());
+
+            double cur_r = dr;
+            double cur_t = 0;
+
+
+            for (int i = 0; i < nbr_interval_r; ++i){
+                cur_t = 0;
+
+                //we now calculate the alpha for the current r
+                double alpha = std::sqrt(sphere->getRadius()*sphere->getRadius() - cur_r*cur_r);
+                alpha /= (v_norm.x + v_norm.y + v_norm.z);
+
+
+                for (int j = 0; j < nbr_interval_t; ++j){
+                    //now we need to test to see if we have to consider this segment for the calculation
+
+                    //first we determine the wolrld coordinate of the current point
+                    Point3d p = center + u*std::cos(cur_t)*cur_r + v*std::sin(cur_t)*cur_r;
+
+                    //now I need to know if the corresponding point on the spere is affected by the water
+                    //since the water level only depnds on the y coordinate I only need to compute it (nvm the x and z)
+                    double y = p.y + alpha*v_norm.y;
+
+                    if (y < water_level){
+                        //I need to calculate the area and add count it
+                        double ds = cur_r*dr*dt;
+                        S += ds;
+                    }
                 }
             }
         }
@@ -1575,7 +1676,7 @@ ForceStruct ODEWorld::compute_liquid_drag_on_feet(RigidBody *body, float water_l
     Compute and affect to force on a face
 */
 ForceStruct ODEWorld::compute_liquid_drag_on_plane(RigidBody *body, double l_x, double l_y, double l_z, Point3d pos,
-                                                Vector3d normal, float water_level,	int nbr_interval_x, int nbr_interval_y, int nbr_interval_z){
+                                                   Vector3d normal, float water_level,	int nbr_interval_x, int nbr_interval_y, int nbr_interval_z){
 
 
 
@@ -1764,7 +1865,7 @@ ForceStruct ODEWorld::compute_liquid_drag_on_plane(RigidBody *body, double l_x, 
 
 
 ForceStruct ODEWorld::compute_liquid_drag_on_planev2(RigidBody *body, Point3d pos, Vector3d normal, float water_level,
-                                                  Vector3d v1, Vector3d v2, int nbr_interval_v1, int nbr_interval_v2, double density, double friction_coef, double l3){
+                                                     Vector3d v1, Vector3d v2, int nbr_interval_v1, int nbr_interval_v2, double density, double friction_coef, double l3){
 
 
     ForceStruct drag_impact(body->getCMPosition());
@@ -1903,14 +2004,21 @@ ForceStruct ODEWorld::compute_liquid_drag_on_legs(RigidBody *body, float water_l
             //	continue;
             //}
 
-            //we read the spead on the axis
+            //we read the speed on the axis
             Vector3d axis_speed = body->getLocalCoordinates(body->getAbsoluteVelocityForLocalPoint(axis_cur_pos));
 
             //to create the facet I must finds the vector that have the same direction as the speed but face the axis
             Vector3d n = axis_speed - axis_unit_vector*(axis_unit_vector.dotProductWith(axis_speed));
+            if (n.isZeroVector()){
+                //if the two vectors are perfectly alligned then skip
+                continue;
+            }
+
             n /= n.length();
 
+
             //I just compute the last vector of the basis
+
             Vector3d v2 = n.crossProductWith(axis_unit_vector);
             v2 /= v2.length();
 
@@ -1983,6 +2091,8 @@ ForceStruct ODEWorld::compute_buoyancy(RigidBody *body, float water_level){
     }
     else if (capsule != NULL){
         result_force = compute_buoyancy_on_capsule(body, water_level, -SimGlobals::gravity, SimGlobals::liquid_density);// +SimGlobals::force_alpha);
+    }else{
+        throw("detected smth other than accepted primitive when computing boyancy");
     }
 
     return result_force;
@@ -2316,7 +2426,7 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
     CapsuleCDP* capsule = dynamic_cast<CapsuleCDP*>(cdp);
 
     if (capsule == NULL){
-        //throwError("the toes should only have a sphere primitive...");
+        throwError("this is not a capsule primitive...");
         return ForceStruct();
     }
 
@@ -2365,19 +2475,25 @@ ForceStruct ODEWorld::compute_buoyancy_on_capsule(RigidBody* body, float water_l
         //that for is just an easy way to skip the complex calculation in the case the simplification works
         for (int uselessvar = 0; uselessvar < 1; ++uselessvar){
 
-            Vector3d n = Vector3d(0, 1, 0).crossProductWith(axis_vector);
+            Vector3d n = axis_vector.crossProductWith(Vector3d(0,1,0));
             double sin_angle = n.length();
-            n /= sin_angle;
+            Vector3d vh= Vector3d(0,0,0);
 
-            //and now I calculate the lowest point
-            Quaternion quat = Quaternion::getRotationQuaternion(PI / 2, n);
-            Vector3d vh = quat.rotate(axis_vector)*r;
-            if (vh.y > 0){
-                vh *= -1;
-                sin_angle *= -1;
+            if (!n.isZeroVector()){
+                // vh is only usefull when the cylinder is not stricly alligned with the vertical axis
+                n.toUnit();
+
+                //and now I calculate the lowest point
+                Quaternion quat = Quaternion::getRotationQuaternion(PI / 2, n);
+                vh = quat.rotate(axis_vector)*r;
+
+                if (vh.y > 0){
+                    vh *= -1;
+                    sin_angle *= -1;
+                }
             }
-            Point3d lowest_pt = axis_lowest_pt + vh;
 
+            Point3d lowest_pt = axis_lowest_pt + vh;
 
             if (lowest_pt.y < water_level){
                 //now I check if the full cylinder is
@@ -2578,8 +2694,9 @@ void ODEWorld::initParticleFluid(){
     //                             "lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};
 
     std::string vect_obj_name[]={"lUpperleg","lLowerleg","rUpperleg","rLowerleg","lFoot","rFoot"};// full legs
+    //std::string vect_obj_name[]={"rUpperleg","rLowerleg","rFoot"};// full legs
     //std::string vect_obj_name[]={"lUpperleg","lLowerleg","rLowerleg","lFoot"};//left leg en right lowerleg
-    //std::string vect_obj_name[]={"rLowerleg"};//right lowerleg
+    //std::string vect_obj_name[]={"rUpperleg"};
     int numObj=6;
 
     for(int i=0;i<numObj;++i){
@@ -2594,10 +2711,11 @@ void ODEWorld::initParticleFluid(){
     //*/
 
 
-   /*
+    /*
     //this is a test with basic objects
-    std::string objs_models[]={"configuration_data/fluid_data/objects/boxTest.rbs"};
-    //std::string objs_models[]={"configuration_data/fluid_data/objects/ballTest.rbs"};
+    //std::string objs_models[]={"configuration_data/fluid_data/objects/boxTest.rbs"};
+    std::string objs_models[]={"configuration_data/fluid_data/objects/ballTest.rbs"};
+    //std::string objs_models[]={"configuration_data/fluid_data/objects/capsuleTest.rbs"};
 
     bool use_two=false;
 
@@ -2632,7 +2750,7 @@ void ODEWorld::initParticleFluid(){
     //are part of the character so this problem will not exists
     {
         RigidBody* body=vect_objects_fluid_interaction[0];
-        body->setCMPosition(Point3d(0.25,0.4,0));//0.89   2.3
+        body->setCMPosition(Point3d(0,0.4,0));//0.89   2.3
         //body->setOrientation(Quaternion::getRotationQuaternion(3.14/2.0,Vector3d(0,0,1)));
 
         //and actually create the objects in ODE

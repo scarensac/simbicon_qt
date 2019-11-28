@@ -592,7 +592,7 @@ void ExternalForceFieldsCompenser::compute_compensation_v3(std::vector<ForceStru
 
 
 void ExternalForceFieldsCompenser::compute_compensation_v4(std::vector<ForceStruct> &force_field, std::vector<Vector3d> &result_ptr,
-                                                           bool ankle_compensate_foot){
+                                                           bool ankle_compensate_foot, bool support_foot_as_root){
     //before anything we need to know which off the leg are in a support phase
     bool swing_foot_contact=false;
     bool stance_foot_contact=false;
@@ -672,13 +672,15 @@ void ExternalForceFieldsCompenser::compute_compensation_v4(std::vector<ForceStru
             }
 
             //now propagate the compensation in the support leg(s)
-            for (int j=0;j<vect_support_hip.size();++j){
-                iter_joint=vect_support_hip[j];
-                Joint* ankle=vect_support_ankle[j];
+            if (support_foot_as_root){
+                for (int j=0;j<vect_support_hip.size();++j){
+                    iter_joint=vect_support_hip[j];
+                    Joint* ankle=vect_support_ankle[j];
 
-                while(iter_joint!=ankle){
-                    result_ptr[iter_joint->idx()]+=compute_joint_torques_equivalent_to_force(iter_joint,force.pt,force.F*vect_influence[j]);
-                    iter_joint=iter_joint->child()->child_joints().front();
+                    while(iter_joint!=ankle){
+                        result_ptr[iter_joint->idx()]+=compute_joint_torques_equivalent_to_force(iter_joint,force.pt,force.F*vect_influence[j]);
+                        iter_joint=iter_joint->child()->child_joints().front();
+                    }
                 }
             }
 
@@ -687,27 +689,31 @@ void ExternalForceFieldsCompenser::compute_compensation_v4(std::vector<ForceStru
     }
 
     //now compute the compensation for body parts that are in support legs
+
     for (int i=0;i<vect_support_hip.size();++i){
         Joint* cur_joint=vect_support_hip[i];
         Joint* ankle=vect_support_ankle[i];
 
-        //set the force to the root force
-        ForceStruct force=force_field[force_field.size()-1];
+        if (support_foot_as_root){
+            //set the force to the root force
+            ForceStruct force=force_field[force_field.size()-1];
 
 
-        while(cur_joint!=ankle){
+            while(cur_joint!=ankle){
 
-            //and compensate up to the ankle
-            Joint* iter_joint=cur_joint;
-            while(iter_joint!=ankle){
-                result_ptr[iter_joint->idx()]+=compute_joint_torques_equivalent_to_force(iter_joint,force.pt,force.F*vect_influence[i]);
-                iter_joint=iter_joint->child()->child_joints().front();
+                //and compensate up to the ankle
+                Joint* iter_joint=cur_joint;
+                while(iter_joint!=ankle){
+                    result_ptr[iter_joint->idx()]+=compute_joint_torques_equivalent_to_force(iter_joint,force.pt,force.F*vect_influence[i]);
+                    iter_joint=iter_joint->child()->child_joints().front();
+                }
+
+                //now read the force for th child body
+                force=force_field[cur_joint->idx()];
+                //and advance to the next joint
+                cur_joint=cur_joint->child()->child_joints().front();
             }
 
-            //now read the force for th child body
-            force=force_field[cur_joint->idx()];
-            //and advance to the next joint
-            cur_joint=cur_joint->child()->child_joints().front();
         }
 
         //and the ankle compensate the foot forces if required
@@ -782,6 +788,14 @@ void ExternalForceFieldsCompenser::compute_fluid_impact_compensation(WaterImpact
     force_field.resize(character->getJointCount()+1);
     for (int i=0; i<character->getJointCount();++i){
         Joint* joint=character->getJoint(i);
+        RigidBody* body=joint->child();
+
+        if(body==character->stance_foot()||
+                body==character->stance_foot()->parent_joint()->parent()||
+                body==character->stance_hip()->child()){
+            continue;
+        }
+
 
         ForceStruct force=impact[joint->child()->idx()];
 
@@ -804,6 +818,6 @@ void ExternalForceFieldsCompenser::compute_fluid_impact_compensation(WaterImpact
     //only do the computatio if we have a existing force field
     if (existing_force_field){
         //compute_compensation_v3(force_field,_torques3_fluid);
-        compute_compensation_v4(force_field,_torques4_fluid);
+        compute_compensation_v4(force_field,_torques4_fluid,false,false);
     }
 }

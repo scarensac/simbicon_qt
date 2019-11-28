@@ -343,6 +343,8 @@ public:
 
 
     void toArray(double* out){out[0]=v.x;out[1]=v.y;out[2]=v.z;out[3]=s;}
+
+    bool is_nan(){return v.is_nan()||s!=s;}
 };
 
 

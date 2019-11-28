@@ -27,6 +27,7 @@ class DFSPHCUDA
 {
 protected:
     DFSPHCData m_data;
+    bool show_fluid_timings;
 
 #ifdef SPLISHSPLASH_FRAMEWORK
     SimulationDataDFSPH m_simulationData;
@@ -117,7 +118,8 @@ public:
 
     void updateTimeStepDuration(RealCuda duration);
     void forceUpdateRigidBodies();
-    void getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments);
+    void getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments,
+                                       const std::vector<SPH::Vector3d>& reduction_factors);
     void getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli);
     SPH::Vector3d getSimulationCenter();
 };

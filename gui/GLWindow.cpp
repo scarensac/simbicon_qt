@@ -28,6 +28,7 @@
 #include "Globals.h"
 #include "Core/SimGlobals.h"
 #include "SPlisHSPlasH/Interface.h"
+#include <iostream>
 
 GLWindow::GLWindow(int x, int y, int w, int h){
 	ellapsedTime = 0;
@@ -189,6 +190,10 @@ void GLWindow::setCameraTarget(const Point3d& newTarget){
 	this->camera.target = newTarget;
 }
 
+//#define FFMPEG_RENDER
+#ifdef FFMPEG_RENDER
+#define USE_MULTIPLES_SHADER
+#endif
 
 /**
  *	This method is used to draw the scene.
@@ -295,6 +300,100 @@ void GLWindow::draw(){
             Interface::drawParticles(true,true,false);
 
 
+#ifdef FFMPEG_RENDER
+            static bool currently_saving=false;
+            static double video_start_time=0;
+
+            static int width = glutGet(GLUT_WINDOW_WIDTH);
+            static int height = glutGet(GLUT_WINDOW_HEIGHT);
+
+            static int* buffer = new int[width*height];
+            static FILE* ffmpeg = NULL;
+
+            if (!currently_saving){
+                if (!Globals::drawFPS){
+                    currently_saving=true;
+                    video_start_time=SimGlobals::simu_time;
+
+                    int framerate = (1/SimGlobals::dt) / 2;
+                    std::cout<<"video framerate: "<<framerate<< std::endl;
+                    std::ostringstream oss;
+                    // start ffmpeg telling it to expect raw rgba 720p-60hz frames
+                    // -i - tells it to read frames from stdin
+                    oss << "D:\\ffmpeg-4.1.3-win64-static\\bin\\ffmpeg " <<
+                        " -r "<<framerate<<" -f rawvideo -pix_fmt rgba -s "<<width<<"x"<<height<<" -i - " <<
+                        "-threads 0 -preset fast -y -pix_fmt yuv420p -crf 21 -vf vflip "<<
+                           "output_"<<++Globals::video_index<<".mp4";
+
+
+
+                    // open pipe to ffmpeg's stdin in binary write mode
+                    ffmpeg = _popen(oss.str().c_str(), "wb");
+                }
+            }
+
+            if (currently_saving){
+
+                glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+                fwrite(buffer, sizeof(int)*width*height, 1, ffmpeg);
+
+
+
+#ifdef USE_MULTIPLES_SHADER
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_ACCUM_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+            //we will now place the camera
+            setupGLCamera();
+            //and set up the lights (do this so that the position is specified in world coordinates, not in camera ones).
+            setupLights();
+
+            glColor3d(1, 1, 1);
+            //and then draw the application stuff
+            //draw character
+            Globals::app->draw();
+
+            if (Globals::drawGroundPlane){
+                //draw the ground
+                Globals::app->drawGround();
+
+                if (Globals::drawShadows){
+                    //no more texture mapping or lighting for the shadows
+                    glDisable(GL_LIGHTING);
+                    glDisable(GL_TEXTURE_2D);
+
+                    drawShadows();
+
+                    //reenable them
+                    glEnable(GL_LIGHTING);
+                    glEnable(GL_TEXTURE_2D);
+                }
+            }
+
+
+            //no more texture mapping or lighting needed
+            glDisable(GL_LIGHTING);
+            glDisable(GL_TEXTURE_2D);
+            glColor3d(1, 1, 1);
+
+            Interface::drawParticles(true,true,false,true);
+
+
+
+            glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+            fwrite(buffer, sizeof(int)*width*height, 1, ffmpeg);
+
+#endif
+            if (SimGlobals::simu_time>(video_start_time+20)){
+                Globals::drawFPS=true;
+            }
+
+             if (Globals::drawFPS){
+                 currently_saving=false;
+                 _pclose(ffmpeg);
+             }
+         }
+#endif
 
         }
 
@@ -302,7 +401,7 @@ void GLWindow::draw(){
 	glColor3d(1, 1, 1);
 
 	//wait until the required ammount of time has passed (respect the desired FPS requirement)
-	if (!Globals::evolution_mode){
+    if ((!Globals::evolution_mode)&&(Globals::limitfps)){
         while (fpsTimer.timeEllapsed()<1.0 / Globals::desiredFrameRate);
 	}
 
@@ -407,14 +506,27 @@ void GLWindow::drawFPSandPerf(double timeSinceLastUpdate, double timeSpentProces
 	processingTime += timeSpentProcessing;
 	nrFramesSinceUpdate++;
 
-	//only change the numbers that we display about 3 times per second
-	if (ellapsedTime>=1/3.0){
-		oldFrameRate = nrFramesSinceUpdate / ellapsedTime;
-		oldPerformanceRate = processingTime / nrFramesSinceUpdate;
-		nrFramesSinceUpdate = 0;
-        ellapsedTime = 0;
-//        std::cout<<"processing time: "<<processingTime<<"  "<<timeSpentProcessing2<<std::endl;
-	}
+    if(Globals::manualFPSRefresh){
+        oldFrameRate = nrFramesSinceUpdate / ellapsedTime;
+        oldPerformanceRate = processingTime / nrFramesSinceUpdate;
+        if (Globals::refreshFPS){
+            nrFramesSinceUpdate = 0;
+            ellapsedTime = 0;
+            Globals::refreshFPS=false;
+        }
+    }else{
+        //only change the numbers that we display about 3 times per second
+        if (ellapsedTime>=1.0/3.0){
+            oldFrameRate = nrFramesSinceUpdate / ellapsedTime;
+            oldPerformanceRate = processingTime / nrFramesSinceUpdate;
+            nrFramesSinceUpdate = 0;
+            ellapsedTime = 0;
+    //        std::cout<<"processing time: "<<processingTime<<"  "<<timeSpentProcessing2<<std::endl;
+        }
+    }
+
+
+
 
 	glPushMatrix();
 	glLoadIdentity();

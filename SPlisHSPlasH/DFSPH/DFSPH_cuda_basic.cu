@@ -1353,7 +1353,7 @@ void cuda_update_pos(SPH::DFSPHCData& data) {
     if (data.damp_borders){
         for (int k = 0; k < data.damp_planes_count; ++k) {
             Vector3d plane = data.damp_planes[k];
-            std::cout << "damping plane: " << plane.x << "  " << plane.y << "  " << plane.z << std::endl;
+            //std::cout << "damping plane: " << plane.x << "  " << plane.y << "  " << plane.z << std::endl;
         }
         data.damp_borders_steps_count--;
         if (data.damp_borders_steps_count == 0) {
@@ -2464,7 +2464,7 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
                 //read the actual height
                 int column_id = pos_temp.x + pos_temp.z*CELL_ROW_LENGTH;
 
-                RealCuda start_height=((near_min) ? start_height_min : start_height_max) + p_distance;
+                RealCuda start_height=((near_min) ? start_height_min : start_height_max) + p_distance + p_distance/4.0;
                 RealCuda min_height= column_max_height[column_id] + p_distance;
 
                 if((start_height+pos_local.y)<min_height){
@@ -2490,7 +2490,7 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
     }
 }
 
-#define SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+//#define SHOW_MESSAGES_IN_CUDA_FUNCTIONS
 void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
     data.damp_planes_count = 0;
     //compute the movement on the position and the axis
@@ -2572,7 +2572,9 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
                                                                     data.gridOffset, count_rmv_particles, count_possible_particles);
         gpuErrchk(cudaDeviceSynchronize());
 
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
         std::cout << "count particle delta: (moved particles, possible particles)" << *count_rmv_particles <<"  "<< *count_possible_particles<< std::endl;
+#endif
         std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
 
         //compute the positions of the 2 planes where there is a junction
@@ -2669,9 +2671,9 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
                 }
             }
         }
-
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
         std::cout<<"check start positon (front back): "<<height_near_max<<"   "<<height_near_min<<std::endl;
-
+#endif
 
 
 
@@ -2695,11 +2697,11 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
         data.destructor_activated = true;
 
 
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
         std::cout<<"number of particles displaced: "<<*count_moved_particles-*count_invalid_position<<"  with "<<
                    *count_rmv_particles+*count_possible_particles <<" at the surface and "<<
                    *count_invalid_position<<" rerolled positions"<<std::endl;
 
-#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tp1 - start).count() / 1000000.0f;
         float time_1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000.0f;
@@ -2769,7 +2771,9 @@ __global__ void find_splashless_column_max_height_kernel(SPH::UnifiedParticleSet
 
     //this array store the highest heights for the column
     //later values are higher
-    RealCuda max_height[5] = { -2, -2, -2, -2, -2 };
+    int count_values_for_median=3;
+    //RealCuda max_height[5] = { -2, -2, -2, -2, -2 };
+    RealCuda max_height[3] = { -2, -2, -2};
     int count_actual_values = 0;
 
     for (int y = CELL_ROW_LENGTH - 1; y >= 0; --y) {
@@ -2783,7 +2787,7 @@ __global__ void find_splashless_column_max_height_kernel(SPH::UnifiedParticleSet
                 int is_superior = -1;
                 //so I need to find the right cell of the max array
                 //the boolean will indicate the id of the last cell for which the new height was superior
-                for (int k = 0; k < 5; ++k) {
+                for (int k = 0; k < count_values_for_median; ++k) {
                     if (cur_height> max_height[k]) {
                         is_superior = k;
                     }
@@ -2796,14 +2800,14 @@ __global__ void find_splashless_column_max_height_kernel(SPH::UnifiedParticleSet
                     max_height[is_superior] = cur_height;
                 }
             }
-            if (count_actual_values>4){
+            if (count_actual_values>(count_values_for_median-1)){
                 break;
             }
         }
     }
 
     //and we keep the median value only if there are enougth particles in the column (so that the result is relatively correct)
-    column_max_height[i] = (count_actual_values>4)?max_height[2]:-2;
+    column_max_height[i] = (count_actual_values>(count_values_for_median-1))?max_height[(count_values_for_median-1)/2]:-2;
 
 }
 
@@ -2876,7 +2880,8 @@ __global__ void place_additional_particles_right_above_kernel(SPH::DFSPHCData da
     pos_temp = pos_temp / data.getKernelRadius() + data.gridOffset;
     pos_temp.toFloor();
     int column_id = pos_temp.x + pos_temp.z*CELL_ROW_LENGTH;
-    pos_f.y = column_max_height[column_id] + p_distance;
+    //the second p distance is to make sure the warm start walues don't fuck the simulation up
+    pos_f.y = column_max_height[column_id] + p_distance+ p_distance;
 
     pos_f += pos_local;
 
@@ -3161,7 +3166,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
     bool need_sort = ((time_count%15)==0);
 
     if (need_sort){
-        std::cout<<"doing full neighbor search"<<std::endl;
+        //std::cout<<"doing full neighbor search"<<std::endl;
     }
 
     bool old_fluid_aggregated=data.is_fluid_aggregated;
@@ -3722,13 +3727,14 @@ void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container) {
 
 
 __global__ void compute_fluid_impact_on_dynamic_body_kernel(SPH::UnifiedParticleSet* container, Vector3d rb_position,
-                                                            Vector3d* force, Vector3d* moment) {
+                                                            Vector3d* force, Vector3d* moment, Vector3d reduction_factor) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= container->numParticles) { return; }
 
     Vector3d F,M;
 
     F=container->F[i];
+    F*=reduction_factor;
     M=(container->pos[i]-rb_position).cross(F);
 
     atomicAdd(&(force->x),F.x);
@@ -3739,15 +3745,18 @@ __global__ void compute_fluid_impact_on_dynamic_body_kernel(SPH::UnifiedParticle
     atomicAdd(&(moment->z),M.z);
 }
 
-void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& moment){
+void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& moment,
+                                               const Vector3d& reduction_factor){
     Vector3d* force_cuda = SVS_CU::get()->force_cuda;
     Vector3d* moment_cuda = SVS_CU::get()->moment_cuda;
     *force_cuda=Vector3d(0,0,0);
     *moment_cuda=Vector3d(0,0,0);
 
+
     int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
     compute_fluid_impact_on_dynamic_body_kernel << <numBlocks, BLOCKSIZE >> > (container.gpu_ptr,
-                                                                               container.rigidBody_cpu->position, force_cuda, moment_cuda);
+                                                                               container.rigidBody_cpu->position, force_cuda,
+                                                                               moment_cuda, reduction_factor);
     gpuErrchk(cudaDeviceSynchronize());
 
     force=*force_cuda;

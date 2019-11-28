@@ -92,7 +92,9 @@ void Interface::loadFluid(){
     SingletonDFSPHCUDA::getFluid()->handleSimulationLoad(true,false,true,false,true,false);
 
     //also init the shader
+    std::cout<<"initialising shader start"<<std::endl;
      SingletonDFSPHCUDA::getShader();
+     std::cout<<"initialising shader end"<<std::endl;
 }
 
 void Interface::initFluid(double timeStep){
@@ -137,10 +139,16 @@ void Interface::forceUpdateDynamicBodies(){
 
 
 
-void Interface::getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Vector3d>& moments){
+void Interface::getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Vector3d>& moments,
+                                              const std::vector<Vector3d>& reduction_factors){
     //read from engine
     std::vector<SPH::Vector3d> sph_forces,sph_moments;
-    SingletonDFSPHCUDA::getFluid()->getFluidImpactOnDynamicBodies(sph_forces,sph_moments);
+
+    std::vector<SPH::Vector3d> reduction_factor_SPH;
+    for (int i=0;i<reduction_factors.size();++i){
+        reduction_factor_SPH.push_back(vector3dToSPH3d(reduction_factors[i]));
+    }
+    SingletonDFSPHCUDA::getFluid()->getFluidImpactOnDynamicBodies(sph_forces,sph_moments,reduction_factor_SPH);
 
     //init the buffers for the avg on first run
     static std::vector<std::vector<Vector3d> > old_forces;
@@ -154,7 +162,7 @@ void Interface::getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std
     }
 
     //compute the avg and set the result
-    int timestep_for_avg=12;
+    int timestep_for_avg=10;
     forces.clear();
     moments.clear();
     for (int i=0;i<sph_forces.size();++i){
@@ -258,11 +266,13 @@ bool Interface::moveFluidSimulation(Point3d target_Position){
         movement.z=delta.z/std::abs(delta.z);
     }
 
+    /*
     if(movement.squaredNorm()>0)
     {
         std::cout<<"Interface::moveFluidSimulation required movement x,z (actual delta x,z): "<<
                    movement.x<<"  "<<movement.z<<"  ("<<delta.x<<"  "<<delta.z<<")"<<std::endl;
     }
+    ///*/
 
     //move the simulation
     if (movement.squaredNorm()>0.5){
@@ -308,7 +318,7 @@ void shaderEnd(){
 }
 
 
-void Interface::drawParticles(bool drawFluid, bool drawBodies, bool drawBoundaries){
+void Interface::drawParticles(bool drawFluid, bool drawBodies, bool drawBoundaries, bool transparent_fluid){
 
     float fluidColor[4] = { 0.3f, 0.5f, 0.9f, 1.0f };
     shaderBegin(&fluidColor[0],0.025,25);
@@ -322,7 +332,6 @@ void Interface::drawParticles(bool drawFluid, bool drawBodies, bool drawBoundari
 
     shaderEnd();
 
-    bool transparent_fluid=true;
     int shader_type=0;
     if (transparent_fluid){
         glDepthMask(GL_FALSE);

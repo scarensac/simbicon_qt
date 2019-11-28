@@ -32,6 +32,10 @@
 #include <GL/freeglut.h>
 #include <chrono>
 #include "SPlisHSPlasH/Interface.h"
+#include "GamepadController.h"
+
+GamepadController * gamepad = NULL;
+#pragma comment(lib, "Xinput.lib")
 
 
 /**
@@ -197,6 +201,15 @@ void appProcess(void){
     if (Globals::followCharacter)
         Globals::window->setCameraTarget(Globals::app->getCameraTarget());
 
+	if (Globals::gamepad) {
+        if (gamepad==NULL) {
+            gamepad = new GamepadController();
+            Globals::window->setCameraTarget(Globals::app->getCameraTarget());
+            Globals::window->setCameraRotation(Vector3d(-0.2,M_PI+0.1,0.0));
+        }
+        if (gamepad->updateState()) manageGamepadInput();
+    }
+    else if (gamepad!=NULL) {delete gamepad; gamepad=NULL;}						
     //check the tk/tcl messages again
     //CheckTCLTKEvents();
 
@@ -255,6 +268,104 @@ void camera (int orientation){
 }
 //*/
 
+///////////////////////////////////////////////////////////
+// Gamepad input
+float accumulatorTargetSagitalSpeed = 0.0;
+float accumulatorTargetCoronalSpeed = 0.0;
+float accumulatorDesiredHeading = 0.0;
+float accumulatorStepWidth = 0.0;
+float accumulatorLiquidLevel = 0.0;
+bool startPressed = false;
+
+void manageGamepadInput() {
+
+    // A and B to speed up and slow down the character (sagital)
+    if (gamepad->isKeyPressed(GamepadController::A)) accumulatorTargetSagitalSpeed += 0.002;
+    if (gamepad->isKeyPressed(GamepadController::B)) accumulatorTargetSagitalSpeed -= 0.002;
+    if (accumulatorTargetSagitalSpeed >= 0.01 || accumulatorTargetSagitalSpeed <= -0.01) {
+        ((ControllerEditor*)(Globals::app))->signal_messenger.emit_target_sagital_speed(SimGlobals::velDSagittal + accumulatorTargetSagitalSpeed);
+        accumulatorTargetSagitalSpeed = 0.0;
+    }
+
+    // Bumpers to speed up and slow down the character (coronal)
+    if (gamepad->isKeyPressed(GamepadController::LEFT_SHOULDER)) accumulatorTargetCoronalSpeed += 0.002;
+    if (gamepad->isKeyPressed(GamepadController::RIGHT_SHOULDER)) accumulatorTargetCoronalSpeed -= 0.002;
+    if (accumulatorTargetCoronalSpeed >= 0.01 || accumulatorTargetCoronalSpeed <= -0.01) {
+        ((ControllerEditor*)(Globals::app))->signal_messenger.emit_target_coronal_speed(SimGlobals::velDCoronal + accumulatorTargetCoronalSpeed);
+        accumulatorTargetCoronalSpeed = 0.0;
+    }
+
+    // Left stick to change the orientation
+    accumulatorDesiredHeading += -gamepad->positionStick(GamepadController::LEFT_STICK_X) * 0.03;
+    if (accumulatorDesiredHeading >= 0.01 || accumulatorDesiredHeading <= -0.01) {
+        ((ControllerEditor*)(Globals::app))->signal_messenger.emit_desired_heading(SimGlobals::desiredHeading + accumulatorDesiredHeading);
+        accumulatorDesiredHeading = 0.0;
+    }
+
+    // Dpad to change the step width
+    if (gamepad->isKeyPressed(GamepadController::DPAD_LEFT)) accumulatorStepWidth -= 0.0002;
+    if (gamepad->isKeyPressed(GamepadController::DPAD_RIGHT)) accumulatorStepWidth += 0.0002;
+    if (accumulatorStepWidth >= 0.001 || accumulatorStepWidth <= -0.001) {
+        ((ControllerEditor*)(Globals::app))->signal_messenger.emit_step_width(SimGlobals::step_width + accumulatorStepWidth);
+        accumulatorStepWidth = 0.0;
+    }
+
+    // Triggers to raise up and lower the liquid level
+    accumulatorLiquidLevel += gamepad->triggerValue(GamepadController::RIGHT_TRIGGER) * 0.01;
+    accumulatorLiquidLevel -= gamepad->triggerValue(GamepadController::LEFT_TRIGGER) * 0.01;
+    if (accumulatorLiquidLevel >= 0.01 || accumulatorLiquidLevel <= -0.01)  {
+        ((ControllerEditor*)(Globals::app))->signal_messenger.emit_liquid_level(SimGlobals::water_level + accumulatorLiquidLevel);
+        accumulatorLiquidLevel = 0.0;
+    }
+
+    // Right stick for camera orientation
+    Vector3d rot = Globals::window->getCameraRotation();
+    rot += Vector3d(0,0.1*gamepad->positionStick(GamepadController::RIGHT_STICK_X),0.0);
+    Globals::window->setCameraRotation(rot);
+
+    // Pause
+    if (gamepad->isKeyPressed(GamepadController::START) && !startPressed) {
+        Globals::animationRunning=!Globals::animationRunning;
+        startPressed = !startPressed;
+    }
+    if (!gamepad->isKeyPressed(GamepadController::START) && startPressed) {
+        startPressed = !startPressed;
+    }
+
+    /*
+    if (gamepad->isKeyPressed(GamepadController::DPAD_UP)) std::cout << "DPAD_UP" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::DPAD_DOWN)) std::cout << "DPAD_DOWN" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::DPAD_LEFT)) std::cout << "DPAD_LEFT" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::DPAD_RIGHT)) std::cout << "DPAD_RIGHT" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::START)) std::cout << "START" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::BACK)) std::cout << "BACK" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::LEFT_THUMB)) std::cout << "LEFT_THUMB" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::RIGHT_THUMB)) std::cout << "RIGHT_THUMB" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::LEFT_SHOULDER)) std::cout << "LEFT_SHOULDER" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::RIGHT_SHOULDER)) std::cout << "RIGHT_SHOULDER" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::A)) std::cout << "A" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::B)) std::cout << "B" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::X)) std::cout << "X" << std::endl;
+    if (gamepad->isKeyPressed(GamepadController::Y)) std::cout << "Y" << std::endl;
+    //*/
+
+    /*
+    if (gamepad->isKeyPressed(GamepadController::A)) gamepad->startVibrate(1.0,0.0);
+    if (gamepad->isKeyPressed(GamepadController::B)) gamepad->startVibrate(0.0,1.0);
+    if (gamepad->isKeyPressed(GamepadController::X)) gamepad->startVibrate(1.0,1.0);
+    if (gamepad->isKeyPressed(GamepadController::Y)) gamepad->stopVibrate();
+    //*/
+
+    /*
+    std::cout << "Left trigger = " << gamepad->triggerValue(GamepadController::LEFT_TRIGGER);
+    std::cout << " Right trigger = " << gamepad->triggerValue(GamepadController::RIGHT_TRIGGER) << std::endl;
+    //*/
+
+    /*
+    std::cout << "Left Stick pos = ( " << gamepad->positionStick(GamepadController::LEFT_STICK_X) << " , " << gamepad->positionStick(GamepadController::LEFT_STICK_Y) << ")";
+    std::cout << " Right Stick pos = ( " << gamepad->positionStick(GamepadController::RIGHT_STICK_X) << " , " << gamepad->positionStick(GamepadController::RIGHT_STICK_Y) << ")" << std::endl;
+    //*/
+}														   
 ///////////////////////////////////////////////////////////
 // Start|Stop the animation
 ///////////////////////////////////////////////////////////

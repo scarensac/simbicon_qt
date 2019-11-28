@@ -95,6 +95,9 @@ protected slots:
     //slot for external signals
     void character_step_ended(double vz, double vx);
 
+    //other control tab
+    void click_refresh_fps();
+
 private:
     Ui::SimulationWindow *ui;
 

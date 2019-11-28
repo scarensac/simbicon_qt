@@ -41,17 +41,18 @@ Vector3d Vector3d::crossProductWith(const Vector3d &v) const{
             Cross product is given by cross multiplying the items in the box, and subing the other
             diagonal
         */
-    Vector3d result, u = *this;
-    result.x = u.y * v.z - u.z * v.y;
-    result.y = u.z * v.x - u.x * v.z;
-    result.z = u.x * v.y - u.y * v.x;
+    Vector3d result;
+    result.x = y * v.z - z * v.y;
+    result.y = z * v.x - x * v.z;
+    result.z = x * v.y - y * v.x;
 
     {
         Vector3d t=result;
-        if(v.x==v.x&&u.x==u.x){
-            if ((t.x!=t.x)||(t.y!=t.y)||(t.z!=t.z)){
-                throw("Vector3d::crossProductWith nan detected");
-            }
+        if(result.is_nan()){
+            std::cout<<x<<" "<<y<<" "<<z<<std::endl;
+            std::cout<<v.x<<" "<<v.y<<" "<<v.z<<std::endl;
+            std::cout<<result.x<<" "<<result.y<<" "<<result.z<<std::endl;
+            throw("Vector3d::crossProductWith nan detected");
         }
     }
 

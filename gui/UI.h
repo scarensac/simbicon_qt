@@ -110,3 +110,5 @@ void processMouseActiveMotion(int x, int y);
 void processKeyboard(unsigned char key, int x, int y);
 
 void processPassiveMouseActiveMotion(int x, int y);
+
+void manageGamepadInput();

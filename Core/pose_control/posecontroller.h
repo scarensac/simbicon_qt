@@ -278,6 +278,7 @@ private:
     double desired_heading_swing_foot;
     double desired_heading_stance_foot;
     double target_heading_mitigation_coefficient;
+    bool first_pass_this_char_step;
 
 
 

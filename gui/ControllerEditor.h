@@ -24,6 +24,8 @@
 #include "InteractiveWorld.h"
 #include "CurveEditor.h"
 #include "qtmessenger.h"
+#include <QSemaphore>
+#include <thread>
 
 
 /**
@@ -78,6 +80,8 @@ public:
 	 */
 	virtual ~ControllerEditor(void);
 
+
+    SimBiConFramework* getConF(){return conF;};
 
 	/**
 		This method draws the desired target that is to be tracked.
@@ -173,6 +177,8 @@ public:
 	*/
 	virtual void processTask();
 
+    void processFluidStepping();
+
 
 	/**
      * This method is to be implemented by classes extending this one. The output of this function is a point that
@@ -235,13 +241,21 @@ private:
     double time_since_application;
 
 
+
     /**
      * @brief this function reset all the members from the old static variables that are used in the evaluaion function
      */
     void reset_members_for_evaluation();
 
-
+public:
+    //static membres for reusable thread
+    std::thread* thread;
+    QSemaphore* semaphore_start;
+    QSemaphore* semaphore_end;
+    bool end_thread;
 };
+
+void fluid_exe_fct(ControllerEditor* ce);
 
 
 

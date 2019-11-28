@@ -179,6 +179,12 @@ public:
     void virtual_force_near_limit(bool& coronal, bool& sagittal, double limit=0.8);
 
     /**
+     * @brief this function return the ration of the last force on the force limit
+     * @return
+     */
+    float get_force_limit_ratio();
+
+    /**
      * @brief this function is used to detec if the last virtual force used is near the maximum autorised
      * @param coronal set to true if the coronal limit is reached
      * @param sagittal set to true if the sagittal limit is reached
