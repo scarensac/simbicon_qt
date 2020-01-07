@@ -7,6 +7,7 @@
 #include <sstream>
 #include <fstream>
 #include <boost/filesystem.hpp>
+//#include <filesystem>
 
 //#include <drvapi_error_string.h>
 bool save_intermediary_results=false;
@@ -508,7 +509,9 @@ SimbiconOnjectiveFunctionGains::SimbiconOnjectiveFunctionGains(bool use_symetric
     std::string solution_folder_path=get_folder_path(solution_folder,7);
     std::ostringstream oss2;
     oss2 << solution_folder_path << a <<"_"<<cma_number-1<< ".sbc";
-    if (boost::filesystem::exists(oss2.str())){
+    if (boost::filesystem::exists(oss2.str()))
+    //if (std::exist(oss2.str()))
+    {
         con->getController()->pose_controller->read_gains(oss2.str());
     }else{
         std::cout<<"SimbiconOnjectiveFunctionGains::SimbiconOnjectiveFunctionGains: could not load preivous result for iter: "<<cma_number<<std::endl;

@@ -46,15 +46,17 @@ public:
     static void releaseFluid(){}
     static inline void forceUpdateDynamicBodies(){}
     static inline void updateDynamicBodies(const std::vector<SPH::DynamicBody> &vect_new_info){}
-    static inline void getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Vector3d>& moments){}
+    static inline void getFluidImpactOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Vector3d>& moments,
+                                                     const std::vector<Vector3d> &reduction_factors){}
+    static inline void getFluidBoyancyOnDynamicBodies(std::vector<Vector3d>& forces, std::vector<Point3d>& pts_appli){}
     static inline void fluidSimulationStep(){}
     static inline void updateTimeStepDuration(double duration){}
     static inline void handleDynamicBodiesPause(bool pause){}
     static inline void zeroFluidVelocities(){}
-    static inline void moveFluidSimulation(Point3d target_Position){}
+    static inline bool moveFluidSimulation(Point3d target_Position){return false;}
     static inline void drawParticles(bool drawFluid, bool drawBodies, bool drawBoundaries){}
     static void handleFLuidLevelControl(float level){}
-    static float getFluidLevel(){}
+    static float getFluidLevel(){return 0;}
 
 #endif
 

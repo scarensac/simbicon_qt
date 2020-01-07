@@ -338,7 +338,9 @@ public:
 
     bool is_nan(){return x!=x||y!=y||z!=z;}
 
-
+    Point3d toPoint3d(){
+        return Point3d(x,y,z);
+    }
 };
 
 

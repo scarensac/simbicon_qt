@@ -6,11 +6,17 @@
 
 CONFIG += object_parallel_to_source
 CONFIG += no_batch
-CONFIG += FLUID_COMPIL
+#CONFIG += FLUID_COMPIL
+CONFIG += SHARK_UTILISATION
+CONFIG += BOOST_UTILISATION
+
+SHARK_UTILISATION{
+    CONFIG += BOOST_UTILISATION
+}
 
 QT       += core gui
 
-CONFIG += c++11
+CONFIG += c++17
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -160,28 +166,32 @@ Debug:LIBS += ode_0_15_1\lib\debug\ode.lib
 INCLUDEPATH += ode_0_15_1\include
 
 #now including boost
-DEFINES += BOOST_PARAMETER_MAX_ARITY=15 BOOST_FILESYSTEM_VERSION=3
-Release:DEFINES += BOOST_UBLAS
-Debug:DEFINES += BOOST_UBLAS_NDEBUG
-BOOST_DIR = .\external_libs\boost_1_64_0
-INCLUDEPATH += $$BOOST_DIR
-#BOOST_DIR
-#C:\boost\boost_1_64_0
-Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_serialization-vc140-mt-s-1_64.lib
-Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_filesystem-vc140-mt-s-1_64.lib
-Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_system-vc140-mt-s-1_64.lib
-Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_serialization-vc140-mt-sgd-1_64.lib
-Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_filesystem-vc140-mt-sgd-1_64.lib
-Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_system-vc140-mt-sgd-1_64.lib
+BOOST_UTILISATION {
+    DEFINES += BOOST_PARAMETER_MAX_ARITY=15 BOOST_FILESYSTEM_VERSION=3
+    Release:DEFINES += BOOST_UBLAS
+    Debug:DEFINES += BOOST_UBLAS_NDEBUG
+    BOOST_DIR = .\external_libs\boost_1_64_0
+    INCLUDEPATH += $$BOOST_DIR
+    #BOOST_DIR
 
 
+    #C:\boost\boost_1_64_0
+    Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_serialization-vc140-mt-s-1_64.lib
+    Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_filesystem-vc140-mt-s-1_64.lib
+    Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_system-vc140-mt-s-1_64.lib
+    Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_serialization-vc140-mt-sgd-1_64.lib
+    Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_filesystem-vc140-mt-sgd-1_64.lib
+    Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_system-vc140-mt-sgd-1_64.lib
+}
 
-#and including shark
-DEFINES += SHARK_VERSION_MAJOR=3 SHARK_VERSION_MINOR=0 SHARK_VERSION_PATCH=0
-SHARK_DIR = .\external_libs\shark
-INCLUDEPATH += $$SHARK_DIR\include
-Release:LIBS += $$SHARK_DIR\lib\Release\shark.lib
-Debug:LIBS += $$SHARK_DIR\lib\Debug\shark.lib
+SHARK_UTILISATION{
+    #and including shark
+    DEFINES += SHARK_VERSION_MAJOR=3 SHARK_VERSION_MINOR=0 SHARK_VERSION_PATCH=0
+    SHARK_DIR = .\external_libs\shark
+    INCLUDEPATH += $$SHARK_DIR\include
+    Release:LIBS += $$SHARK_DIR\lib\Release\shark.lib
+    Debug:LIBS += $$SHARK_DIR\lib\Debug\shark.lib
+}
 
 FLUID_COMPIL {
     #######################################################################

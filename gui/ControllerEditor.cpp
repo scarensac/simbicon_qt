@@ -1453,7 +1453,8 @@ void ControllerEditor::processFluidStepping(){
         }
 
         if (Globals::fluidFollowCharacter){
-            bool moved=Interface::moveFluidSimulation(simbiconframework->getCharacter()->getCOM());
+            Point3d pt(simbiconframework->getCharacter()->getCOM().toPoint3d());
+            bool moved=Interface::moveFluidSimulation(pt);
             //Interface::moveFluidSimulation(Vector3d(-conF->getCharacter()->getCOM().x,0,-conF->getCharacter()->getCOM().z));
             if (moved){
                 //Globals::animationRunning=0;

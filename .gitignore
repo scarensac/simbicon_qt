@@ -15,3 +15,6 @@ eval_estimate/
 *.pdb
 Makefile
 Makefile.*
+
+# keep all external libs folders
+!external_libs/
