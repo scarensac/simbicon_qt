@@ -115,7 +115,7 @@ public:
 	*/
 	static int printOglError(char *file, int line);
 
-
+    static void drawEllipsoid(unsigned int uiStacks, unsigned int uiSlices, float fA, float fB, float fC);
 
 };
 

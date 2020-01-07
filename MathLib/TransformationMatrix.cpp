@@ -349,7 +349,22 @@ void TransformationMatrix::setToInverseCoordFrameTransformation(){
 */
 void TransformationMatrix::setToInverseCoordFrameTransformationOf(const TransformationMatrix& other){
 	*this = other;
-	setToInverseCoordFrameTransformation();
+    setToInverseCoordFrameTransformation();
+}
+
+void TransformationMatrix::setTo3x3Matrix(const Matrix &other)
+{
+    if (other.getColumnCount()!=3||other.getRowCount()!=3){
+        throw("TransformationMatrix::setTo3x3Matrix:  the input s not a 3x3 matrix...");
+    }
+    this->loadIdentity();
+
+    for (int i=0;i<3;i++){
+        for (int j=0;j<3;j++){
+            this->set(i,j,other.get(i,j));
+        }
+    }
+
 }
 
 

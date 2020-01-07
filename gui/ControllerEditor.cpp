@@ -33,6 +33,7 @@
 #include "Core/velocity_control/velocitycontroller.h"
 #include "Physics/softbodypointmass.h"
 #include "SPlisHSPlasH/Interface.h"
+#include "Physics/EllipticalContacts.h"
 /**
  * Constructor.
  */
@@ -309,7 +310,7 @@ void ControllerEditor::draw(bool shadowMode){
         glDisable(GL_TEXTURE_2D);
         if (Globals::drawCollisionPrimitives){
             flags |= SHOW_CD_PRIMITIVES | SHOW_FRICTION_PARTICLES;
-            Globals::drawJoints=1;
+            Globals::drawJoints=0;
         }
         if (Globals::drawJoints){
             flags |= SHOW_JOINTS;// | SHOW_BODY_FRAME;
@@ -439,10 +440,17 @@ void ControllerEditor::draw(bool shadowMode){
 
     if (rbc){
         rbc->drawRBs(flags);
+
+        {
+            static EllipticalContacts elli_contacts(rbc->getARBByName("lFoot"));
+
+            elli_contacts.computeForces();
+
+            elli_contacts.draw();
+
+
+        }
     }
-
-
-
     //*
     AbstractRBEngine* rb_fw= SimGlobals::stanceFootWorld;
 
@@ -1359,6 +1367,8 @@ void ControllerEditor::processTask(){
                     }
                     //*/
 
+                    std::ios_base::fmtflags f( std::cout.flags() );
+
 
                     std::cout<<std::setprecision(5);
                     std::cout<<std::fixed;
@@ -1381,6 +1391,8 @@ void ControllerEditor::processTask(){
                     std::cout<<")";
                     std::cout<< std::endl;
 
+
+                    std::cout.flags( f );
 
                 }
                 //                std::cout<<"step: %lf %lf %lf (phi = %lf, avg_speed_x = %lf, avg_speed_z = %lf, TIME = %lf, ipm_alt_sagittal = %lf)\n",

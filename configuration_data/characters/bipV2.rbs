@@ -214,7 +214,7 @@ A_RigidBody
 	moi 0.002 0.002 0.0005
 	colour 0.5 0.5 0.5 1
 	
-	CDP_Sphere 0.0 -0.005 0.025 0.01
+#	CDP_Sphere 0.0 -0.005 0.025 0.01
 	CDP_Box -0.023 -0.015 0.010 0.023 0.005 0.035
 	frictionCoefficient 0.8
 	restitutionCoefficient 0.35	
@@ -228,7 +228,7 @@ A_RigidBody
 	moi 0.002 0.002 0.0005
 	colour 0.5 0.5 0.5 1
 	
-	CDP_Sphere 0.0 -0.005 0.025 0.01
+#	CDP_Sphere 0.0 -0.005 0.025 0.01
 	CDP_Box -0.023 -0.015 0.010 0.023 0.005 0.035
 	frictionCoefficient 0.8
 	restitutionCoefficient 0.35

@@ -1149,17 +1149,11 @@ void PoseController::compute_torques(){
             //}//*/
             if (controlParams[i].relative_to_char_frame == false){
 
-                if (use_spd){
-                    //get the current relative orientation between the child and parent
-                    character->getRelativeOrientationFuture(i, &qRel);
-                    //and the relative angular velocity, computed in parent coordinates
-                    character->getRelativeAngularVelocityFuture(i, &wRel);
-                }else{
-                    //get the current relative orientation between the child and parent
-                    character->getRelativeOrientation(i, &qRel);
-                    //and the relative angular velocity, computed in parent coordinates
-                    character->getRelativeAngularVelocity(i, &wRel);
-                }
+
+                //get the current relative orientation between the child and parent
+                character->getRelativeOrientation(i, &qRel);
+                //and the relative angular velocity, computed in parent coordinates
+                character->getRelativeAngularVelocity(i, &wRel);
 
                 RigidBody* childRB = character->getJoint(i)->child();
                 RigidBody* parentRB = character->getJoint(i)->parent();
@@ -1229,8 +1223,14 @@ void PoseController::compute_torques(){
                 }
                 //*/
 
-                //now compute the torque
-                _torques[i] = compute_pd_torque(qRel, rs.getJointRelativeOrientation(i), wRel, rs.getJointRelativeAngVelocity(i), &params);
+                 if(use_spd){
+                    //now compute the torque
+                    _torques[i] = compute_pd_torque(qRel, rs.getJointRelativeOrientation(i), wRel, rs.getJointRelativeAngVelocity(i), &params);
+                 }else{
+                    //now compute the torque
+                    _torques[i] = compute_pd_torque(qRel, rs.getJointRelativeOrientation(i), wRel, rs.getJointRelativeAngVelocity(i), &params);
+                 }
+
                 //the torque is expressed in parent coordinates, so we need to convert it to world coords now
                 _torques[i] = character->getJoint(i)->parent()->getWorldCoordinates(_torques[i]);
 
@@ -1241,13 +1241,8 @@ void PoseController::compute_torques(){
                 }
             }else{
                 RigidBody* childRB = character->getJoint(i)->child();
-                if (use_spd){
-                    qRel=childRB->getOrientationFuture();
-                    wRel=childRB->getAngularVelocityFuture();
-                }else{
-                    qRel=childRB->getOrientation();
-                    wRel=childRB->getAngularVelocity();
-                }
+                qRel=childRB->getOrientation();
+                wRel=childRB->getAngularVelocity();
 
                 //this use an avg system for the angular velocity but I don't currently uses it
                 if (false)
@@ -1284,9 +1279,13 @@ void PoseController::compute_torques(){
                 }
                 //*/
 
-
-                _torques[i] = compute_pd_torque(qRel, controlParams[i].char_frame * rs.getJointRelativeOrientation(i),
-                                                wRel, rs.getJointRelativeAngVelocity(i), &params);
+                if(use_spd){
+                    _torques[i] = compute_pd_torque(qRel, controlParams[i].char_frame * rs.getJointRelativeOrientation(i),
+                                                    wRel, rs.getJointRelativeAngVelocity(i), &params);
+                }else{
+                    _torques[i] = compute_pd_torque(qRel, controlParams[i].char_frame * rs.getJointRelativeOrientation(i),
+                                                    wRel, rs.getJointRelativeAngVelocity(i), &params);
+                }
 
 
                 Vector3d t=_torques[i];

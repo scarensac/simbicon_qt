@@ -509,3 +509,19 @@ int GLUtils::printOglError(char *file, int line){
     return retCode;
 }
 
+void GLUtils::drawEllipsoid(unsigned int uiStacks, unsigned int uiSlices, float fA, float fB, float fC)
+{
+    float tStep = (PI) / (float)uiSlices;
+    float sStep = (PI) / (float)uiStacks;
+    for(float t = -PI/2; t <= (PI/2)+.0001; t += tStep)
+    {
+        glBegin(GL_TRIANGLE_STRIP);
+        for(float s = -PI; s <= PI+.0001; s += sStep)
+        {
+            glVertex3f(fA * cos(t) * cos(s), fB * cos(t) * sin(s), fC * sin(t));
+            glVertex3f(fA * cos(t+tStep) * cos(s), fB * cos(t+tStep) * sin(s), fC * sin(t+tStep));
+        }
+        glEnd();
+    }
+}
+

@@ -67,7 +67,6 @@ ODEWorld::ODEWorld(bool i_is_parallel_world) : AbstractRBEngine(){
         dWorldSetStepThreadingImplementation(worldID,dThreadingImplementationGetFunctions(m_ode_threading_id),m_ode_threading_id);
     }
 
-
     nb_collisions_cumul=0;
     time_counter=0;
 

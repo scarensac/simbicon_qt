@@ -189,7 +189,11 @@ public:
 	*/
 	void setToInverseCoordFrameTransformationOf(const TransformationMatrix& other);
 
-
+    /**
+     * @brief populate the matrix from a 3x3 matrix
+     * @param other
+     */
+    void setTo3x3Matrix(const Matrix& other);
 };
 
 void testTransformationMatrixClass();

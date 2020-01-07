@@ -175,7 +175,8 @@ void RigidBody::draw(int flags){
 
         float tempColor[] = {(float)r,(float)g,(float)b,(float)(a)};
         glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, tempColor);
-        if (flags & SHOW_JOINTS){
+        //if (flags & SHOW_JOINTS)
+        {
             if (lighting)
                 glDisable(GL_LIGHTING);
             glColor3d(0.0, 0.6, 0);
@@ -188,7 +189,8 @@ void RigidBody::draw(int flags){
 
         for (uint i=0;i<cdps.size();i++)
             cdps[i]->draw();
-        if (flags & SHOW_JOINTS){
+        //if (flags & SHOW_JOINTS)
+        {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
 
