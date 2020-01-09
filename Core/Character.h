@@ -5,7 +5,7 @@
 #include "Utils/Utils.h"
 #include "SimGlobals.h"
 
-
+class EllipticalContacts;
 /**
     A character is an articulated figure - This class implements methods that allow it to easily save and restore its state, etc.
 */
@@ -48,6 +48,10 @@ protected:
     void setHeading(Quaternion heading, DynamicArray<double>* state, int start = 0);
 
 public:
+    //the classes for the elliptical contact model
+    EllipticalContacts* left_contacts;
+    EllipticalContacts* right_contacts;
+
     /**
         the constructor
     */

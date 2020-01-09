@@ -49,6 +49,12 @@ class EllipticalContacts{
     //the dynamic rigidity
     float Av;
 
+    //tangencial friction parameters
+    float v_t;
+    float mu_s;
+    float mu_k;
+
+
     ArticulatedRigidBody* foot;
     ArticulatedRigidBody* toes;
 
@@ -60,11 +66,14 @@ class EllipticalContacts{
     std::vector<Vector3d> forces_T;
 
 public:
-    EllipticalContacts( ArticulatedRigidBody* foot_i);
+    EllipticalContacts( ArticulatedRigidBody* foot_i, bool is_left_foot=true);
 
     void draw();
     void computeForces();
 
+    void scaleSecondMomentMatrix(Matrix& M,float a,float b,float c);
+
+    Vector3d getSumForces();
 };
 
 

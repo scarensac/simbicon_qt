@@ -159,6 +159,8 @@ void SimBiConFramework::preprocess_simulation_step(double dt)
 
 
 
+
+
     _new_character_step=false;
 
     ODEWorld* world = dynamic_cast<ODEWorld*>(pw);

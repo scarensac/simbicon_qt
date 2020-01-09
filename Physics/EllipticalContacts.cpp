@@ -4,6 +4,7 @@
 #include "Physics/joints/Joint.h"
 #include "MathLib/Matrix.h"
 #include <iostream>
+#include <cmath>
 
 //*
 Ellipsoid::Ellipsoid(float x, float y, float z, float rx, float ry, float rz, float rotx, float roty, float rotz)
@@ -52,7 +53,7 @@ Vector3d Ellipsoid::getLocalCoordinates(const Vector3d& globalVector){
 }
 
 
-EllipticalContacts::EllipticalContacts(ArticulatedRigidBody *foot_i)
+EllipticalContacts::EllipticalContacts(ArticulatedRigidBody *foot_i, bool is_left_foot)
 {
     if (foot_i==NULL){
         throw("nope too much fail");
@@ -60,6 +61,9 @@ EllipticalContacts::EllipticalContacts(ArticulatedRigidBody *foot_i)
     Kv=1.5E7;
     Av=-0.5;
 
+    v_t=0.01;
+    mu_k=1;
+    mu_s=mu_k;
 
     foot=foot_i;
     toes=foot->child_joints()[0]->child();
@@ -68,13 +72,13 @@ EllipticalContacts::EllipticalContacts(ArticulatedRigidBody *foot_i)
     Ellipsoid elli;
     //elli= Ellipsoid(0,1.5,0,1,2,1,0,0,PI/4);
     //elli= Ellipsoid(0,-0.025,-0.075,0.125,0.125,0.125,0,0,PI/4);
-    elli= Ellipsoid(0,-0.025,-0.075,0.030,0.015,0.020,0,0,PI/4);
+    elli= Ellipsoid(0,-0.025,-0.075,0.030,0.015,0.020,0,0,0);
     ellipsoids.push_back(elli);
     bodies.push_back(foot);
     elli= Ellipsoid(0,-0.025,0.045,0.030,0.015,0.020,0,0,0);
     ellipsoids.push_back(elli);
     bodies.push_back(foot);
-    elli= Ellipsoid(-0.01,-0.005,0.020,0.010,0.015,0.015,0,0,0);
+    elli= Ellipsoid(0.01*((is_left_foot)?-1:1),-0.005,0.020,0.010,0.015,0.015,0,0,0);
     ellipsoids.push_back(elli);
     bodies.push_back(toes);
 
@@ -265,13 +269,91 @@ void EllipticalContacts::computeForces()
 
 
         //and now we can compute the force (normal force)
-        float F_n_real=Kv*V_s*(1+Av*arb->getAbsoluteVelocityForLocalPoint(elli.p+C_e).y);
+        Vector3d v_c=arb->getAbsoluteVelocityForLocalPoint(elli.getWorldCoordinates(PressureCenter[i]));
+        float F_n_real=Kv*V_s*(1+Av*v_c.y);
         forces_N[i]=Vector3d(0,F_n_real,0);
 
         //*
-        std::cout<<std::iostream::scientific<<"force elli "<<i<<"   : "<<V_e<<"  at position "<<
+        std::cout<<std::iostream::scientific<<"force elli "<<i<<"   : "<<F_n_real<<"   volume: "<<V_e<<"  at position "<<
                    C_e.x<<"  "<<C_e.y<<"  "<<C_e.z<<"  "<<std::endl;
                    //*/
+
+        //now we must compute the frictions force
+        //starting with the tangencial friction
+        Vector3d v_ct=v_c;
+        v_ct.y=0;
+        float v_ct_ratio=v_ct.length()/v_t;
+        float F_t_real=mu_k*tanh(4*v_ct_ratio);
+        F_t_real+=(mu_s-mu_k)*(v_ct_ratio)/(v_ct_ratio*v_ct_ratio/4+3/4);
+        forces_T[i]=v_ct.unit()*F_t_real;
+
+        continue;
+
+        //for rolling and spinning friction we need the second moment of area
+        //first we define it for the sphere
+        Matrix J_s(3,3);
+        J_s.loadIdentity();
+        float J_s_n=(d*d*d/30.0)*PI*(3*d*d-15*d+20);
+        //note J_s_t = J_s_n/2
+        J_s.set(0,0,J_s_n/2);
+        J_s.set(1,1,J_s_n);
+        J_s.set(2,2,J_s_n/2);
+        //now to convert that to the ellpsoid I need two thing
+        //first the rotation matrix from the ground to the local sphere in the sphere referencial.
+        //I cna build it the same way we built n_s
+        Vector3d t_w_x(1,0,0);
+        Vector3d t_e_x=q.to_local_coordinate(t_w_x);
+        Vector3d t_s_x=S*t_e_x;
+        t_s_x.toUnit();
+
+        Vector3d t_w_z(0,0,1);
+        Vector3d t_e_z=q.to_local_coordinate(t_w_z);
+        Vector3d t_s_z=S*t_e_z;
+        t_s_z.toUnit();
+
+        ///TODO check that this is actually an orthogonal referencial
+        Matrix R_ps(3,3);
+        R_ps.set(0,0,t_s_x.x);
+        R_ps.set(0,1,t_s_x.x);
+        R_ps.set(0,2,t_s_x.z);
+        R_ps.set(1,0,n_s.x);
+        R_ps.set(1,1,n_s.x);
+        R_ps.set(1,2,n_s.z);
+        R_ps.set(2,0,t_s_z.x);
+        R_ps.set(2,1,t_s_z.x);
+        R_ps.set(2,2,t_s_z.z);
+
+
     }
 
+}
+
+void EllipticalContacts::scaleSecondMomentMatrix(Matrix &M, float a, float b, float c)
+{
+    float J_xx=a*b*c/2*(b*b*(M.get(0,0)+M.get(2,2)-M.get(1,1))+c*c*(M.get(0,0)+M.get(1,1)-M.get(2,2)));
+    float J_yy=a*b*c/2*(a*a*(M.get(1,1)+M.get(2,2)-M.get(0,0))+c*c*(M.get(1,1)+M.get(0,0)-M.get(2,2)));
+    float J_zz=a*b*c/2*(a*a*(M.get(2,2)+M.get(1,1)-M.get(0,0))+b*b*(M.get(2,2)+M.get(0,0)-M.get(1,1)));
+    float J_xy=a*a*b*b*c*M.get(0,1);
+    float J_xz=a*a*c*c*b*M.get(0,2);
+    float J_yz=b*b*c*c*a*M.get(1,2);
+
+    M.set(0,0,J_xx);
+    M.set(0,1,J_xy);
+    M.set(0,2,J_xz);
+    M.set(1,0,J_xy);
+    M.set(1,1,J_yy);
+    M.set(1,2,J_yz);
+    M.set(2,0,J_xz);
+    M.set(2,1,J_yz);
+    M.set(2,2,J_zz);
+
+}
+
+Vector3d EllipticalContacts::getSumForces()
+{
+    Vector3d sum_forces=Vector3d(0,0,0);
+    for(int i=0;i<ellipsoids.size();++i){
+        sum_forces+=forces_N[i]+forces_T[i];
+    }
+    return sum_forces;
 }

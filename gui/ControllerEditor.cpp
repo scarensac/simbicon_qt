@@ -442,13 +442,8 @@ void ControllerEditor::draw(bool shadowMode){
         rbc->drawRBs(flags);
 
         {
-            static EllipticalContacts elli_contacts(rbc->getARBByName("lFoot"));
-
-            elli_contacts.computeForces();
-
-            elli_contacts.draw();
-
-
+            conF->getCharacter()->left_contacts->draw();
+            conF->getCharacter()->right_contacts->draw();
         }
     }
     //*

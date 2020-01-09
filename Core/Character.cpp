@@ -26,8 +26,9 @@
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>
-
 #include <Globals.h>
+#include "Physics/EllipticalContacts.h"
+
 /**
     the constructor
 */
@@ -60,6 +61,13 @@ Character::Character(ArticulatedFigure* ch){
             }
         }
     }
+
+    //initialize the elliptical contact
+    left_contacts=new EllipticalContacts(getJointByName("lAnkle")->child(),true);
+    right_contacts=new EllipticalContacts(getJointByName("rAnkle")->child(),false);
+
+    left_contacts->computeForces();
+    right_contacts->computeForces();
 
 }
 
@@ -166,6 +174,9 @@ bool Character::is_foot(RigidBody *body)
 
 void Character::organize_foot_contact_forces(DynamicArray<ContactPoint> *cfs){
     //*
+    left_contacts->computeForces();
+    right_contacts->computeForces();
+
 
     ArticulatedRigidBody* swing_body = _swing_foot;
     ArticulatedRigidBody* stance_body = _stance_foot;
@@ -247,6 +258,41 @@ void Character::organize_foot_contact_forces(DynamicArray<ContactPoint> *cfs){
         }
     }
     //*/
+    static bool first_time=true;
+    if (first_time){
+        std::remove("contact_forces.txt");
+        first_time=false;
+    }
+
+    Vector3d sum_forces_left=Vector3d(0,0,0);
+    Vector3d sum_forces_right=Vector3d(0,0,0);
+
+    for (int i=0;i<4;++i){
+        sum_forces_left+=_force_stance_foot[i];
+        sum_forces_right+=_force_swing_foot[i];
+    }
+    sum_forces_left+=_force_stance_toes;
+    sum_forces_right+=_force_swing_toes;
+
+    if (!is_left_stance()){
+        Vector3d temp=sum_forces_left;
+        sum_forces_left=sum_forces_right;
+        sum_forces_right=temp;
+    }
+
+    std::ostringstream oss;
+    oss<<sum_forces_left.x<<"  "<<sum_forces_left.y<<"  "<<sum_forces_left.z<<"  "<<
+         sum_forces_right.x<<"  "<<sum_forces_right.y<<"  "<<sum_forces_right.z<<"  "<<
+         left_contacts->getSumForces().x<<"  "<<left_contacts->getSumForces().y<<"  "<<left_contacts->getSumForces().z<<"  "<<
+         right_contacts->getSumForces().x<<"  "<<right_contacts->getSumForces().y<<"  "<<right_contacts->getSumForces().z<<"  "<<
+         std::endl;
+    std::ofstream myfile ("contact_forces.txt", std::iostream::app);
+    if (myfile.is_open())
+    {
+        myfile<<oss.str();
+        myfile.close();
+    }
+    else std::cout << "Unable to open file";
 
 }
 
