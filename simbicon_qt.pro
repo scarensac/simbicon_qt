@@ -9,6 +9,8 @@ CONFIG += no_batch
 #CONFIG += FLUID_COMPIL
 CONFIG += SHARK_UTILISATION
 CONFIG += BOOST_UTILISATION
+#CONFIG += MT
+CONFIG += MD
 
 SHARK_UTILISATION{
     CONFIG += BOOST_UTILISATION
@@ -137,15 +139,20 @@ FLUID_COMPIL {
 INCLUDEPATH += .
 INCLUDEPATH += include
 
-LIBS += -L.\external_libs\GL
-Debug:LIBS += -lfreeglut_staticd
-Debug:LIBS += -lfreeglutd
+#glew
+Debug:LIBS += -L.\external_libs\GL\glew\msvc2015_MD\lib\Debug\x64
+Release:LIBS += -L.\external_libs\GL\glew\msvc2015_MD\lib\Release\x64
 Debug:LIBS += -lglew32d
 Debug:LIBS += -lglew32sd
-Release:LIBS += -lfreeglut_static
-Release:LIBS += -lfreeglut
 Release:LIBS += -lglew32
 Release:LIBS += -lglew32s
+
+Debug:LIBS += -L.\external_libs\GL\freeglut\msvc2015_MD\lib\Debug
+Release:LIBS += -L.\external_libs\GL\freeglut\msvc2015_MD\lib\Release
+Debug:LIBS += -lfreeglut_staticd
+Debug:LIBS += -lfreeglutd
+Release:LIBS += -lfreeglut_static
+Release:LIBS += -lfreeglut
 
 # Define output directories
 Release:DESTDIR = release
@@ -176,12 +183,22 @@ BOOST_UTILISATION {
 
 
     #C:\boost\boost_1_64_0
+MD{
+    Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_serialization-vc140-mt-1_64.lib
+    Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_filesystem-vc140-mt-1_64.lib
+    Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_system-vc140-mt-1_64.lib
+    Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_serialization-vc140-mt-gd-1_64.lib
+    Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_filesystem-vc140-mt-gd-1_64.lib
+    Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_system-vc140-mt-gd-1_64.lib
+}
+MT{
     Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_serialization-vc140-mt-s-1_64.lib
     Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_filesystem-vc140-mt-s-1_64.lib
     Release:LIBS += $$BOOST_DIR\lib64-msvc-14.0\libboost_system-vc140-mt-s-1_64.lib
     Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_serialization-vc140-mt-sgd-1_64.lib
     Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_filesystem-vc140-mt-sgd-1_64.lib
     Debug:LIBS +=  $$BOOST_DIR\lib64-msvc-14.0\libboost_system-vc140-mt-sgd-1_64.lib
+}
 }
 
 SHARK_UTILISATION{
