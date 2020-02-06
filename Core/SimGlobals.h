@@ -30,6 +30,8 @@
 #define LEFT_STANCE 0
 #define RIGHT_STANCE 1
 
+//#define USE_ELLIPTICAL_CONTACTS
+//#define COMPUTE_ELLIPTICAL_CONTACTS
 /**
         This class is used as a container for all the constants that are pertinent for the physical simulations, the controllers, etc.
 */

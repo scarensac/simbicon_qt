@@ -58,11 +58,11 @@ EllipticalContacts::EllipticalContacts(ArticulatedRigidBody *foot_i, bool is_lef
     if (foot_i==NULL){
         throw("nope too much fail");
     }
-    Kv=1.5E7;
-    Av=-0.5;
+    Kv=3.5E2;
+    Av=-7;
 
     v_t=0.01;
-    mu_k=1;
+    mu_k=300;
     mu_s=mu_k;
 
     foot=foot_i;
@@ -72,13 +72,13 @@ EllipticalContacts::EllipticalContacts(ArticulatedRigidBody *foot_i, bool is_lef
     Ellipsoid elli;
     //elli= Ellipsoid(0,1.5,0,1,2,1,0,0,PI/4);
     //elli= Ellipsoid(0,-0.025,-0.075,0.125,0.125,0.125,0,0,PI/4);
-    elli= Ellipsoid(0,-0.025,-0.075,0.030,0.015,0.020,0,0,0);
+    elli= Ellipsoid(0,-0.027,-0.078,0.030,0.025,0.020,0,0,0);
     ellipsoids.push_back(elli);
     bodies.push_back(foot);
-    elli= Ellipsoid(0,-0.025,0.045,0.030,0.015,0.020,0,0,0);
+    elli= Ellipsoid(0,-0.021,0.048,0.030,0.015,0.020,0,0,0);
     ellipsoids.push_back(elli);
     bodies.push_back(foot);
-    elli= Ellipsoid(0.01*((is_left_foot)?-1:1),-0.005,0.020,0.010,0.015,0.015,0,0,0);
+    elli= Ellipsoid(0.01*((is_left_foot)?-1:1),-0.0025,0.023,0.010,0.015,0.023,0,0,0);
     ellipsoids.push_back(elli);
     bodies.push_back(toes);
 
@@ -270,7 +270,9 @@ void EllipticalContacts::computeForces()
 
         //and now we can compute the force (normal force)
         Vector3d v_c=arb->getAbsoluteVelocityForLocalPoint(elli.getWorldCoordinates(PressureCenter[i]));
-        float F_n_real=Kv*V_s*(1+Av*v_c.y);
+        float F_n_position_real=Kv*V_s;
+        float F_n_vitesse_real=Kv*V_s*Av*v_c.y;
+        float F_n_real=fmaxf(F_n_position_real+F_n_vitesse_real,0);
         forces_N[i]=Vector3d(0,F_n_real,0);
 
         //*
@@ -285,7 +287,8 @@ void EllipticalContacts::computeForces()
         float v_ct_ratio=v_ct.length()/v_t;
         float F_t_real=mu_k*tanh(4*v_ct_ratio);
         F_t_real+=(mu_s-mu_k)*(v_ct_ratio)/(v_ct_ratio*v_ct_ratio/4+3/4);
-        forces_T[i]=v_ct.unit()*F_t_real;
+        float F_t_max_real=F_n_position_real+fmaxf(F_n_vitesse_real,0);
+        forces_T[i]=v_ct.unit()*F_t_max_real*-1;
 
         continue;
 
@@ -349,11 +352,39 @@ void EllipticalContacts::scaleSecondMomentMatrix(Matrix &M, float a, float b, fl
 
 }
 
-Vector3d EllipticalContacts::getSumForces()
+Vector3d EllipticalContacts::getSumForces(bool consider_foot, bool consider_toes)
 {
     Vector3d sum_forces=Vector3d(0,0,0);
     for(int i=0;i<ellipsoids.size();++i){
-        sum_forces+=forces_N[i]+forces_T[i];
+        if((consider_foot&&(bodies[i]==foot))||(consider_toes&&(bodies[i]==toes))){
+            sum_forces+=forces_N[i]+forces_T[i];
+        }
     }
     return sum_forces;
 }
+
+Vector3d EllipticalContacts::getHeelForce()
+{
+    return forces_N[0]+forces_T[0];
+}
+
+Vector3d EllipticalContacts::getFrontForce()
+{
+    return forces_N[1]+forces_T[1];
+}
+
+Vector3d EllipticalContacts::getForceWorld(int ellipsoidId)
+{
+    return forces_N[ellipsoidId]+forces_T[ellipsoidId];
+}
+
+Point3d EllipticalContacts::getPressureCenterWorld(int ellipsoidId)
+{
+    return bodies[ellipsoidId]->getWorldCoordinates(ellipsoids[ellipsoidId].getWorldCoordinates(PressureCenter[ellipsoidId]));
+}
+
+Point3d EllipticalContacts::getPressureCenterLocal(int ellipsoidId)
+{
+    return ellipsoids[ellipsoidId].getWorldCoordinates(PressureCenter[ellipsoidId]);
+}
+

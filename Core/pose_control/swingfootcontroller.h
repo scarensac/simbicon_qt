@@ -222,6 +222,7 @@ private:
     //SwingFootController::compute_ipm_alteration
     bool evolve_sagittal;
     int steps_left_sag;
+    Vector3d old_avg_buff;
 
 };
 

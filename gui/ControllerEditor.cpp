@@ -39,9 +39,14 @@
  */
 ControllerEditor::ControllerEditor(void):InteractiveWorld(){
     end_thread=false;
-    semaphore_start= new QSemaphore(0);
-    semaphore_end= new QSemaphore(0);
-    thread= new std::thread(fluid_exe_fct,this);
+    thread=NULL;
+    semaphore_start=NULL;
+    semaphore_end=NULL;
+    if (Globals::simulateFluid){
+        semaphore_start= new QSemaphore(0);
+        semaphore_end= new QSemaphore(0);
+        thread= new std::thread(fluid_exe_fct,this);
+    }
 
 
 
@@ -112,13 +117,15 @@ ControllerEditor::ControllerEditor(void):InteractiveWorld(){
  */
 ControllerEditor::~ControllerEditor(void){
     //first I close the fluid threading if I'm using it
-    end_thread=true;
-    semaphore_start->release();
-    thread->join();
+    if(thread!=NULL){
+        end_thread=true;
+        semaphore_start->release();
+        thread->join();
 
-    delete thread;
-    delete semaphore_start;
-    delete semaphore_end;
+        delete thread;
+        delete semaphore_start;
+        delete semaphore_end;
+    }
 
     delete conF;
     worldState.clear();
@@ -441,10 +448,12 @@ void ControllerEditor::draw(bool shadowMode){
     if (rbc){
         rbc->drawRBs(flags);
 
+#ifdef COMPUTE_ELLIPTICAL_CONTACTS
         {
             conF->getCharacter()->left_contacts->draw();
             conF->getCharacter()->right_contacts->draw();
         }
+#endif
     }
     //*
     AbstractRBEngine* rb_fw= SimGlobals::stanceFootWorld;
@@ -648,7 +657,6 @@ void ControllerEditor::processTask(){
     //}
     //*
 
-    static double cumuled_phi=0;
     double simulationTime = 0;
     double maxRunningTime = 0.98/Globals::desiredFrameRate;
 

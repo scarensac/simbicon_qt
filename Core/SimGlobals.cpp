@@ -115,7 +115,7 @@ void SimGlobals::reset_sim_globals()
     SimGlobals::force_ipm= false;
 
     SimGlobals::force_alpha = 0;
-    SimGlobals::water_level = 0.25;
+    SimGlobals::water_level = 0.0;
     SimGlobals::liquid_density = 1000;
     SimGlobals::liquid_viscosity = 1;
     SimGlobals::left_stance_factor = 0;

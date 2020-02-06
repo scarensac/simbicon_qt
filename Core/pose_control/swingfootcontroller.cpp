@@ -16,6 +16,7 @@ SwingFootController::SwingFootController(Character *c)
     swing_foot_traj=NULL;
     evolve_sagittal = false;
     steps_left_sag = 0;
+    old_avg_buff=Vector3d(0,0,0);
 
     character=c;
 
@@ -52,6 +53,11 @@ void SwingFootController::restart()
     ipm_alt_sagittal = 0;
     ipm_alt_coronal_left = 0;
     ipm_alt_coronal_right = 0;
+
+    evolve_sagittal = false;
+    steps_left_sag = 0;
+    old_avg_buff=Vector3d(0,0,0);
+
 
     //init_new_character_step(false,0,NULL);
 }
@@ -708,10 +714,6 @@ void SwingFootController::compute_inversed_kinematics(int parentJIndex, int chil
 
 void SwingFootController::compute_ipm_alteration(VelocityController* vel_control)
 {
-    static int count=0;
-    count++;
-    if (count<0) return;
-
 
     if (vel_control==NULL){
         return;
@@ -730,7 +732,6 @@ void SwingFootController::compute_ipm_alteration(VelocityController* vel_control
         write_to_report_file(oss.str(),false);
     }//*/
 
-    static Vector3d old_avg_buff=Vector3d(0,0,0);
     Vector3d old_avg_speed=old_avg_buff;
     old_avg_buff=Globals::avg_speed;
     //we don't try to adapt the speed control if we are rotating (even if the system consider itself stable)

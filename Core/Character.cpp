@@ -62,12 +62,20 @@ Character::Character(ArticulatedFigure* ch){
         }
     }
 
+
+    use_elliptical_contacts=false;
+#ifdef USE_ELLIPTICAL_CONTACTS
+    use_elliptical_contacts=true;
+#endif
+
     //initialize the elliptical contact
+#ifdef COMPUTE_ELLIPTICAL_CONTACTS
     left_contacts=new EllipticalContacts(getJointByName("lAnkle")->child(),true);
     right_contacts=new EllipticalContacts(getJointByName("rAnkle")->child(),false);
 
     left_contacts->computeForces();
     right_contacts->computeForces();
+#endif
 
 }
 
@@ -80,13 +88,24 @@ Character::~Character(void){
 
 bool Character::is_swing_foot_in_contact()
 {
-    for (int i=0; i<4;++i){
-        if (_force_swing_foot[i].length()>0.001){
+    if (use_elliptical_contacts){
+        EllipticalContacts* contacts=left_contacts;
+        if (is_left_stance()){
+            contacts=right_contacts;
+        }
+
+        if(contacts->getSumForces().y>0.001){
             return true;
         }
-    }
-    if (_force_swing_toes.length()>0.001){
-        return true;
+    }else{
+        for (int i=0; i<4;++i){
+            if (_force_swing_foot[i].length()>0.001){
+                return true;
+            }
+        }
+        if (_force_swing_toes.length()>0.001){
+            return true;
+        }
     }
 
     return false;
@@ -174,9 +193,10 @@ bool Character::is_foot(RigidBody *body)
 
 void Character::organize_foot_contact_forces(DynamicArray<ContactPoint> *cfs){
     //*
+#ifdef COMPUTE_ELLIPTICAL_CONTACTS
     left_contacts->computeForces();
     right_contacts->computeForces();
-
+#endif
 
     ArticulatedRigidBody* swing_body = _swing_foot;
     ArticulatedRigidBody* stance_body = _stance_foot;
@@ -258,41 +278,92 @@ void Character::organize_foot_contact_forces(DynamicArray<ContactPoint> *cfs){
         }
     }
     //*/
-    static bool first_time=true;
-    if (first_time){
-        std::remove("contact_forces.txt");
-        first_time=false;
-    }
 
-    Vector3d sum_forces_left=Vector3d(0,0,0);
-    Vector3d sum_forces_right=Vector3d(0,0,0);
+    if (false){
+        static bool first_time=true;
+        if (first_time){
+            std::remove("contact_forces.txt");
+            first_time=false;
+        }
 
-    for (int i=0;i<4;++i){
-        sum_forces_left+=_force_stance_foot[i];
-        sum_forces_right+=_force_swing_foot[i];
-    }
-    sum_forces_left+=_force_stance_toes;
-    sum_forces_right+=_force_swing_toes;
+        //just check the sum of force in both models
+        Vector3d sum_forces_left=Vector3d(0,0,0);
+        Vector3d sum_forces_right=Vector3d(0,0,0);
 
-    if (!is_left_stance()){
-        Vector3d temp=sum_forces_left;
-        sum_forces_left=sum_forces_right;
-        sum_forces_right=temp;
-    }
+        for (int i=0;i<4;++i){
+            sum_forces_left+=_force_stance_foot[i];
+            sum_forces_right+=_force_swing_foot[i];
+        }
+        sum_forces_left+=_force_stance_toes;
+        sum_forces_right+=_force_swing_toes;
 
-    std::ostringstream oss;
-    oss<<sum_forces_left.x<<"  "<<sum_forces_left.y<<"  "<<sum_forces_left.z<<"  "<<
-         sum_forces_right.x<<"  "<<sum_forces_right.y<<"  "<<sum_forces_right.z<<"  "<<
-         left_contacts->getSumForces().x<<"  "<<left_contacts->getSumForces().y<<"  "<<left_contacts->getSumForces().z<<"  "<<
-         right_contacts->getSumForces().x<<"  "<<right_contacts->getSumForces().y<<"  "<<right_contacts->getSumForces().z<<"  "<<
-         std::endl;
-    std::ofstream myfile ("contact_forces.txt", std::iostream::app);
-    if (myfile.is_open())
-    {
-        myfile<<oss.str();
-        myfile.close();
+        if (!is_left_stance()){
+            Vector3d temp=sum_forces_left;
+            sum_forces_left=sum_forces_right;
+            sum_forces_right=temp;
+        }
+
+        std::ostringstream oss;
+        oss<<sum_forces_left.x<<"  "<<sum_forces_left.y<<"  "<<sum_forces_left.z<<"  "<<
+             sum_forces_right.x<<"  "<<sum_forces_right.y<<"  "<<sum_forces_right.z<<"  "<<
+             left_contacts->getSumForces().x<<"  "<<left_contacts->getSumForces().y<<"  "<<left_contacts->getSumForces().z<<"  "<<
+             right_contacts->getSumForces().x<<"  "<<right_contacts->getSumForces().y<<"  "<<right_contacts->getSumForces().z<<"  "<<
+             std::endl;
+        std::ofstream myfile ("contact_forces.txt", std::iostream::app);
+        if (myfile.is_open())
+        {
+            myfile<<oss.str();
+            myfile.close();
+        }
+        else std::cout << "Unable to open file";
     }
-    else std::cout << "Unable to open file";
+    if (false){
+        //output the forces data of both models to check the back from distibution
+        Vector3d sum_forces_back=Vector3d(0,0,0);
+        Vector3d sum_forces_front=Vector3d(0,0,0);
+        Vector3d sum_forces_toes=Vector3d(0,0,0);
+
+        sum_forces_back+=_force_stance_foot[0];
+        sum_forces_back+=_force_stance_foot[1];
+        sum_forces_front+=_force_stance_foot[2];
+        sum_forces_front+=_force_stance_foot[3];
+        sum_forces_toes+=_force_stance_toes;
+
+        if (is_left_stance()){
+            sum_forces_back=Vector3d(0,0,0);
+            sum_forces_front=Vector3d(0,0,0);
+            sum_forces_toes=Vector3d(0,0,0);
+            sum_forces_back+=_force_swing_foot[0];
+            sum_forces_back+=_force_swing_foot[1];
+            sum_forces_front+=_force_swing_foot[2];
+            sum_forces_front+=_force_swing_foot[3];
+            sum_forces_toes+=_force_swing_toes;
+        }
+
+        Vector3d sum_forces_back_elli=Vector3d(0,0,0);
+        Vector3d sum_forces_front_elli=Vector3d(0,0,0);
+        Vector3d sum_forces_toes_elli=Vector3d(0,0,0);
+
+        sum_forces_back_elli+=right_contacts->getForceWorld(0);
+        sum_forces_front_elli+=right_contacts->getForceWorld(1);
+        sum_forces_toes_elli+=right_contacts->getForceWorld(2);
+
+        std::ostringstream oss;
+        oss<<sum_forces_back.x<<"  "<<sum_forces_back.y<<"  "<<sum_forces_back.z<<"  "<<
+             sum_forces_front.x<<"  "<<sum_forces_front.y<<"  "<<sum_forces_front.z<<"  "<<
+             sum_forces_toes.x<<"  "<<sum_forces_toes.y<<"  "<<sum_forces_toes.z<<"  "<<
+             sum_forces_back_elli.x<<"  "<<sum_forces_back_elli.y<<"  "<<sum_forces_back_elli.z<<"  "<<
+             sum_forces_front_elli.x<<"  "<<sum_forces_front_elli.y<<"  "<<sum_forces_front_elli.z<<"  "<<
+             sum_forces_toes_elli.x<<"  "<<sum_forces_toes_elli.y<<"  "<<sum_forces_toes_elli.z<<"  "<<
+             std::endl;
+        std::ofstream myfile ("contact_forces.txt", std::iostream::app);
+        if (myfile.is_open())
+        {
+            myfile<<oss.str();
+            myfile.close();
+        }
+        else std::cout << "Unable to open file";
+    }
 
 }
 
@@ -376,20 +447,29 @@ void Character::get_leg_contact_influence(std::vector<Joint *> &vect_joints, std
 Vector3d Character::get_force_on_foot(RigidBody* foot, bool consider_toes){
     Vector3d fNet;
 
-    if (foot == _swing_foot){
-        for (int i = 0; i < 4; ++i){
-            fNet.y += std::abs(_force_swing_foot[i].y);
+    if(use_elliptical_contacts){
+        EllipticalContacts* contacts=left_contacts;
+        if (foot==right_contacts->getFoot()){
+            contacts=right_contacts;
         }
-        if (consider_toes){
-            fNet.y += std::abs(_force_swing_toes.y);
+
+        fNet.y=contacts->getSumForces(true,consider_toes).y;
+    }else{
+        if (foot == _swing_foot){
+            for (int i = 0; i < 4; ++i){
+                fNet.y += std::abs(_force_swing_foot[i].y);
+            }
+            if (consider_toes){
+                fNet.y += std::abs(_force_swing_toes.y);
+            }
         }
-    }
-    else{
-        for (int i = 0; i < 4; ++i){
-            fNet.y += std::abs(_force_stance_foot[i].y);
-        }
-        if (consider_toes){
-            fNet.y += std::abs(_force_stance_toes.y);
+        else{
+            for (int i = 0; i < 4; ++i){
+                fNet.y += std::abs(_force_stance_foot[i].y);
+            }
+            if (consider_toes){
+                fNet.y += std::abs(_force_stance_toes.y);
+            }
         }
     }
 
@@ -413,24 +493,41 @@ void Character::get_force_info_on_foot(RigidBody *rb, ForceStruct &heelForce, Fo
     frontFeetForce.F = Vector3d(0, 0, 0);
     toeForce.F = Vector3d(0, 0, 0);
 
-    RigidBody* swing_foot = getJointByName("lAnkle")->child();
-    if (_stance==0){
-        swing_foot = getJointByName("rAnkle")->child();
-    }
+    if(use_elliptical_contacts){
+        EllipticalContacts* contacts;
+        if (rb==right_contacts->getFoot()){
+            contacts=right_contacts;
+        }else if (rb==left_contacts->getFoot()){
+            contacts=left_contacts;
+        }else{
+            throw("Character::get_force_info_on_foot can only take a foot body as input parameter");
+        }
 
-    if (rb == swing_foot){
-        heelForce.F.y += std::abs(_force_swing_foot[0].y);
-        heelForce.F.y += std::abs(_force_swing_foot[1].y);
-        frontFeetForce.F.y += std::abs(_force_swing_foot[2].y);
-        frontFeetForce.F.y += std::abs(_force_swing_foot[3].y);
-        toeForce.F.y = std::abs(_force_swing_toes.y);
-    }
-    else{
-        heelForce.F.y += std::abs(_force_stance_foot[0].y);
-        heelForce.F.y += std::abs(_force_stance_foot[1].y);
-        frontFeetForce.F.y += std::abs(_force_stance_foot[2].y);
-        frontFeetForce.F.y += std::abs(_force_stance_foot[3].y);
-        toeForce.F.y = std::abs(_force_stance_toes.y);
+        heelForce.F.y=contacts->getHeelForce().y;
+        frontFeetForce.F.y=contacts->getFrontForce().y;
+        toeForce.F.y=contacts->getSumForces(false,true).y;
+    }else{
+
+        RigidBody* swing_foot = getJointByName("lAnkle")->child();
+        if (_stance==0){
+            swing_foot = getJointByName("rAnkle")->child();
+        }
+
+        if (rb == swing_foot){
+            heelForce.F.y += std::abs(_force_swing_foot[0].y);
+            heelForce.F.y += std::abs(_force_swing_foot[1].y);
+            frontFeetForce.F.y += std::abs(_force_swing_foot[2].y);
+            frontFeetForce.F.y += std::abs(_force_swing_foot[3].y);
+            toeForce.F.y = std::abs(_force_swing_toes.y);
+        }
+        else{
+            heelForce.F.y += std::abs(_force_stance_foot[0].y);
+            heelForce.F.y += std::abs(_force_stance_foot[1].y);
+            frontFeetForce.F.y += std::abs(_force_stance_foot[2].y);
+            frontFeetForce.F.y += std::abs(_force_stance_foot[3].y);
+            toeForce.F.y = std::abs(_force_stance_toes.y);
+        }
+
     }
     //*/
 }

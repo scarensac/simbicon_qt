@@ -71,7 +71,9 @@ SimulationWindow::SimulationWindow(QWidget *parent) :
     ui->combo_box_curve_editor->addItems(qlist);
 
 
-
+    if (!Globals::simulateFluid){
+        ui->widget_simulated_fluid_control->hide();
+    }
 
 }
 

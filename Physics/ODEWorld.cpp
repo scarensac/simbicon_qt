@@ -387,28 +387,6 @@ void ODEWorld::setRBStateFromODE(int i){
     //compute the acceleration
     odeToRbs[i].rb->state.acc= (odeToRbs[i].rb->state.velocity-linear_vel_old)/SimGlobals::dt;
     odeToRbs[i].rb->state.angular_acc= (odeToRbs[i].rb->state.angular_velocity-angular_vel_old)/SimGlobals::dt;
-
-    /*
-    if (odeToRbs[i].rb->name()=="pelvis"){
-        static Quaternion old_quat;
-        Quaternion relative=body->getOrientation()*old_quat.getComplexConjugate();
-        Vector3d ang_vel=relative.v/(relative.v.length())*safeACOS(relative.s)*2/SimGlobals::dt;
-
-        static Vector3d old_value=Vector3d(0,0,0);
-        Vector3d test=ang_vel;
-        Vector3d test2=odeToRbs[i].rb->getAngularVelocity();
-        old_quat=body->getOrientation();
-        std::ostringstream oss;
-        oss<<"roottorque"<<std::setprecision(3)<<std::fixed<<std::setw(10)<<test.x<<" "<<std::setw(10)<<test.y<<" "<<std::setw(10)<<test.z
-          <<"  //  "<<std::setw(10)<<test2.x<<" "<<std::setw(10)<<test2.y<<" "<<std::setw(10)<<test2.z;
-        //    Vector3d test3=pelvis_torso_torque;
-        //    Vector3d test4=rootTorque;
-        //    oss<<std::setprecision(3)<<"  //  "<<std::fixed<<"   "<<std::setw(10)<<test3.x<<" "<<std::setw(10)<<test3.y<<" "<<std::setw(10)<<test3.z
-        //      <<"  //  "<<std::setw(10)<<test4.x<<" "<<std::setw(10)<<test4.y<<" "<<std::setw(10)<<test4.z;
-        //        oss<<"roottorque "<<rootMakeupTorque.y<<" "<<rootTorque.y<<" "<<test.z;
-        std::cout<<oss.str();
-    }
-    //*/
 }
 
 
@@ -690,7 +668,10 @@ void ODEWorld::processCollisions(dGeomID o1, dGeomID o2){
     //this mean that the ollisions is between 2 things tha are not the ground...
     //or the ball ...
     //this is used so that the sole have no collision with the foot and that the body parts don't collide with each other
-    if (rb1->name()!="ground"&&rb2->name()!="ground"&&
+    if (
+#ifndef USE_ELLIPTICAL_CONTACTS
+            rb1->name()!="ground"&&rb2->name()!="ground"&&
+#endif
             rb1->name()!="dodgeBall"&&rb2->name()!="dodgeBall"&&
             rb1->name()!="fillerObj"&&rb2->name()!="fillerObj"){
 

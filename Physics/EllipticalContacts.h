@@ -73,8 +73,19 @@ public:
 
     void scaleSecondMomentMatrix(Matrix& M,float a,float b,float c);
 
-    Vector3d getSumForces();
-};
+
+    ArticulatedRigidBody* getFoot(){return foot;}
+    ArticulatedRigidBody* getBody(int ellipsoidId){return bodies[ellipsoidId];}
+    Vector3d getSumForces(bool consider_foot=true, bool consider_toes=true);
+    Vector3d getHeelForce();
+    Vector3d getFrontForce();
+    Vector3d getForceWorld(int ellipsoidId);
+    Vector3d getForceNWorld(int ellipsoidId){return forces_N[ellipsoidId];}
+    Vector3d getForceTWorld(int ellipsoidId){return forces_T[ellipsoidId];}
+    int getNbrEllipsoid(){return static_cast<int>(ellipsoids.size());}
+    Point3d getPressureCenterWorld(int ellipsoidId);
+    Point3d getPressureCenterLocal(int ellipsoidId);
+   };
 
 
 

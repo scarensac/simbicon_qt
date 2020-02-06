@@ -31,6 +31,7 @@
 #include <sstream>
 #include "Globals.h"
 #include "SPlisHSPlasH/Interface.h"
+#include "Physics/EllipticalContacts.h"
 
 ///TODO remoe those incudes
 #include "core/velocity_control/velocitycontroller.h"
@@ -211,89 +212,189 @@ void SimBiConFramework::preprocess_simulation_step(double dt)
     }
 
     if (true){
-        static bool trigger[4]={false,false,false,false};
-        static bool trigger_central=false;
-        static bool back_trigerred=false;
-        static Vector3d delta_integral_vect[4]={Vector3d(0,0,0),Vector3d(0,0,0),Vector3d(0,0,0),Vector3d(0,0,0)};
-        static Vector3d delta_integral_central_point=Vector3d(0,0,0);
-        static Point3d stance_foot_target_position[4];
-        static Point3d central_point_target;
-        if (con->getPhase()<0.000001){
-            trigger_central=false;
-            back_trigerred=false;
-            central_point_target=Point3d(0,0,0);
-            for (int i=0;i<4;++i){
-                trigger[i]=false;
-                delta_integral_vect[i]=Vector3d(0,0,0);
-                stance_foot_target_position[i]=Vector3d(0,0,0);
-                delta_integral_central_point=Vector3d(0,0,0);
+        bool use_box_contacts=!con->get_character()->use_elliptical_contacts;
+        if(use_box_contacts){
+
+            static bool trigger[4]={false,false,false,false};
+            static bool trigger_central=false;
+            static bool back_trigerred=false;
+            static Vector3d delta_integral_vect[4]={Vector3d(0,0,0),Vector3d(0,0,0),Vector3d(0,0,0),Vector3d(0,0,0)};
+            static Vector3d delta_integral_central_point=Vector3d(0,0,0);
+            static Point3d stance_foot_target_position[4];
+            static Point3d central_point_target;
+            if (con->getPhase()<0.000001){
+                trigger_central=false;
+                back_trigerred=false;
+                central_point_target=Point3d(0,0,0);
+                for (int i=0;i<4;++i){
+                    trigger[i]=false;
+                    delta_integral_vect[i]=Vector3d(0,0,0);
+                    stance_foot_target_position[i]=Vector3d(0,0,0);
+                    delta_integral_central_point=Vector3d(0,0,0);
+                }
+                SimGlobals::foot_flat_on_ground=false;
             }
-            SimGlobals::foot_flat_on_ground=false;
-        }
 
-        RigidBody* rb=con->get_character()->stance_foot();
-        const Vector3d* force_stance_foot=con->get_character()->force_stance_foot();
-        //test with the position of each corner
+            RigidBody* rb=con->get_character()->stance_foot();
+            const Vector3d* force_stance_foot=con->get_character()->force_stance_foot();
+            //test with the position of each corner
 
-        /*
-        std::vector<ContactPoint> *cfs=pw->getContactForces();
-        int count_real_contacts_front=0;
-        int count_real_contacts_back=0;
-        for (uint i = 0; i<cfs->size(); ++i){
-            if (((*cfs)[i].rb1 == con->get_character()->stance_foot()) || ((*cfs)[i].rb2 == con->get_character()->stance_foot())){
-                if (con->get_character()->stance_foot()->getLocalCoordinates((*cfs)[i].cp).z>0){
-                    count_real_contacts_front++;
-                }else{
-                    count_real_contacts_back++;
+            /*
+            std::vector<ContactPoint> *cfs=pw->getContactForces();
+            int count_real_contacts_front=0;
+            int count_real_contacts_back=0;
+            for (uint i = 0; i<cfs->size(); ++i){
+                if (((*cfs)[i].rb1 == con->get_character()->stance_foot()) || ((*cfs)[i].rb2 == con->get_character()->stance_foot())){
+                    if (con->get_character()->stance_foot()->getLocalCoordinates((*cfs)[i].cp).z>0){
+                        count_real_contacts_front++;
+                    }else{
+                        count_real_contacts_back++;
+                    }
                 }
             }
-        }
-        if (count_real_contacts_back==0||count_real_contacts_front==0){
-            SimGlobals::foot_flat_on_ground_current=false;
-        }else{
-            SimGlobals::foot_flat_on_ground_current=true;
-        }
-        //*/
-        //*
-        BoxCDP* box=dynamic_cast<BoxCDP*>(rb->get_cdps()[0]);
-        bool all_trigger=true;
-        int count_fail=0;
-        for (int i=0;i<4;++i){
-            if ((std::abs(force_stance_foot[i].y)<10)){
-                count_fail++;
-                //                trigger[i]=true;
-                //                stance_foot_target_position[i]=rb->getWorldCoordinates(local_corner);
-                //                stance_foot_target_position[i].y=0;
-            }
-        }
-        if (count_fail>1&&!SimGlobals::foot_flat_on_ground){
-            all_trigger=false;
-//            std::cout<<count_fail<<std::endl;
-        }
-        /*
-        for (int i=0;i<4;++i){
-            Point3d local_corner=box->get_corner_position(i);
-            Point3d global_corner=rb->getWorldCoordinates(local_corner);
-            if (!trigger[i]){
-                all_trigger=false;
-                if ((std::abs(force_stance_foot[i].y)>10)){
-                    trigger[i]=true;
-                    stance_foot_target_position[i]=rb->getWorldCoordinates(local_corner);
-                    stance_foot_target_position[i].y=0;
-                }
+            if (count_real_contacts_back==0||count_real_contacts_front==0){
+                SimGlobals::foot_flat_on_ground_current=false;
             }else{
+                SimGlobals::foot_flat_on_ground_current=true;
+            }
+            //*/
+            //*
+            BoxCDP* box=dynamic_cast<BoxCDP*>(rb->get_cdps()[0]);
+            bool all_trigger=true;
+            int count_fail=0;
+            for (int i=0;i<4;++i){
+                if ((std::abs(force_stance_foot[i].y)<10)){
+                    count_fail++;
+                    //                trigger[i]=true;
+                    //                stance_foot_target_position[i]=rb->getWorldCoordinates(local_corner);
+                    //                stance_foot_target_position[i].y=0;
+                }
+            }
+            if (count_fail>1&&!SimGlobals::foot_flat_on_ground){
+                all_trigger=false;
+    //            std::cout<<count_fail<<std::endl;
+            }
 
-                float kp=00000;
+            /*
+            for (int i=0;i<4;++i){
+                Point3d local_corner=box->get_corner_position(i);
+                Point3d global_corner=rb->getWorldCoordinates(local_corner);
+                if (!trigger[i]){
+                    all_trigger=false;
+                    if ((std::abs(force_stance_foot[i].y)>10)){
+                        trigger[i]=true;
+                        stance_foot_target_position[i]=rb->getWorldCoordinates(local_corner);
+                        stance_foot_target_position[i].y=0;
+                    }
+                }else{
+
+                    float kp=00000;
+                    float ki=0;
+                    float kd=0;
+                    Vector3d position_err=stance_foot_target_position[i]-rb->getWorldCoordinates(local_corner);
+                    if (position_err.y>0){
+                        position_err.y=0;
+                    }
+
+                    Vector3d velocity_err=-rb->getAbsoluteVelocityForLocalPoint(local_corner);
+
+                    Vector3d& delta_integral=delta_integral_vect[i];
+                    delta_integral+=position_err;
+
+
+                    Vector3d force;
+                    force.x=position_err.x*kp+delta_integral.x*ki+velocity_err.x*kd;
+                    force.y=position_err.y*kp+delta_integral.y*ki+velocity_err.y*kd;
+                    force.z=position_err.z*kp+delta_integral.z*ki+velocity_err.z*kd;
+
+                    pw->applyForceTo(rb,force,local_corner);
+
+
+    //                std::ostringstream oss;
+    //                oss.str("");
+    //                oss<<i<<"  "<<stance_foot_target_position[i].x<<" "<<stance_foot_target_position[i].y<<" "<<stance_foot_target_position[i].z<<"    "
+    //                  <<delta_to_target_position.x<<" "<<delta_to_target_position.y<<" "<<delta_to_target_position.z;
+    //                std::cout<<oss.str();
+            }
+            }
+    //*/
+
+            /*
+            //this is a system that ralign the target positions ot have a correct rectangle
+            if (!back_trigerred&&trigger[0]&&trigger[1]){
+                back_trigerred=true;
+                Vector3d vect=stance_foot_target_position[1]-stance_foot_target_position[0];
+                vect.toUnit();
+                double target_length=Vector3d(box->get_corner_position(0),box->get_corner_position(1)).length();
+                vect*=target_length;
+                Point3d target=stance_foot_target_position[0]+vect;
+
+
+                stance_foot_target_position[1]=target;
+
+
+                central_point_target=(stance_foot_target_position[1]+stance_foot_target_position[0])/2;
+                trigger_central=true;
+
+                //for now the system only support the back of the foot first
+                if (SimGlobals::foot_flat_on_ground){
+                    exit(534);
+                }
+            }
+            /*
+            if ((!SimGlobals::foot_flat_on_ground) && (all_trigger)){
+                if (!Globals::evolution_mode&&!Globals::save_mode){
+                    std::cout<<"flat_on_ground_reached";
+                }
+                Vector3d vect(0,0,0);
+                Vector3d ortho_to=stance_foot_target_position[1]-stance_foot_target_position[0];
+                //we set z to one (but we will normalize the vector at some time
+                vect.z=1;
+                // x=-(z*z_2)/x_2
+                vect.x=-(vect.z*ortho_to.z)/ortho_to.x;
+                vect.toUnit();
+                double target_length=Vector3d(box->get_corner_position(0),box->get_corner_position(2)).length();
+                vect*=target_length;
+
+                Point3d target2=stance_foot_target_position[0]+vect;
+                Point3d target3=stance_foot_target_position[1]+vect;
+
+                stance_foot_target_position[2]=target2;
+                stance_foot_target_position[3]=target3;
+
+
+                central_point_target=(stance_foot_target_position[0]+stance_foot_target_position[1]+
+                        stance_foot_target_position[2]+stance_foot_target_position[3])/4;
+                trigger_central=true;
+            }
+
+            //*/
+            //use a pd control on a central point
+            //as long as only the back is on the ground the central point is the center of the back
+            //when all the foot touch the center of the foo become the central point
+    /*
+            if (trigger_central){
+                float kp=0;
                 float ki=0;
                 float kd=0;
-                Vector3d position_err=stance_foot_target_position[i]-rb->getWorldCoordinates(local_corner);
+                Point3d current_location;
+                if (all_trigger){
+                    current_location=(box->get_corner_position(0)+box->get_corner_position(1)+
+                                      box->get_corner_position(2)+box->get_corner_position(3))/4;
+                }else{
+                    current_location=(box->get_corner_position(0)+box->get_corner_position(1))/2;
+                }
+
+
+
+                Vector3d position_err=central_point_target-rb->getWorldCoordinates(current_location);
                 if (position_err.y>0){
                     position_err.y=0;
                 }
 
-                Vector3d velocity_err=-rb->getAbsoluteVelocityForLocalPoint(local_corner);
+                Vector3d velocity_err=-rb->getAbsoluteVelocityForLocalPoint(current_location);
 
-                Vector3d& delta_integral=delta_integral_vect[i];
+                Vector3d& delta_integral=delta_integral_central_point;
                 delta_integral+=position_err;
 
 
@@ -302,107 +403,62 @@ void SimBiConFramework::preprocess_simulation_step(double dt)
                 force.y=position_err.y*kp+delta_integral.y*ki+velocity_err.y*kd;
                 force.z=position_err.z*kp+delta_integral.z*ki+velocity_err.z*kd;
 
-                pw->applyForceTo(rb,force,local_corner);
-
-
-//                std::ostringstream oss;
-//                oss.str("");
-//                oss<<i<<"  "<<stance_foot_target_position[i].x<<" "<<stance_foot_target_position[i].y<<" "<<stance_foot_target_position[i].z<<"    "
-//                  <<delta_to_target_position.x<<" "<<delta_to_target_position.y<<" "<<delta_to_target_position.z;
-//                std::cout<<oss.str();
-        }
-        }
-//*/
-
-        /*
-        //this is a system that ralign the target positions ot have a correct rectangle
-        if (!back_trigerred&&trigger[0]&&trigger[1]){
-            back_trigerred=true;
-            Vector3d vect=stance_foot_target_position[1]-stance_foot_target_position[0];
-            vect.toUnit();
-            double target_length=Vector3d(box->get_corner_position(0),box->get_corner_position(1)).length();
-            vect*=target_length;
-            Point3d target=stance_foot_target_position[0]+vect;
-
-
-            stance_foot_target_position[1]=target;
-
-
-            central_point_target=(stance_foot_target_position[1]+stance_foot_target_position[0])/2;
-            trigger_central=true;
-
-            //for now the system only support the back of the foot first
-            if (SimGlobals::foot_flat_on_ground){
-                exit(534);
+                pw->applyForceTo(rb,force,current_location);
             }
-        }
-        /*
-        if ((!SimGlobals::foot_flat_on_ground) && (all_trigger)){
-            if (!Globals::evolution_mode&&!Globals::save_mode){
-                std::cout<<"flat_on_ground_reached";
+    //*/
+
+            SimGlobals::foot_flat_on_ground=all_trigger;
+
+        }else{
+            //so here it means we have elliptical contacts
+            //first actually apply the computed forces on the foot
+            EllipticalContacts* contactsStruct=con->get_character()->left_contacts;
+            for (int i=0;i<contactsStruct->getNbrEllipsoid();++i){
+                world->applyForceTo(contactsStruct->getBody(i),contactsStruct->getForceWorld(i),contactsStruct->getPressureCenterLocal(i));
             }
-            Vector3d vect(0,0,0);
-            Vector3d ortho_to=stance_foot_target_position[1]-stance_foot_target_position[0];
-            //we set z to one (but we will normalize the vector at some time
-            vect.z=1;
-            // x=-(z*z_2)/x_2
-            vect.x=-(vect.z*ortho_to.z)/ortho_to.x;
-            vect.toUnit();
-            double target_length=Vector3d(box->get_corner_position(0),box->get_corner_position(2)).length();
-            vect*=target_length;
-
-            Point3d target2=stance_foot_target_position[0]+vect;
-            Point3d target3=stance_foot_target_position[1]+vect;
-
-            stance_foot_target_position[2]=target2;
-            stance_foot_target_position[3]=target3;
-
-
-            central_point_target=(stance_foot_target_position[0]+stance_foot_target_position[1]+
-                    stance_foot_target_position[2]+stance_foot_target_position[3])/4;
-            trigger_central=true;
-        }
-
-        //*/
-        //use a pd control on a central point
-        //as long as only the back is on the ground the central point is the center of the back
-        //when all the foot touch the center of the foo become the central point
-/*
-        if (trigger_central){
-            float kp=0;
-            float ki=0;
-            float kd=0;
-            Point3d current_location;
-            if (all_trigger){
-                current_location=(box->get_corner_position(0)+box->get_corner_position(1)+
-                                  box->get_corner_position(2)+box->get_corner_position(3))/4;
-            }else{
-                current_location=(box->get_corner_position(0)+box->get_corner_position(1))/2;
+            contactsStruct=con->get_character()->right_contacts;
+            for (int i=0;i<contactsStruct->getNbrEllipsoid();++i){
+                world->applyForceTo(contactsStruct->getBody(i),contactsStruct->getForceWorld(i),contactsStruct->getPressureCenterLocal(i));
             }
 
-
-
-            Vector3d position_err=central_point_target-rb->getWorldCoordinates(current_location);
-            if (position_err.y>0){
-                position_err.y=0;
+            //so now I need to know if the stance foot is on the ground
+            if (con->get_character()->is_left_stance()){
+                contactsStruct=con->get_character()->left_contacts;//note we are on the right side from previous computations
             }
 
-            Vector3d velocity_err=-rb->getAbsoluteVelocityForLocalPoint(current_location);
+            int count_elli=0;
+            for (int i=0;i<contactsStruct->getNbrEllipsoid();++i){
+                if (contactsStruct->getBody(i)==con->get_character()->stance_foot()){
+                    count_elli++;
+                }
+            }
 
-            Vector3d& delta_integral=delta_integral_central_point;
-            delta_integral+=position_err;
+            static bool contact_with_ground[10];//10 just because we dont realy care formemory here
+            //reset at each step start
+            if (con->getPhase()<0.000001){
+                for (int i=0;i<count_elli;++i){
+                    contact_with_ground[i]=false;
+                }
+                SimGlobals::foot_flat_on_ground=false;
+            }
 
-
-            Vector3d force;
-            force.x=position_err.x*kp+delta_integral.x*ki+velocity_err.x*kd;
-            force.y=position_err.y*kp+delta_integral.y*ki+velocity_err.y*kd;
-            force.z=position_err.z*kp+delta_integral.z*ki+velocity_err.z*kd;
-
-            pw->applyForceTo(rb,force,current_location);
+            //check if all ellipsoids are in significative contact with the ground at some point in time since the start of the step
+            if (!SimGlobals::foot_flat_on_ground){
+                bool all_trigger=true;
+                for (int i=0;i<count_elli;++i){
+                    if (!contact_with_ground[i]){
+                        if (contactsStruct->getForceWorld(i).y>30){
+                            contact_with_ground[i]=true;
+                        }else{
+                            all_trigger=false;
+                        }
+                    }
+                }
+                SimGlobals::foot_flat_on_ground=all_trigger;
+            }
         }
-//*/
 
-        SimGlobals::foot_flat_on_ground=all_trigger;
+
     }
 
 

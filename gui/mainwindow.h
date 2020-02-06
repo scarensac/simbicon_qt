@@ -31,6 +31,7 @@ protected:
 
 
 public slots:
+    void mode_changed(int);
     void start_click();
 
 protected slots:

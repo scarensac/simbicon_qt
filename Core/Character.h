@@ -51,6 +51,7 @@ public:
     //the classes for the elliptical contact model
     EllipticalContacts* left_contacts;
     EllipticalContacts* right_contacts;
+    bool use_elliptical_contacts;
 
     /**
         the constructor

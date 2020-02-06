@@ -100,7 +100,7 @@ bool Globals::zeroFluidVelocities = false;
 bool Globals::simulateOnlyFluid = false;
 bool Globals::fluidFollowCharacter = false;
 bool Globals::fluidControlLevel=false;
-bool Globals::parralelFluidAndControl=true;
+bool Globals::parralelFluidAndControl=false;
 
 
 bool Globals::manualFPSRefresh=false;

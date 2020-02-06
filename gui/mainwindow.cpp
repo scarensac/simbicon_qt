@@ -85,6 +85,9 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
 
     link_signals();
 
+    //use the normal mode by default
+    mode_changed(0);
+
     //hide the 3 boxes useless for the presentation
     /*
     ui->spin_box_iter->hide();
@@ -155,7 +158,7 @@ MainWindow::~MainWindow()
 void MainWindow::link_signals()
 {
     connect(ui->btn_start, SIGNAL(clicked(bool)), this, SLOT(start_click()));
-
+    connect(ui->combo_box_mode, SIGNAL(activated(int)), this, SLOT(mode_changed(int)));
 
 
 
@@ -165,6 +168,40 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     (void)event;
     exit(0);
+}
+
+
+void MainWindow::mode_changed(int){
+    ui->widget_model_parameters->hide();
+    ui->widget_opti->hide();
+    ui->widget_others->hide();
+    setFixedHeight(550);
+
+    switch(ui->combo_box_mode->currentIndex()){
+        case 0:{
+            setFixedHeight(175);
+            //normal execution
+            break;
+        }
+        case 1:{
+            //optimisation mode
+            ui->widget_model_parameters->show();
+            ui->widget_opti->show();
+            ui->widget_others->show();
+            break;
+        }
+        case 2:{
+            //evaluation mode
+            ui->widget_model_parameters->show();
+            ui->widget_opti->show();
+            ui->widget_others->show();
+            break;
+        }
+        default:{
+            std::cerr<<"this mode is not handled yet"<<std::endl;
+            break;
+        }
+    }
 }
 
 #include "gui/ControllerEditor.h"

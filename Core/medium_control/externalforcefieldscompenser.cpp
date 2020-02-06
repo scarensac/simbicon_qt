@@ -164,17 +164,8 @@ void ExternalForceFieldsCompenser::compute_compensation_v2(WaterImpact &resultin
     //and we can't have the ankle trying to hold the whole body because it may create huge torques which may
     //lead to worse contacts...
     //we do the check for both f the feet because in the case of a flight phase none of the foots are in contact with the ground
-    bool swing_foot_contact=false;
-    bool stance_foot_contact=false;
-    for (int i=0;i<4;++i){
-        if ((character->force_stance_foot()[i]).length()>0){
-            stance_foot_contact=true;
-        }
-
-        if ((character->force_swing_foot()[i]).length()>0){
-            swing_foot_contact=true;
-        }
-    }
+    bool swing_foot_contact=character->get_force_on_foot(true,false).y>0.0001;
+    bool stance_foot_contact=character->get_force_on_foot(false,false).y>0.0001;
 
 
     //First I need the leafs of the character
@@ -437,17 +428,8 @@ void ExternalForceFieldsCompenser::compute_compensation_v3(std::vector<ForceStru
     //and we can't have the ankle trying to hold the whole body because it may create huge torques which may
     //lead to worse contacts...
     //we do the check for both f the feet because in the case of a flight phase none of the foots are in contact with the ground
-    bool swing_foot_contact=false;
-    bool stance_foot_contact=false;
-    for (int i=0;i<4;++i){
-        if ((character->force_stance_foot()[i]).length()>0){
-            stance_foot_contact=true;
-        }
-
-        if ((character->force_swing_foot()[i]).length()>0){
-            swing_foot_contact=true;
-        }
-    }
+    bool swing_foot_contact=character->get_force_on_foot(true,false).y>0.0001;
+    bool stance_foot_contact=character->get_force_on_foot(false,false).y>0.0001;
 
 
     //First I need the leafs of the character
@@ -594,20 +576,12 @@ void ExternalForceFieldsCompenser::compute_compensation_v3(std::vector<ForceStru
 void ExternalForceFieldsCompenser::compute_compensation_v4(std::vector<ForceStruct> &force_field, std::vector<Vector3d> &result_ptr,
                                                            bool ankle_compensate_foot, bool support_foot_as_root){
     //before anything we need to know which off the leg are in a support phase
-    bool swing_foot_contact=false;
-    bool stance_foot_contact=false;
+    bool swing_foot_contact=character->get_force_on_foot(true,false).y>0.0001;
+    bool stance_foot_contact=character->get_force_on_foot(false,false).y>0.0001;
     std::vector<Joint*> vect_support_hip;
     std::vector<Joint*> vect_support_ankle;
     std::vector<float> vect_influence;
-    for (int i=0;i<4;++i){
-        if ((character->force_stance_foot()[i]).length()>0){
-            stance_foot_contact=true;
-        }
 
-        if ((character->force_swing_foot()[i]).length()>0){
-            swing_foot_contact=true;
-        }
-    }
 
     if (stance_foot_contact){
         vect_support_hip.push_back(character->stance_hip());

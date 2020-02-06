@@ -111,7 +111,7 @@ void PoseController::init_character_step(VelocityController *vel_control)
 {
     target_heading_mitigation_coefficient=1.0;
 
-    if(velDsag_old!=SimGlobals::velDSagittal&&liquid_lvl_old!=SimGlobals::water_level){
+    if((velDsag_old!=SimGlobals::velDSagittal)||(liquid_lvl_old!=SimGlobals::water_level)){
         state(_state_idx)->update_joints_trajectory();
     }
     velDsag_old=SimGlobals::velDSagittal;
@@ -1927,7 +1927,7 @@ void PoseController::set_stance(int nstance){
     //Now I need to handle the case of the asymetric gains for the legs
     //just a note if the gain are symetric that system does nothing
     //so I don't have to consider the case where that system is not used
-    if (check_fsm_state()){
+    if (false&&check_fsm_state()){
         //we will say that the right side contains the values for the stance
         std::vector<std::string> target={"rHip","rKnee","rAnkle","rToeJoint","lHip","lKnee","lAnkle","lToeJoint"};
         std::vector<std::string> input={"rHip","rKnee","rAnkle","rToeJoint","lHip","lKnee","lAnkle","lToeJoint"};
@@ -1943,8 +1943,8 @@ void PoseController::set_stance(int nstance){
     }
 
     ///PROTOCOL: activate those lines if you want color on stance foot
-    //    character->stance_foot()->set_mesh_color(0, 0, 1, 1);
-    //    character->swing_foot()->set_mesh_color(1, 1, 1, 1);
+    character->stance_foot()->set_mesh_color(0, 0, 1, 1);
+    character->swing_foot()->set_mesh_color(1, 1, 1, 1);
 }
 
 bool PoseController::check_fsm_state()

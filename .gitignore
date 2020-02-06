@@ -17,4 +17,4 @@ Makefile
 Makefile.*
 
 # keep all external libs folders
-!external_libs/
+!external_libs/boost_1_64_0
