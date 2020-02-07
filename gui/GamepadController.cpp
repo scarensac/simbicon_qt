@@ -13,26 +13,26 @@ bool GamepadController::updateState() {
 }
 
 bool GamepadController::isKeyPressed(BUTTON button) {
-	if (updateState()) {
+    if (updateState()) {
 		switch (button) {
-		case GamepadController::DPAD_UP: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP;
-		case GamepadController::DPAD_DOWN: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
-		case GamepadController::DPAD_LEFT: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT;
-		case GamepadController::DPAD_RIGHT: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT;
-		case GamepadController::START: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_START;
-		case GamepadController::BACK: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
-		case GamepadController::LEFT_THUMB: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB;
-		case GamepadController::RIGHT_THUMB: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB;
-		case GamepadController::LEFT_SHOULDER: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER;
-		case GamepadController::RIGHT_SHOULDER: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER;
-		case GamepadController::A: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
-		case GamepadController::B: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_B;
-		case GamepadController::X: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_X;
-		case GamepadController::Y: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_Y;
-		default: return false;
+        case GamepadController::DPAD_UP: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP;
+        case GamepadController::DPAD_DOWN: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
+        case GamepadController::DPAD_LEFT: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT;
+        case GamepadController::DPAD_RIGHT: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT;
+        case GamepadController::START: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_START;
+        case GamepadController::BACK: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+        case GamepadController::LEFT_THUMB: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB;
+        case GamepadController::RIGHT_THUMB: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB;
+        case GamepadController::LEFT_SHOULDER: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER;
+        case GamepadController::RIGHT_SHOULDER: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER;
+        case GamepadController::A: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
+        case GamepadController::B: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_B;
+        case GamepadController::X: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_X;
+        case GamepadController::Y: return _controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_Y;
+        default: return false;
 		}
 	}
-	return false;
+    return false;
 }
 
 float GamepadController::triggerValue(TRIGGER trigger) {

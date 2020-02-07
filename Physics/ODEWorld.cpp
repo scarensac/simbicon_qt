@@ -1027,7 +1027,12 @@ void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact, Ch
     std::vector<double> reduction_factors = {1,1,1,1,1,1}; //for particles inside the mesh
 
     //resize the data structure
-    resulting_impact.init(getRBCount());
+    std::vector<int> ids;
+    for (int i=0;i<getRBCount();++i){
+        ids.push_back(objects[i]->idx());
+    }
+    resulting_impact.init(getRBCount(),ids);
+
 
     std::vector<Vector3d> reduction_factors_internal;
     for (int i=0;i<vect_objects_fluid_interaction.size();++i){
@@ -1056,7 +1061,7 @@ void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact, Ch
         impact.pt=body->getCMPosition();
         impact.F=forces[i]*reduction_factors[i];
         impact.M=moments[i]*reduction_factors[i];
-        resulting_impact.impact_drag[body->idx()]=impact;
+        resulting_impact.setDrag(body->idx(),impact);
 
         /*
         std::cout<<body->name()<< "   reduc factor: "<<reduction_factors[i]<<
@@ -1103,7 +1108,7 @@ void ODEWorld::readDataFromParticleFluidEngine(WaterImpact &resulting_impact, Ch
             impact.pt=pts_appli_b[i];
             impact.F=forces_b[i]*reduction_factors[i];
             impact.M=Vector3d(0,0,0);
-            resulting_impact.impact_boyancy[body->idx()]=impact;
+            resulting_impact.setBoyancy(body->idx(),impact);
         }
     }
 
@@ -1211,7 +1216,11 @@ void ODEWorld::applyTorqueTo(RigidBody* b, const Vector3d& t){
 void ODEWorld::compute_water_impact(Character* character, float water_level, WaterImpact &resulting_impact){
 
     //resize the data structure
-    resulting_impact.init(getRBCount());
+    std::vector<int> ids;
+    for (int i=0;i<getRBCount();++i){
+        ids.push_back(objects[i]->idx());
+    }
+    resulting_impact.init(getRBCount(),ids);
 
     //first I check if the water have any density (if not it's useless to try anything)
     if (IS_ZERO(SimGlobals::liquid_density)||IS_ZERO(water_level)){
@@ -1298,10 +1307,8 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
             //*/
 
 
-
-            resulting_impact.impact_drag[body->idx()]=impact_drag;
-            resulting_impact.impact_boyancy[body->idx()]=impact_boyancy;
-
+            resulting_impact.setDrag(body->idx(),impact_drag);
+            resulting_impact.setBoyancy(body->idx(),impact_boyancy);
 
 
         }
@@ -1317,7 +1324,12 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
 
 void ODEWorld::estimate_water_impact_on_particle_objects(float water_level,   WaterImpact& resulting_impact){
     //resize the data structure
-    resulting_impact.init(getRBCount());
+    std::vector<int> ids;
+    for (int i=0;i<getRBCount();++i){
+        ids.push_back(objects[i]->idx());
+    }
+    resulting_impact.init(getRBCount(),ids);
+
 
     //first I check if the water have any density (if not it's useless to try anything)
     if (IS_ZERO(SimGlobals::liquid_density)||IS_ZERO(water_level)){
@@ -1376,8 +1388,8 @@ void ODEWorld::estimate_water_impact_on_particle_objects(float water_level,   Wa
 
 
 
-            resulting_impact.impact_drag[body->idx()]=impact_drag;
-            resulting_impact.impact_boyancy[body->idx()]=impact_boyancy;
+            resulting_impact.setDrag(body->idx(),impact_drag);
+            resulting_impact.setBoyancy(body->idx(),impact_boyancy);
 
 
 

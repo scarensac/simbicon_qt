@@ -4,6 +4,7 @@
 #include <vector>
 #include "MathLib/Vector3d.h"
 #include <sstream>
+#include <map>
 
 /**
         the application point is defined in local coordinates but the F vector is defined in wolrd coordinates
@@ -114,11 +115,13 @@ struct ForceStruct
 
 struct WaterImpact
 {
+protected:
     std::vector<ForceStruct> impact_boyancy;
     std::vector<ForceStruct> impact_drag;
+    std::map<int,int> bodies_id_map;
+    std::vector<int> bodies_id;
 
-
-
+public:
     WaterImpact(){
     }
 
@@ -127,7 +130,45 @@ struct WaterImpact
         impact_drag.clear();
     }
 
-    void init(int num_bodies){
+    int getNumBodies(){return static_cast<int>(bodies_id.size());}
+
+    ForceStruct getDrag(int body_id){
+        return impact_drag[bodies_id_map[body_id]];
+    }
+
+    ForceStruct getDragInOrder(int i){
+        return impact_drag[i];
+    }
+
+    void setDrag(int body_id, ForceStruct& drag){
+        impact_drag[bodies_id_map[body_id]]=drag;
+    }
+
+
+    ForceStruct getBoyancy(int body_id){
+        return impact_boyancy[bodies_id_map[body_id]];
+    }
+
+    ForceStruct getBoyancyInOrder(int i){
+        return impact_boyancy[i];
+    }
+
+    void setBoyancy(int body_id, ForceStruct& boyancy){
+        impact_boyancy[bodies_id_map[body_id]]=boyancy;
+    }
+
+
+    void init(int num_bodies, std::vector<int> bodies_id_i){
+        if(num_bodies!=bodies_id_i.size()){
+            throw(std::string("WaterImpact::init the num body does not corespond to the number of ids"));
+        }
+
+        bodies_id=bodies_id_i;
+        for (int i=0;i<num_bodies;++i){
+            bodies_id_map[bodies_id_i[i]]=i;
+        }
+
+
         impact_boyancy.clear();
         impact_boyancy.resize(num_bodies);
 

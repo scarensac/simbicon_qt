@@ -130,7 +130,7 @@ void CurveEditor::draw() {
     double deltaPos = (maxX - minX) * 0.025;
     double deltaVal = (maxY - minY) * 0.025;
     int nbDigit = 0;
-    if( vTickSize < 1 ) nbDigit = (int)((-log10(vTickSize))+0.5);
+    if( vTickSize < 1 ) nbDigit = static_cast<int>((-log10(vTickSize))+0.5);
     for( double pos = vTickStart; pos <= maxX; pos += vTickSize ) {
         glRasterPos2d( pos - deltaPos, minY + deltaVal );
         gprintf( "%.*f", nbDigit, pos);
@@ -200,9 +200,9 @@ void CurveEditor::draw() {
     //    glPushMatrix();
     //    glLoadIdentity();
     //    glTranslatef(maxX,minY,0);
-    float axis_pos_x=maxX-0.0-pixelXToViewport(56);
-    float axis_pos_y=maxY-0.0-pixelXToViewport(27);
-    glRasterPos2f(axis_pos_x,axis_pos_y);
+    double axis_pos_x=maxX-0.0-pixelXToViewport(56);
+    double axis_pos_y=maxY-0.0-pixelXToViewport(27);
+    glRasterPos2f(static_cast<float>(axis_pos_x),static_cast<float>(axis_pos_y));
     //glRasterPos2f(maxX-(maxX-minX)/10*2,maxY-(maxY-minY)/7);
 
     glColor3d(1.0,0.0,0.0);

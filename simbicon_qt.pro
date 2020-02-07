@@ -20,6 +20,7 @@ QT       += core gui
 
 CONFIG += c++17
 
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = simbicon_qt

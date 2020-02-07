@@ -755,7 +755,6 @@ void ExternalForceFieldsCompenser::simulation_step(){
 
 void ExternalForceFieldsCompenser::compute_fluid_impact_compensation(WaterImpact &resulting_impact, int type){
 
-    std::vector<ForceStruct>& impact=(type==0)?resulting_impact.impact_boyancy:resulting_impact.impact_drag;
     std::vector<ForceStruct> force_field;
     //the +1 is in case there is a force applyed on the pelvis I'll put it at the end
     bool existing_force_field=false;
@@ -771,7 +770,7 @@ void ExternalForceFieldsCompenser::compute_fluid_impact_compensation(WaterImpact
         }
 
 
-        ForceStruct force=impact[joint->child()->idx()];
+        ForceStruct force=(type==0)?resulting_impact.getBoyancy(joint->child()->idx()):resulting_impact.getDrag(joint->child()->idx());
 
         if(!(force.F.isZeroVector())){
             force_field[joint->idx()].pt=force.pt;
@@ -780,7 +779,8 @@ void ExternalForceFieldsCompenser::compute_fluid_impact_compensation(WaterImpact
         }
     }
 
-    ForceStruct force=impact[character->getRoot()->idx()];
+    ForceStruct force=(type==0)?resulting_impact.getBoyancy(character->getRoot()->idx()):resulting_impact.getDrag(character->getRoot()->idx());
+
 
     if(!(force.F.isZeroVector())){
         force_field[force_field.size()-1].pt=force.pt;

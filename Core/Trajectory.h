@@ -51,7 +51,7 @@ private:
 		of the values stored), then values.size() is returned.
 	*/
 	int getFirstLargerIndex(double t){
-		int size = tValues.size();
+        int size = static_cast<int>(tValues.size());
 		if( size == 0 ) 
 			return 0;
 		if( t < tValues[(lastIndex+size-1)%size] )
@@ -167,7 +167,7 @@ public:
 	*/
 	void setKnotPosition(int i, double pos){
 		if( i-1 >= 0               && tValues[i-1] >= pos ) return;
-		if( (uint)(i+1) < tValues.size()-1 && tValues[i+1] <= pos ) return;
+        if( static_cast<uint>(i+1) < tValues.size()-1 && tValues[i+1] <= pos ) return;
 		tValues[i] = pos;
 	}
 

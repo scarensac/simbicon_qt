@@ -35,7 +35,9 @@
 */
 #define EPSILON 0.0000000001
 
+#ifndef INFINITY
 #define INFINITY DBL_MAX
+#endif
 
 #define TINY_NUMBER 0.000000001
 #define TINY TINY_NUMBER

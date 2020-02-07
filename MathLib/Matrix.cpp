@@ -21,7 +21,7 @@
 	If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "matrix.h"
+#include "MathLib/matrix.h"
 #include <gsl/blas/gsl_blas.h>
 #include <MathLib/Vector3d.h>
 
@@ -29,7 +29,7 @@
 	constructor	- creates an m rows	by n columns matrix	that is	not initialized to a particular values
 */
 Matrix::Matrix(int m, int n){
-	this->matrix = gsl_matrix_alloc(m, n);
+    this->matrix = gsl_matrix_alloc(static_cast<size_t>(m), static_cast<size_t>(n));
 }
 
 /**
@@ -94,20 +94,20 @@ void Matrix::setToOuterproduct(const Vector3d& a, const Vector3d& b){
 */
 void Matrix::resizeTo(int m, int n){
 	//if the current matrix already has the correct dimensions, our work is easy
-	if (this->matrix->size1 == m && this->matrix->size2 == n)
+    if (this->matrix->size1 == static_cast<size_t>(m) && this->matrix->size2 == static_cast<size_t>(n))
 		return;
 
 	//if the matrix already has a block of memory large enough, then our work is again easy
-	if (this->matrix->owner == 1 && this->matrix->block != NULL && this->matrix->block->size >= (size_t)m*n){
-		this->matrix->size1 = m;
-		this->matrix->size2 = n;
-		this->matrix->tda = n;
+    if (this->matrix->owner == 1 && this->matrix->block != NULL && this->matrix->block->size >= static_cast<size_t>(m*n)){
+        this->matrix->size1 = static_cast<size_t>(m);
+        this->matrix->size2 = static_cast<size_t>(n);
+        this->matrix->tda = static_cast<size_t>(n);
 		return;
 	}
 
 	//otherwise the matrix doesn't own the memory or it doesn't have enough of it, so we'll create a new one of correct dimensions
 	gsl_matrix_free(this->matrix);
-	this->matrix = gsl_matrix_alloc(m, n);
+    this->matrix = gsl_matrix_alloc(static_cast<size_t>(m), static_cast<size_t>(n));
 }
 
 /**
@@ -115,7 +115,7 @@ void Matrix::resizeTo(int m, int n){
 */
 Matrix&	Matrix::operator=(const	Matrix &other){
 	//make sure that the current matrix is large enough and has the right dimensions
-	resizeTo((int)other.matrix->size1, (int)other.matrix->size2);
+    resizeTo(static_cast<int>(other.matrix->size1), static_cast<int>(other.matrix->size2));
 
 	//and now copy the data
 	gsl_matrix_memcpy(this->matrix, other.matrix);
@@ -129,9 +129,12 @@ void Matrix::shallowCopy(const Matrix& other, int startRow, int startCol, int en
 	//we have to first delete the current matrix
 	gsl_matrix_free(this->matrix);
 	//and create the shallow copy
-	if (endRow < 0) endRow = other.matrix->size1;
-	if (endCol < 0) endRow = other.matrix->size2;
-	this->matrix = gsl_matrix_alloc_from_matrix(other.matrix, startRow, startCol, endRow, endCol);
+    if (endRow < 0) endRow = static_cast<int>(other.matrix->size1);
+    if (endCol < 0) endRow = static_cast<int>(other.matrix->size2);
+    this->matrix = gsl_matrix_alloc_from_matrix(other.matrix, static_cast<size_t>(startRow),
+                                                static_cast<size_t>(startCol),
+                                                static_cast<size_t>(endRow),
+                                                static_cast<size_t>(endCol));
 }
 
 /**
@@ -139,7 +142,7 @@ void Matrix::shallowCopy(const Matrix& other, int startRow, int startCol, int en
 */
 void Matrix::deepCopy(const Matrix& other){
 	//make sure that the current matrix is large enough and has the right dimensions
-	resizeTo((int)other.matrix->size1, (int)other.matrix->size2);
+    resizeTo(static_cast<int>(other.matrix->size1), static_cast<int>(other.matrix->size2));
 
 	//and now copy the data
 	gsl_matrix_memcpy(this->matrix, other.matrix);
@@ -149,14 +152,14 @@ void Matrix::deepCopy(const Matrix& other){
 	Returns	the	number of columns
 */
 int	Matrix::getColumnCount() const{
-	return (int)this->matrix->size2;
+    return static_cast<int>(this->matrix->size2);
 }
 
 /**
 	Returns	the	number of rows
 */
 int	Matrix::getRowCount()const{
-	return (int)this->matrix->size1;
+    return static_cast<int>(this->matrix->size1);
 }
 
 /**
@@ -222,12 +225,12 @@ void Matrix::setToProductOf(const Matrix& a, const Matrix& b, bool transA, bool	
 			return;
 		}
 		//we'll resize the current matrix and then proceede
-		resizeTo((int)MA, (int)NB);
+        resizeTo(static_cast<int>(MA), static_cast<int>(NB));
 		gsl_blas_dgemm(TransA, TransB, 1.0, a.matrix, b.matrix, 0.0, this->matrix);
 		return;
 	}
 	
-	Matrix *c = new Matrix((int)MA, (int)NB);
+    Matrix *c = new Matrix(static_cast<int>(MA), static_cast<int>(NB));
 	//otherwise it means that either a or b is the current matrix, so we'll allocate a new one...
 	gsl_blas_dgemm(TransA, TransB, 1.0, a.matrix, b.matrix, 0.0, c->matrix);
 
@@ -244,8 +247,8 @@ void Matrix::setToInverseOf(const Matrix &a, double t){
 		if (a.matrix->size1 != a.matrix->size2)
 			throwError("Cannot invert a matrix that is not square");
 	
-		int DIM = (int)a.matrix->size1;
-		this->resizeTo(DIM, DIM);
+        size_t DIM = a.matrix->size1;
+        this->resizeTo(static_cast<int>(DIM), static_cast<int>(DIM));
 
 //we'll write some messy code and try to get efficient inverses by means of determinants for 1x1, 2x2 and 3x3 matrices. We'll also safeguard 
 //against very small determinants if desired...
@@ -312,7 +315,7 @@ void Matrix::setToInverseOf(const Matrix &a, double t){
 
 
 		double val, val2;
-		int i, j, k, ind;
+        size_t i, j, k, ind;
 		
 		//make a copy of the current matrix
 		Matrix tmp = a;
@@ -407,8 +410,8 @@ void Matrix::setToSubmatrix(const Matrix &a, int i,	int	j, int rows, int cols){
   }
 
   this->matrix->data = a.matrix->data + i * a.matrix->tda + j ;
-  this->matrix->size1 = rows;
-  this->matrix->size2 = cols;
+  this->matrix->size1 = static_cast<size_t>(rows);
+  this->matrix->size2 = static_cast<size_t>(cols);
   this->matrix->tda = a.matrix->tda;
   this->matrix->block = a.matrix->block;
   this->matrix->owner = 0;
@@ -418,7 +421,11 @@ void Matrix::setToSubmatrix(const Matrix &a, int i,	int	j, int rows, int cols){
 	This method	returns	a copy of the value	of the matrix at (i,j)
 */
 double Matrix::get(int i, int j) const{
-	return gsl_matrix_get(this->matrix, i, j);
+    return get(static_cast<unsigned int>(i),static_cast<unsigned int>(j));
+}
+
+double Matrix::get(unsigned int i, unsigned int j) const{
+    return gsl_matrix_get(this->matrix, i, j);
 }
 
 /**

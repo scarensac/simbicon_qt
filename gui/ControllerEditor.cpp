@@ -327,7 +327,7 @@ void ControllerEditor::draw(bool shadowMode){
         Character* ch = conF->getCharacter();
         Point3d base=ch->getRoot()->getCMPosition();
         base.y=1.0;
-        if ((SimGlobals::desiredHeading!=0&&Globals::motion_cycle_type!=0)||(Globals::motion_cycle_type==3)
+        if ((IS_ZERO(SimGlobals::desiredHeading)&&Globals::motion_cycle_type!=0)||(Globals::motion_cycle_type==3)
                 ||(Globals::motion_cycle_type==6)){
             //draw the desired heading
             Vector3d F=Quaternion::getRotationQuaternion(SimGlobals::desiredHeading,Vector3d(0,1,0)).rotate(Vector3d(0,0,1)*0.5/7);
@@ -1476,9 +1476,9 @@ void ControllerEditor::processFluidStepping(){
             ode_world->readDataFromParticleFluidEngine(current_impact,simbiconframework->getCharacter());
 
 
-            for (int i=0;i<current_impact.impact_boyancy.size();++i){
-                SimGlobals::vect_forces.push_back(current_impact.impact_boyancy[i]);
-                SimGlobals::vect_forces.push_back(current_impact.impact_drag[i]);
+            for (int i=0;i<current_impact.getNumBodies();++i){
+                SimGlobals::vect_forces.push_back(current_impact.getBoyancyInOrder(i));
+                SimGlobals::vect_forces.push_back(current_impact.getDragInOrder(i));
             }
 
 
@@ -1493,7 +1493,7 @@ void ControllerEditor::processFluidStepping(){
             ode_world->readDataFromParticleFluidEngine(simbiconframework->resulting_impact,simbiconframework->getCharacter());
 
             {
-                ForceStruct impact=simbiconframework->resulting_impact.impact_drag[simbiconframework->getCharacter()->stance_foot()->idx()];
+                ForceStruct impact=simbiconframework->resulting_impact.getDrag(simbiconframework->getCharacter()->stance_foot()->idx());
                 //SimGlobals::vect_forces.push_back(impact_sim);
                 //std::cout<<"  "<<impact.F.x<<"  "<<impact.F.y<<"  "<<impact.F.z<<std::endl;
             }
@@ -1507,14 +1507,14 @@ void ControllerEditor::processFluidStepping(){
                 //"rUpperleg","rLowerleg","rFoot"
                 std::string objName="rLowerleg";
 
-                ForceStruct impact_sim=simbiconframework->resulting_impact.impact_drag[simbiconframework->getCharacter()->getARBByName(objName)->idx()];
+                ForceStruct impact_sim=simbiconframework->resulting_impact.getDrag(simbiconframework->getCharacter()->getARBByName(objName)->idx());
                 SimGlobals::vect_forces.push_back(impact_sim);
 
 
                 ode_world->compute_water_impact(simbiconframework->getCharacter(),1.0, simbiconframework->resulting_impact);
 
-                ForceStruct impact_reduced_drag=simbiconframework->resulting_impact.impact_drag[simbiconframework->getCharacter()->getARBByName(objName)->idx()];
-                ForceStruct impact_reduced_boy=simbiconframework->resulting_impact.impact_boyancy[simbiconframework->getCharacter()->getARBByName(objName)->idx()];
+                ForceStruct impact_reduced_drag=simbiconframework->resulting_impact.getDrag(simbiconframework->getCharacter()->getARBByName(objName)->idx());
+                ForceStruct impact_reduced_boy=simbiconframework->resulting_impact.getBoyancy(simbiconframework->getCharacter()->getARBByName(objName)->idx());
                 ForceStruct impact_reduced;
                 impact_reduced.F=impact_reduced_boy.F+impact_reduced_drag.F;
                 impact_reduced.M=impact_reduced_boy.M+impact_reduced_drag.M;
@@ -1623,11 +1623,11 @@ void ControllerEditor::processFluidStepping(){
         bool show_forces=false;
 
 
-        std::vector<ForceStruct>& impact_boyancy=simbiconframework->resulting_impact.impact_boyancy;
-        std::vector<ForceStruct>& impact_drag=simbiconframework->resulting_impact.impact_drag;
         for (int i=0;i<ode_world->getRBCount();++i){
             RigidBody* body=ode_world->getRBByIdx(i);
 
+            ForceStruct impact_drag=simbiconframework->resulting_impact.getDrag(body->idx());
+            ForceStruct impact_boyancy=simbiconframework->resulting_impact.getBoyancy(body->idx());
 
             if (apply_forces){
                 /*
@@ -1639,19 +1639,19 @@ void ControllerEditor::processFluidStepping(){
                 //*/
 
                 //apply the forces and moments
-                if (!impact_drag[body->idx()].F.isZeroVector()){
-                    ode_world->applyForceTo(body, impact_drag[body->idx()].F, body->getLocalCoordinates(impact_drag[body->idx()].pt));
-                    if (!impact_drag[body->idx()].M.isZeroVector()){
-                        ode_world->applyTorqueTo(body,impact_drag[body->idx()].M);
+                if (!impact_drag.F.isZeroVector()){
+                    ode_world->applyForceTo(body, impact_drag.F, body->getLocalCoordinates(impact_drag.pt));
+                    if (!impact_drag.M.isZeroVector()){
+                        ode_world->applyTorqueTo(body,impact_drag.M);
                     }
                     //std::cout<<"drag force found: "<<body->name()<<std::endl;
                 }
 
                 if (!Globals::simulateFluid){
-                    if (!impact_boyancy[body->idx()].F.isZeroVector()){
-                        ode_world->applyForceTo(body, impact_boyancy[body->idx()].F, body->getLocalCoordinates(impact_boyancy[body->idx()].pt));
-                        if (!impact_boyancy[body->idx()].M.isZeroVector()){
-                            ode_world->applyTorqueTo(body,impact_boyancy[body->idx()].M);
+                    if (!impact_boyancy.F.isZeroVector()){
+                        ode_world->applyForceTo(body, impact_boyancy.F, body->getLocalCoordinates(impact_boyancy.pt));
+                        if (!impact_boyancy.M.isZeroVector()){
+                            ode_world->applyTorqueTo(body,impact_boyancy.M);
                         }
                         //std::cout<<"boyancy force found "<<body->name()<<std::endl;
                     }
@@ -1662,8 +1662,8 @@ void ControllerEditor::processFluidStepping(){
             if (show_forces){
                 //*
                 //this can be used to show the forces
-                SimGlobals::vect_forces.push_back(simbiconframework->resulting_impact.impact_drag[i]);
-                //SimGlobals::vect_forces.push_back(simbiconframework->resulting_impact.impact_boyancy[i]);
+                SimGlobals::vect_forces.push_back(impact_drag);
+                //SimGlobals::vect_forces.push_back(impact_boyancy);
                 //*/
 
             }
@@ -1674,13 +1674,13 @@ void ControllerEditor::processFluidStepping(){
 
             Vector3d sumForces;
             {
-                std::vector<ForceStruct>& impact_drag=simbiconframework->resulting_impact.impact_drag;
                 for (int i=0;i<ode_world->getRBCount();++i){
                     RigidBody* body=ode_world->getRBByIdx(i);
+                    ForceStruct impact_drag=simbiconframework->resulting_impact.getDrag(body->idx());
 
                     //apply the forces and moments
-                    if (!impact_drag[body->idx()].F.isZeroVector()){
-                        sumForces+=impact_drag[body->idx()].F;
+                    if (!impact_drag.F.isZeroVector()){
+                        sumForces+=impact_drag.F;
                     }
                 }
             }
@@ -1699,18 +1699,18 @@ void ControllerEditor::processFluidStepping(){
                 //for a random single objet
 
                 ode_world->estimate_water_impact_on_particle_objects(4.0, simbiconframework->resulting_impact);
-                std::vector<ForceStruct>& impact_drag=simbiconframework->resulting_impact.impact_drag;
-                std::vector<ForceStruct>& impact_boyancy=simbiconframework->resulting_impact.impact_boyancy;
                 for (int i=0;i<ode_world->getRBCount();++i){
                     RigidBody* body=ode_world->getRBByIdx(i);
+                    ForceStruct impact_drag=simbiconframework->resulting_impact.getDrag(body->idx());
+                    ForceStruct impact_boyancy=simbiconframework->resulting_impact.getBoyancy(body->idx());
 
                     //apply the forces and moments
-                    if (!impact_drag[body->idx()].F.isZeroVector()){
-                        sumGRF+=impact_drag[body->idx()].F;
+                    if (!impact_drag.F.isZeroVector()){
+                        sumGRF+=impact_drag.F;
                     }
 
-                    if(!impact_boyancy[body->idx()].F.isZeroVector()){
-                        sumGRF+=impact_boyancy[body->idx()].F;
+                    if(!impact_boyancy.F.isZeroVector()){
+                        sumGRF+=impact_boyancy.F;
                     }
 
                 }

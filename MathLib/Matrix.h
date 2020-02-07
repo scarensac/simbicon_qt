@@ -157,7 +157,8 @@ public:
 	/**
 		This method returns a copy of the value of the matrix at (i,j)
 	*/
-	double get(int i, int j) const;
+    double get(int i, int j) const;
+    double get(unsigned int i, unsigned int j) const;
 
 	/**
 		This method sets the value of the matrix at (i,j) to newVal.

@@ -35,8 +35,8 @@
  * Constructor.
  */
 Application::Application(void){
-    groundTexture=NULL;
-    waterTexture=NULL;
+    groundTexture=nullptr;
+    waterTexture=nullptr;
 }
 
 /**
@@ -50,7 +50,7 @@ Application::~Application(void){
 /**
  * This method is called whenever the window gets redrawn.
  */
-void Application::draw(bool shadow){
+void Application::draw(bool){
 	glDisable(GL_LIGHTING);
 	glDisable(GL_TEXTURE_2D);
 	glColor3f(1.0f,1.0f,0.0f);
@@ -191,7 +191,7 @@ void Application::reload(){
 /**
  *	This method is used when a mouse event gets generated. This method returns true if the message gets processed, false otherwise.
  */
-bool Application::onMouseEvent(int eventType, int button, int mouseX, int mouseY){
+bool Application::onMouseEvent(int , int , int , int ){
 	return false;
 }
 
