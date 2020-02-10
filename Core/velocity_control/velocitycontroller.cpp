@@ -170,8 +170,8 @@ void VelocityController::init_new_character_step(){
     virt_force_limit= 200; //old 100,0,200
     variation_moy_limit_sagittal = 0.1;
     variation_moy_limit_coronal = 0.1;
-    evo_speed_sagittal=0.08;
-    evo_speed_coronal=0.08;
+    evo_speed_sagittal=0.4;
+    evo_speed_coronal=0.15;
 
 
     //reset values used in the internal computation
@@ -342,11 +342,11 @@ void VelocityController::adapt_learning_curve(Vector3d v, double phi_last_step){
     sup_point_val=v.z-velD_sagittal;
     reset_value=0;
 
-
+//*
     prev_result_sag=adapt_learning_component(sagittal_comp,vel_sagittal,sup_point_val,variation_moy_limit_sagittal,
                                              recovery_step_asked_z,avg_signed_variation_sag,0.50,reset_value,
                                              prev_result_sag,reset_value);
-
+//*/
     if (!recovery_step_asked_z&&!is_currently_rotating()){
 
         //now we handle the variation of the offset
@@ -522,11 +522,15 @@ void VelocityController::adapt_learning_curve(Vector3d v, double phi_last_step){
     //now finish to ckeck if we need a recovery step
     if (recovery_step_asked_z||recovery_step_asked_x){
         _need_recovery_steps = true;
+        _remaining_recovery_steps_count=3;
     }
     else{
         if (_need_recovery_steps){
-            end_recovery_step_id=step_count;
-            _need_recovery_steps = false;
+            _remaining_recovery_steps_count--;
+            if(_remaining_recovery_steps_count<1){
+                end_recovery_step_id=step_count;
+                _need_recovery_steps = false;
+            }
         }
 
         if ((step_count-start_rotating_step_id)>1&&(step_count-end_recovery_step_id)>3&&is_currently_rotating()){
@@ -781,7 +785,20 @@ int VelocityController::adapt_learning_component(TrajectoryComponent *affected_c
     variation_moy /= nbr_values_original;
     variation_moy_signed /= nbr_values_original;
 
-    avg_signed_variation=variation_moy;
+    avg_signed_variation=variation_moy_signed;
+
+    //cap the variations  so that I don't try to learn variations that are too small
+    //which would reduce the stability of the velocity control
+    if(variation_max<0.008){
+        //std::cout<<"variation max capped"<<std::endl;
+        return 0;
+    }
+
+    if(variation_moy<0.003){
+        //std::cout<<"variation moy capped"<<std::endl;
+        return 0;
+    }
+
 
     //we check if we can evolve the curve or if we need to use a recovery step
     if (variation_moy < variation_moy_limit || force_learning){
@@ -953,6 +970,9 @@ Vector3d VelocityController::compute_virtual_force(const Vector3d &v)
         oss<< fA.length();
         write_to_report_file(oss.str());
     }//*/
+
+    //fA.z=0;
+
 
     //now change this quantity to world coordinates...
     fA=qheading.to_world_coordinate(fA);

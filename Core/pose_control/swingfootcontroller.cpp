@@ -718,6 +718,8 @@ void SwingFootController::compute_ipm_alteration(VelocityController* vel_control
     if (vel_control==NULL){
         return;
     }
+    std::cout<<"no imp alt"<<std::endl;
+    return;
 
     steps_left_sag--;
     if (steps_left_sag < 1){

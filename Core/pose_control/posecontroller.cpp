@@ -841,9 +841,6 @@ void PoseController::resolve_joints(SimBiConState *state)
                 }else{
                     //in that case we need to generate it
                     double zero_val=0;
-                    if (c->rotationAxis.z!=0){
-                        zero_val=1;
-                    }
                     int nb_points=c->baseTraj.getKnotValue(0);
                     c->baseTraj.clear();
 

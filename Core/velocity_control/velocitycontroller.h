@@ -40,6 +40,7 @@ protected:
     ///Members for the results
     std::vector<Vector3d> _torques;
     bool _need_recovery_steps;
+    int _remaining_recovery_steps_count;
 
     ///Members for internal computations
     //I'll store the velD trajectory here before I'll use it often
