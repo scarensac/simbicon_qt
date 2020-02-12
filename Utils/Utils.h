@@ -146,6 +146,10 @@ public:
 
 
 double generate_random_0_1();
+#include <MathLib/mathLib.h>
+
+//a function that returns the signed distance between two radiasn value
+double radian_distance_signed(double from, double to);
 
 
 #endif

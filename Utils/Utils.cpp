@@ -185,3 +185,25 @@ double generate_random_0_1()
     return number;
     //*/
 }
+
+double radian_distance_signed(double from, double to){
+    double dist=0;
+    //first let's normalize in the interval 0  2PI for an easier handling
+    if((from<0)||(from>(2*PI))){
+        from=fmod(from,2*PI);
+    }
+    if((to<0)||(to>(2*PI))){
+        to=fmod(to,2*PI);
+    }
+
+    //now a simple sustractio can handle all cases
+    dist=to-from;
+
+    //then take the shortest distance
+    if(fabs(dist)>PI){
+        dist=-1*(dist/fabs(dist))*(2*PI-fabs(dist));
+    }
+
+    return dist;
+
+}

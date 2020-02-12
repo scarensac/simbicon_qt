@@ -72,10 +72,7 @@ public:
      * @brief Quaternion construnctor from angular rotation
      * @param angular_displacement
      */
-    Quaternion(Vector3d angular_rotation){
-        this->s = std::cos(angular_rotation.length()/2);
-        this->v = angular_rotation.unit()*std::sin(angular_rotation.length()/2);
-    }
+    Quaternion(Vector3d angular_rotation);
 
 	
 	/**
@@ -99,15 +96,20 @@ public:
 		Because you can always consider a rotation to be of x degrees around axis v, or by -x degrees around axis -v,
 		we need to know the base rotation axis.
 	*/
-	inline double getRotationAngle(const Vector3d& positiveRotAxis){
-		int sinSign = SGN(positiveRotAxis.dotProductWith(v));
-		double result = 2 * safeACOS(s);
-		if (sinSign < 0)
-			result = -result;
-		if (result > PI) result -= 2*PI;
-		if (result < -PI) result += 2*PI;
-		return result;
-	}
+    inline double getRotationAngle(const Vector3d& positiveRotAxis){
+        int sinSign = SGN(positiveRotAxis.dotProductWith(v));
+        double result = 2 * safeACOS(s);
+        if (sinSign < 0)
+            result = -result;
+        if (result > PI) result -= 2*PI;
+        if (result < -PI) result += 2*PI;
+        return result;
+    }
+
+    /**
+        This decompose the quaternion to get the x y and z rotation angles
+     */
+    Vector3d getRotationAngles();
 
 	/**
 		Default destructor.

@@ -168,46 +168,94 @@ Quaternion Quaternion::operator * (const Quaternion &other) const{
 	return Quaternion(this->s * other.s - this->v.dotProductWith(other.v), other.v * this->s + this->v * other.s + this->v.crossProductWith(other.v));
 }
 
+
+Quaternion::Quaternion(Vector3d angular_rotation){
+    //this->s = std::cos(angular_rotation.length()/2);
+    //this->v = angular_rotation.unit()*std::sin(angular_rotation.length()/2);
+    // Abbreviations for the various angular functions
+    angular_rotation/=2;
+    double cy = cos(angular_rotation.z);
+    double sy = sin(angular_rotation.z);
+    double cp = cos(angular_rotation.y);
+    double sp = sin(angular_rotation.y);
+    double cr = cos(angular_rotation.x);
+    double sr = sin(angular_rotation.x);
+
+    Quaternion q;
+    s = cy * cp * cr + sy * sp * sr;
+    v.x = sr * cp * cy - cr * sp * sy;
+    v.y = cr * sp * cy + sr * cp * sy;
+    v.z = cr * cp * sy - sr * sp * cy;
+}
+
 /**
-	this method is used to set the current quaternion to the product of the two quaternions passed in as parameters.
-	the bool parameters invA and invB indicate wether or not, the quaternion a or b should be inverted (well, complex conjugate really)
-	for the multiplication
+    this method is used to set the current quaternion to the product of the two quaternions passed in as parameters.
+    the bool parameters invA and invB indicate wether or not, the quaternion a or b should be inverted (well, complex conjugate really)
+    for the multiplication
 */
 void Quaternion::setToProductOf(const Quaternion& a, const Quaternion& b, bool invA, bool invB){
-	double multA = (invA==false)?(1):(-1);
-	double multB = (invB==false)?(1):(-1);
-	this->s = a.s*b.s - a.v.dotProductWith(b.v) * multA * multB;
-	this->v.setToCrossProduct(a.v, b.v);
-	this->v.multiplyBy(multA * multB);
+    double multA = (invA==false)?(1):(-1);
+    double multB = (invB==false)?(1):(-1);
+    this->s = a.s*b.s - a.v.dotProductWith(b.v) * multA * multB;
+    this->v.setToCrossProduct(a.v, b.v);
+    this->v.multiplyBy(multA * multB);
 
-	this->v.addScaledVector(a.v, b.s*multA);
-	this->v.addScaledVector(b.v, a.s*multB);
+    this->v.addScaledVector(a.v, b.s*multA);
+    this->v.addScaledVector(b.v, a.s*multB);
+}
+
+#include <iostream>
+Vector3d Quaternion::getRotationAngles(){
+    Vector3d result;
+
+      // roll (x-axis rotation)
+    double sinr_cosp = 2 * (s * v.x + v.y * v.z);
+    double cosr_cosp = 1 - 2 * (v.x * v.x + v.y * v.y);
+    result.x = std::atan2(sinr_cosp, cosr_cosp);
+
+    // pitch (y-axis rotation)
+    double sinp = 2 * (s * v.y - v.z * v.x);
+    if (std::abs(sinp) >= 1)
+        result.y = std::copysign(PI / 2, sinp); // use 90 degrees if out of range
+    else
+        result.y = std::asin(sinp);
+
+    // yaw (z-axis rotation)
+    double siny_cosp = 2 * (s * v.z + v.x * v.y);
+    double cosy_cosp = 1 - 2 * (v.y * v.y + v.z * v.z);
+    result.z = std::atan2(siny_cosp, cosy_cosp);
+
+
+    //std::cout<<"euler rotation: "<<result.toString()<<std::endl;
+
+
+    return result;
 }
 
 
 /**
-	This operator multiplies the current quaternion by the rhs one. Keep in mind the note RE quaternion multiplication.
+    This operator multiplies the current quaternion by the rhs one. Keep in mind the note RE quaternion multiplication.
 */
 Quaternion& Quaternion::operator *= (const Quaternion &other){
-	double newS = this->s * other.s - this->v.dotProductWith(other.v);
-	Vector3d newV = other.v * this->s + this->v * other.s + this->v.crossProductWith(other.v);
-	this->s = newS;
-	this->v = newV;
-	return *this;
+    double newS = this->s * other.s - this->v.dotProductWith(other.v);
+    Vector3d newV = other.v * this->s + this->v * other.s + this->v.crossProductWith(other.v);
+    this->s = newS;
+    this->v = newV;
+    return *this;
 }
 
 /**
-	This method multiplies the current quaternion by a scalar.
+    This method multiplies the current quaternion by a scalar.
 */
 Quaternion& Quaternion::operator *= (double scalar){
-	this->s *= scalar;
-	this->v *= scalar;
-	return *this;
+    this->s *= scalar;
+    this->v *= scalar;
+    return *this;
 }
 
 
 /**
-	This method returns a copy of the current quaternion multiplied by a scalar.
+    This method returns a copy of the current quaternion multiplied by a scalar.
 */
 Quaternion Quaternion::operator * (double scalar) const{
     return Quaternion(s * scalar, v * scalar);
