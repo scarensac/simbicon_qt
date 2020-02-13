@@ -278,7 +278,6 @@ float accumulatorLiquidLevel = 0.0;
 bool startPressed = false;
 
 void manageGamepadInput() {
-
     // A and B to speed up and slow down the character (sagital)
     if (gamepad->isKeyPressed(GamepadController::A)) accumulatorTargetSagitalSpeed += 0.002;
     if (gamepad->isKeyPressed(GamepadController::B)) accumulatorTargetSagitalSpeed -= 0.002;
