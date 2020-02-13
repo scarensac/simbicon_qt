@@ -273,6 +273,7 @@ private:
     //PoseController::preprocess_simulation_step
     double old_heading;
     double target_heading;
+    double angle_to_target_heading;
     double start_phi_change_heading;
     double desired_heading_pelvis;
     double desired_heading_swing_foot;

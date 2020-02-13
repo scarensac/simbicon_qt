@@ -340,8 +340,8 @@ void ControllerEditor::draw(bool shadowMode){
             glEnable(GL_LIGHTING);
         }
 
-
-        if (SimGlobals::desiredHeading!=SimGlobals::desiredHeading_active&&Globals::use_fluid_heading){
+        //if it's the same heading, do nothing
+        if (!ZERO_WITHIN_EPSILON(radian_distance_signed(SimGlobals::desiredHeading_active,SimGlobals::desiredHeading))&&Globals::use_fluid_heading){
             //draw the desired heading
             {
                 Vector3d F=Quaternion::getRotationQuaternion(SimGlobals::desiredHeading_active,Vector3d(0,1,0)).rotate(Vector3d(0,0,1)*0.4/7);

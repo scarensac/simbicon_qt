@@ -32,6 +32,7 @@ PoseController::PoseController(Character *c)
     target_heading=0;
     desired_heading_pelvis=0;
     desired_heading_swing_foot=0;
+    angle_to_target_heading=0;
     start_phi_change_heading=0.0f;
     target_heading_mitigation_coefficient=1.0;
     first_pass_this_char_step=true;
@@ -1016,9 +1017,17 @@ void PoseController::evaluate_joints_target(double phi)
             rootControlParams.strength = curState->getTrajectory(i)->evaluateStrength(cur_phi);
         }
         else{
+
             rs.setJointRelativeOrientation(newOrientation, jIndex);
             rs.setJointRelativeAngVelocity(ang_vel, jIndex);
             controlParams[jIndex].strength = curState->getTrajectory(i)->evaluateStrength(cur_phi);
+
+            /*
+            if (character->getJoint(jIndex)->name().find("rShoulder")!=std::string::npos){
+                Vector3d angle;
+                angle=rs.getJointRelativeOrientation(jIndex).getRotationAngles();
+                std::cout<<"angle test in target setting: "<<angle.toString()<<std::endl;
+            }//*/
         }
     }
 }
@@ -1027,6 +1036,8 @@ void PoseController::evaluate_joints_target(double phi)
 
 void PoseController::control_desired_heading(double phase)
 {
+     double dist;
+
     if (!Globals::use_fluid_heading){
         desired_heading_pelvis=SimGlobals::desiredHeading;
         desired_heading_swing_foot=desired_heading_pelvis;
@@ -1040,10 +1051,14 @@ void PoseController::control_desired_heading(double phase)
     //once we detect that the foot is fully anchored in the ground
 
     //if it's the same heading, do nothing
-    if (desired_heading_pelvis==SimGlobals::desiredHeading){
+    dist=radian_distance_signed(desired_heading_pelvis,SimGlobals::desiredHeading);
+
+    if (ZERO_WITHIN_EPSILON(dist)){
         old_heading=desired_heading_pelvis;
         start_phi_change_heading=phase;
         return;
+    }else{
+
     }
 
     //we do not touche the desired orientation of the pelvis as long as the foot is not anchored
@@ -1061,18 +1076,24 @@ void PoseController::control_desired_heading(double phase)
     }
 
     if(first_pass_this_char_step){
-        old_heading=character->getHeadingAngle();//in case the heading moved during the wait time
+        //in case the heading moved during the wait time
+        //I'm also careful that the sign of the heading did not changed
+        old_heading=character->getHeadingAngle();
+        angle_to_target_heading=radian_distance_signed(old_heading,target_heading);
+
         first_pass_this_char_step=false;
-        std::cout<<"trig"<<std::endl;
     }
 
-    if (target_heading!=SimGlobals::desiredHeading){
+    dist=radian_distance_signed(target_heading,SimGlobals::desiredHeading);
+    if (!ZERO_WITHIN_EPSILON(dist)){
         //this if allow to only register orientations changes after the start of the us of the ipm
         if (!swing_foot_controller->is_early_step(0.1)){
             old_heading=desired_heading_pelvis;
             start_phi_change_heading=phase;
             target_heading=SimGlobals::desiredHeading;
             target_heading_mitigation_coefficient=0.75;
+
+            angle_to_target_heading=radian_distance_signed(old_heading,target_heading);
         }else{
             old_heading=desired_heading_pelvis;
             start_phi_change_heading=phase;
@@ -1086,10 +1107,11 @@ void PoseController::control_desired_heading(double phase)
                                              target_heading_mitigation_coefficient)*current_mult_swing_foot;//*/
 
     double current_mult_pelvis=std::min(1.0,(phase-start_phi_change_heading)/0.8);
-    desired_heading_pelvis=old_heading+ ((target_heading-old_heading)*
+    desired_heading_pelvis=old_heading+ ((angle_to_target_heading)*
                                          target_heading_mitigation_coefficient)*current_mult_pelvis;
 
-    if (std::abs(desired_heading_pelvis-target_heading)/std::abs(target_heading)<0.01){
+    dist=radian_distance_signed(desired_heading_pelvis,target_heading);
+    if (std::abs(dist)<0.03){
         //std::cout<<"completed change"<< desired_heading_pelvis<<"  "<< target_heading<<std::endl;
         desired_heading_pelvis=target_heading;
     }
@@ -1097,6 +1119,11 @@ void PoseController::control_desired_heading(double phase)
 
     desired_heading_swing_foot=desired_heading_pelvis;
 
+/*
+    if(SimGlobals::desiredHeading>3){
+        std::cout<<"test: "<<dist<<std::endl;
+        std::cout<<"old target desired:  "<<old_heading<<"  "<<target_heading<<"  "<<angle_to_target_heading<<"  "<<desired_heading_pelvis<<"  "<<std::endl;
+    }//*/
 
 
 }
@@ -1109,6 +1136,8 @@ void PoseController::compute_torques(){
     Quaternion qRel;
     Vector3d wRel;
 
+    //this does not work
+    //if you want the spd you need to compute all the torques at the same time in the way shown in the paper
     bool use_spd=false;
 
     ReducedCharacterState rs(&PoseControlGlobals::desired_pose);
@@ -1118,6 +1147,7 @@ void PoseController::compute_torques(){
     //    static std::vector<Vector3d> vect_speeds_c[50];
 
     for (int i=0;i<character->getJointCount();i++){
+
         if (controlParams[i].controlled == true ){
             ControlParams params = controlParams[i];
             std::vector<Vector3d>& vect_speed=vect_speeds[i];
@@ -1226,11 +1256,11 @@ void PoseController::compute_torques(){
                  }else{
                     //now compute the torque
                     _torques[i] = compute_pd_torque(qRel, rs.getJointRelativeOrientation(i), wRel, rs.getJointRelativeAngVelocity(i), &params);
+
                  }
 
                 //the torque is expressed in parent coordinates, so we need to convert it to world coords now
                 _torques[i] = character->getJoint(i)->parent()->getWorldCoordinates(_torques[i]);
-
 
                 Vector3d t=_torques[i];
                 if ((t.x!=t.x)||(t.y!=t.y)||(t.z!=t.z)){
@@ -1240,6 +1270,8 @@ void PoseController::compute_torques(){
                 RigidBody* childRB = character->getJoint(i)->child();
                 qRel=childRB->getOrientation();
                 wRel=childRB->getAngularVelocity();
+
+
 
                 //this use an avg system for the angular velocity but I don't currently uses it
                 if (false)
@@ -1278,10 +1310,30 @@ void PoseController::compute_torques(){
 
                 if(use_spd){
                     _torques[i] = compute_pd_torque(qRel, controlParams[i].char_frame * rs.getJointRelativeOrientation(i),
-                                                    wRel, rs.getJointRelativeAngVelocity(i), &params);
+                                                    wRel, controlParams[i].char_frame.rotate(rs.getJointRelativeAngVelocity(i)), &params);
                 }else{
+
+
                     _torques[i] = compute_pd_torque(qRel, controlParams[i].char_frame * rs.getJointRelativeOrientation(i),
-                                                    wRel, rs.getJointRelativeAngVelocity(i), &params);
+                                                    wRel, controlParams[i].char_frame.rotate(rs.getJointRelativeAngVelocity(i)), &params);
+                    /*
+
+                    if (character->getJoint(i)->name().find("rShoulder")!=std::string::npos){
+                        Vector3d angle;
+
+                        angle=rs.getJointRelativeOrientation(i).getRotationAngles();
+                        std::cout<<"angle test in pd-controller: "<<angle.toString()<<std::endl;
+                        angle=(controlParams[i].char_frame.getInverse()*qRel).getRotationAngles();
+                        std::cout<<"actual ori in pd-controller: "<<angle.toString()<<std::endl;
+                        std::cout<<"check the angular velocity: "<<rs.getJointRelativeAngVelocity(i).toString()<<std::endl;
+
+                        Quaternion qErr = controlParams[i].char_frame.getInverse().qRel.getComplexConjugate();
+                        qErr *= rs.getJointRelativeOrientation(i);
+                        std::cout<<"check delta in pd-controller: "<<angle.toString()<<std::endl;
+                        std::cout<<"check error v in pd-controller: "<<qErr.v.toString()<<std::endl;
+
+                        std::cout<<"torque: "<<_torques[i].toString()<<std::endl;
+                    }//*/
                 }
 
 

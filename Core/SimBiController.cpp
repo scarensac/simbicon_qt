@@ -45,6 +45,66 @@
 SimBiController::SimBiController(Character* b){
     if (b == NULL)
         throwError("Cannot create a SIMBICON controller if there is no associated biped!!");
+    /*
+    //this test if the quaternion <==> euler conversions actualy works
+    {
+        Quaternion q=Quaternion::getRotationQuaternion(PI/4,Vector3d(1,0,0));
+        Quaternion q2(Vector3d(PI/4,0,0));
+        q.getRotationAngles();
+        q2.getRotationAngles();
+
+        Vector3d test=q.rotate(Vector3d(0,0,1));
+        std::cout<<"test: "<<test.toString()<<std::endl;
+
+        Vector3d test2=q2.rotate(Vector3d(0,0,1));
+        std::cout<<"tes2t: "<<test2.toString()<<std::endl;
+    }
+    {
+        Quaternion q=Quaternion::getRotationQuaternion(3*PI/4,Vector3d(0,1,0));
+        Quaternion q2(Vector3d(0,3*PI/4,0));
+        q.getRotationAngles();
+        q2.getRotationAngles();
+
+        Vector3d test=q.rotate(Vector3d(0,0,1));
+        std::cout<<"test: "<<test.toString()<<std::endl;
+
+        Vector3d test2=q2.rotate(Vector3d(0,0,1));
+        std::cout<<"tes2t: "<<test2.toString()<<std::endl;
+
+        std::cout<<"test3: "<<q2.getRotationAngle(Vector3d(1,0,0))<<std::endl;//LOL
+    }
+    {
+        Quaternion q=Quaternion::getRotationQuaternion(PI/4,Vector3d(0,0,1));
+        Quaternion q2(Vector3d(0,0,PI/4));
+        q.getRotationAngles();
+        q2.getRotationAngles();
+
+        Vector3d test=q.rotate(Vector3d(0,1,0));
+        std::cout<<"test: "<<test.toString()<<std::endl;
+
+        Vector3d test2=q2.rotate(Vector3d(0,1,0));
+        std::cout<<"tes2t: "<<test2.toString()<<std::endl;
+    }
+
+    {
+        Quaternion q(Vector3d(1.241593,1.441593,-0.141593));
+        q.getRotationAngles();
+
+        Quaternion q2(Vector3d(-1.9,1.7,3));
+        q2.getRotationAngles();
+
+
+
+
+
+        Vector3d test=q.rotate(Vector3d(0,1,0));
+        std::cout<<"test: "<<test.toString()<<std::endl;
+
+        Vector3d test2=q2.rotate(Vector3d(0,1,0));
+        std::cout<<"tes2t: "<<test2.toString()<<std::endl;
+    }
+    //*/
+
 
     character = b;
     torques.resize(character->getJointCount());

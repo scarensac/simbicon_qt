@@ -341,6 +341,8 @@ public:
     Point3d toPoint3d(){
         return Point3d(x,y,z);
     }
+
+    inline std::string toString() { return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z); }
 };
 
 
