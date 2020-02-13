@@ -251,6 +251,20 @@ void MainWindow::start_click()
             connect(&editor->signal_messenger, SIGNAL(fluid_level(double)),
                     this->sim_window, SLOT(spin_box_liquid_level_changed(double)));
 
+            //those are mainly for the controler
+            connect(&editor->signal_messenger, SIGNAL(set_target_sagital_speed(double)),
+                    this->sim_window, SLOT(spin_box_target_sagittal_speed_changed(double)));
+            connect(&editor->signal_messenger, SIGNAL(set_target_coronal_speed(double)),
+                    this->sim_window, SLOT(spin_box_target_coronal_speed_changed(double)));
+            connect(&editor->signal_messenger, SIGNAL(set_desired_heading(double)),
+                    this->sim_window, SLOT(spin_box_target_orientation_changed(double)));
+            connect(&editor->signal_messenger, SIGNAL(set_step_width(double)),
+                    this->sim_window, SLOT(spin_box_step_width_changed(double)));
+            connect(&editor->signal_messenger, SIGNAL(set_liquid_level(double)),
+                    this->sim_window, SLOT(spin_box_liquid_level_changed(double)));
+
+
+
             connect(sim_window, SIGNAL(close_signal()), this, SLOT(end_simulation()));
             sim_window->show();
             launch_gl();

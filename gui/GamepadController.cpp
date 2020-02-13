@@ -5,6 +5,8 @@
 #define MAX_STICK 32767
 #define DEAD_ZONE_STICK 0.2
 
+#include<iostream>
+
 bool GamepadController::updateState() {
 	// Zeroise the state
 	ZeroMemory(&_controllerState, sizeof(XINPUT_STATE));

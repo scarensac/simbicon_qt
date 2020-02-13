@@ -208,7 +208,7 @@ SHARK_UTILISATION{
     SHARK_DIR = .\external_libs\shark
     INCLUDEPATH += $$SHARK_DIR\include
     Release:LIBS += $$SHARK_DIR\lib\Release\shark.lib
-    Debug:LIBS += $$SHARK_DIR\lib\Debug\shark.lib
+    Debug:LIBS += $$SHARK_DIR\lib\Debug\shark_debug.lib
 }
 
 FLUID_COMPIL {

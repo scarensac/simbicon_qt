@@ -21,23 +21,23 @@ void QtMessenger::emit_new_phase(double phi)
 }
 
 void QtMessenger::emit_target_sagital_speed(double speed) {
-    emit set_target_sagital_speed(speed*100);
+    emit set_target_sagital_speed(speed);
 }
 
 void QtMessenger::emit_target_coronal_speed(double speed) {
-    emit set_target_coronal_speed(speed*100);
+    emit set_target_coronal_speed(speed);
 }
 
 void QtMessenger::emit_desired_heading(double orientation) {
-    emit set_desired_heading(orientation*100);
+    emit set_desired_heading(orientation);
 }
 
 void QtMessenger::emit_step_width(double width) {
-    emit set_step_width(width*10000);
+    emit set_step_width(width);
 }
 
 void QtMessenger::emit_liquid_level(double level) {
-    emit set_liquid_level(level*100);
+    emit set_liquid_level(level);
 }
 
 
