@@ -971,7 +971,6 @@ Vector3d VelocityController::compute_virtual_force(const Vector3d &v)
         write_to_report_file(oss.str());
     }//*/
 
-    //fA.z=0;
 
 
     //now change this quantity to world coordinates...
