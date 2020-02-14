@@ -97,6 +97,7 @@ void SimulationWindow::load_from_data()
     ui->check_box_target_pose->setChecked(Globals::drawDesiredPose);
     ui->check_box_show_shadow->setChecked(Globals::drawShadows);
     ui->check_box_show_forces->setChecked(Globals::drawContactForces);
+    ui->check_box_show_fluid_drag->setChecked(Globals::estimatedFluidDrawDrag);
     ui->check_box_show_ground->setChecked(Globals::drawGroundPlane);
     ui->check_box_collision_primitives->setChecked(Globals::drawCollisionPrimitives);
     ui->check_box_follow_character->setChecked(Globals::followCharacter);
@@ -165,6 +166,7 @@ void SimulationWindow::link_signals()
     connect(ui->check_box_follow_character, SIGNAL(toggled(bool)), this, SLOT(check_box_follow_character_changed(bool)));
     connect(ui->check_box_collision_primitives, SIGNAL(toggled(bool)), this, SLOT(check_box_show_collision_primitive_changed(bool)));
     connect(ui->check_box_show_forces, SIGNAL(toggled(bool)), this, SLOT(check_box_show_forces_changed(bool)));
+    connect(ui->check_box_show_fluid_drag, SIGNAL(toggled(bool)), this, SLOT(check_box_show_fluid_drag_changed(bool)));
     connect(ui->check_box_show_ground, SIGNAL(toggled(bool)), this, SLOT(check_box_show_ground_plane_changed(bool)));
     connect(ui->check_box_show_shadow, SIGNAL(toggled(bool)), this, SLOT(check_box_show_shadow_changed(bool)));
     connect(ui->check_box_target_pose, SIGNAL(toggled(bool)), this, SLOT(check_box_show_target_pose_changed(bool)));
@@ -432,6 +434,11 @@ void SimulationWindow::check_box_show_shadow_changed(bool val)
 void SimulationWindow::check_box_show_forces_changed(bool val)
 {
     Globals::drawContactForces=val;
+}
+
+void SimulationWindow::check_box_show_fluid_drag_changed(bool val)
+{
+    Globals::estimatedFluidDrawDrag=val;
 }
 
 void SimulationWindow::check_box_show_ground_plane_changed(bool val)

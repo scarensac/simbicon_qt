@@ -343,11 +343,12 @@ void VelocityController::adapt_learning_curve(Vector3d v, double phi_last_step){
     reset_value=0;
 
 //*
-    prev_result_sag=adapt_learning_component(sagittal_comp,vel_sagittal,sup_point_val,variation_moy_limit_sagittal,
-                                             recovery_step_asked_z,avg_signed_variation_sag,0.50,reset_value,
-                                             prev_result_sag,reset_value);
 //*/
     if (!recovery_step_asked_z&&!is_currently_rotating()){
+
+        prev_result_sag=adapt_learning_component(sagittal_comp,vel_sagittal,sup_point_val,variation_moy_limit_sagittal,
+                                                 recovery_step_asked_z,avg_signed_variation_sag,0.50,reset_value,
+                                                 prev_result_sag,reset_value);
 
         //now we handle the variation of the offset
         offset_delta = velD_sagittal - previous_speeds_z.back();
@@ -413,12 +414,13 @@ void VelocityController::adapt_learning_curve(Vector3d v, double phi_last_step){
             }
         }
 
-        prev_result_cor=adapt_learning_component(coronal_comp,vel_coronal,(v.x*stance_coef)-velD_coronal,variation_moy_limit_coronal,
-                                                 recovery_step_asked_x,avg_signed_variation_cor,0.5,0,
-                                                 prev_result_cor,0);
 
         //*
         if (!recovery_step_asked_x&&!is_currently_rotating()){
+            prev_result_cor=adapt_learning_component(coronal_comp,vel_coronal,(v.x*stance_coef)-velD_coronal,variation_moy_limit_coronal,
+                                                     recovery_step_asked_x,avg_signed_variation_cor,0.5,0,
+                                                     prev_result_cor,0);
+
             //now we need to translate the curve depending on the speed it result in and the speed we want
             //evo_speed_coronal = 0.2;// +(velDSagittal / 0.7) / 2;
 
@@ -600,7 +602,7 @@ void VelocityController::apply_virtual_force(const Vector3d& v)
     ForceStruct show_force;
     show_force.F = virtual_force;
     show_force.pt = character->getCOM();
-    SimGlobals::vect_forces.push_back(show_force);
+    Globals::vect_forces.push_back(show_force);
     //*/
 
     /*

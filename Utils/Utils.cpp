@@ -137,10 +137,8 @@ std::string get_folder_path(std::string name, int lookup_nbr, std::string delim,
 
         oss << ".."<<delim;
     }
-    std::cout << "the configuration_data folder cannot be found" << std::endl;
-    system("pause");
-    exit(69);
-
+    throw("get_folder_path:: the configuration_data folder cannot be found");
+    return "";
 }
 
 

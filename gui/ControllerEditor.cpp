@@ -376,6 +376,45 @@ void ControllerEditor::draw(bool shadowMode){
 
         }
 
+        if(Globals::estimatedFluidDrawDrag){
+            std::vector<ForceStruct> vect = Globals::vect_forces_estimated_fluid;
+            for (uint i = 0; i < vect.size(); ++i){
+                if(vect[i].F.length()<0.01){
+                    continue;
+                }
+
+                double factor = 0.05;
+                double radius = 0.005;
+                glDisable(GL_LIGHTING);
+                glColor3d(1, 0, 0);
+
+                GLUtils::drawSphere( vect[i].pt,radius);
+                GLUtils::drawCylinder(radius/2, vect[i].F * 9*factor, vect[i].pt);
+                GLUtils::drawCone(radius, vect[i].F * 3 * factor, vect[i].pt + vect[i].F * 9 * factor);
+
+                glEnable(GL_LIGHTING);
+                /*
+                if (std::abs(vect[i].F.y)<0.0001)
+                {
+                    GLUtils::drawCylinder(0.005, vect[i].F * 9*factor, vect[i].pt);
+                    GLUtils::drawCone(0.015, vect[i].F * 1 * factor, vect[i].pt + vect[i].F * 9 * factor);
+                }
+                else{
+                    factor*=0.08;
+                    glDisable(GL_LIGHTING);
+                    glColor3d(0.0, 0, 1);
+
+                    GLUtils::drawSphere( vect[i].pt,0.01*4);
+                    GLUtils::drawCylinder(0.005*4, vect[i].F * 9*factor, vect[i].pt);
+                    GLUtils::drawCone(0.015*4, vect[i].F * 3 * factor, vect[i].pt + vect[i].F * 9 * factor);
+
+                    glEnable(GL_LIGHTING);
+                }
+                //*/
+
+            }
+        }
+
         if (Globals::drawContactForces){
             //figure out if we should draw the contacts, desired pose, etc.
             glColor3d(0, 0, 1);
@@ -404,15 +443,20 @@ void ControllerEditor::draw(bool shadowMode){
 
             //*/
             //*
-            std::vector<ForceStruct> vect = SimGlobals::vect_forces;
+            std::vector<ForceStruct> vect = Globals::vect_forces;
             for (uint i = 0; i < vect.size(); ++i){
-                double factor = 0.005;
+                if(vect[i].F.length()<0.01){
+                    continue;
+                }
+
+                double factor = 0.0005;
+                double radius = 0.01;
                 glDisable(GL_LIGHTING);
                 glColor3d(1, 0, 0);
 
-                GLUtils::drawSphere( vect[i].pt,0.01);
-                GLUtils::drawCylinder(0.005, vect[i].F * 9*factor, vect[i].pt);
-                GLUtils::drawCone(0.015, vect[i].F * 3 * factor, vect[i].pt + vect[i].F * 9 * factor);
+                GLUtils::drawSphere( vect[i].pt,radius);
+                GLUtils::drawCylinder(radius/2, vect[i].F * 9*factor, vect[i].pt);
+                GLUtils::drawCone(radius, vect[i].F * 3 * factor, vect[i].pt + vect[i].F * 9 * factor);
 
                 glEnable(GL_LIGHTING);
                 /*
@@ -435,8 +479,38 @@ void ControllerEditor::draw(bool shadowMode){
                 //*/
 
             }
-            //*/
 
+
+            //*/
+            /*
+            for (int i=0;i<conF->resulting_impact.getNumBodies();++i){
+                ForceStruct fs= conF->resulting_impact.getDragInOrder(i);
+                if(fs.F.length()>0.01){
+                    double factor = 0.05;
+                    glDisable(GL_LIGHTING);
+                    glColor3d(1, 0, 0);
+
+                    GLUtils::drawSphere( fs.pt,0.01);
+                    GLUtils::drawCylinder(0.005, fs.F * 9*factor, fs.pt);
+                    GLUtils::drawCone(0.015, fs.F * 3 * factor, fs.pt + fs.F * 9 * factor);
+
+                    glEnable(GL_LIGHTING);
+                }
+
+                fs= conF->resulting_impact.getBoyancyInOrder(i);
+                if(fs.F.length()>0.01){
+                    double factor = 0.05;
+                    glDisable(GL_LIGHTING);
+                    glColor3d(0, 1, 0);
+
+                    GLUtils::drawSphere( fs.pt,0.01);
+                    GLUtils::drawCylinder(0.005, fs.F * 9*factor, fs.pt);
+                    GLUtils::drawCone(0.015, fs.F * 3 * factor, fs.pt + fs.F * 9 * factor);
+
+                    glEnable(GL_LIGHTING);
+                }
+            }
+            //*/
         }
     }
 
@@ -696,8 +770,9 @@ void ControllerEditor::processTask(){
                 //std::chrono::steady_clock::time_point start_f = std::chrono::steady_clock::now();
 
 
-                //clear the vector that's used to show the forces
-                SimGlobals::vect_forces.clear();
+                //clear the vectors that are used to show the forces
+                Globals::vect_forces.clear();
+                Globals::vect_forces_estimated_fluid.clear();
 
                 ODEWorld* ode_world = dynamic_cast<ODEWorld*>(world);
 
@@ -1477,8 +1552,8 @@ void ControllerEditor::processFluidStepping(){
 
 
             for (int i=0;i<current_impact.getNumBodies();++i){
-                SimGlobals::vect_forces.push_back(current_impact.getBoyancyInOrder(i));
-                SimGlobals::vect_forces.push_back(current_impact.getDragInOrder(i));
+                //Globals::vect_forces.push_back(current_impact.getBoyancyInOrder(i));
+                //Globals::vect_forces.push_back(current_impact.getDragInOrder(i));
             }
 
 
@@ -1508,7 +1583,7 @@ void ControllerEditor::processFluidStepping(){
                 std::string objName="rLowerleg";
 
                 ForceStruct impact_sim=simbiconframework->resulting_impact.getDrag(simbiconframework->getCharacter()->getARBByName(objName)->idx());
-                SimGlobals::vect_forces.push_back(impact_sim);
+                //Globals::vect_forces.push_back(impact_sim);
 
 
                 ode_world->compute_water_impact(simbiconframework->getCharacter(),1.0, simbiconframework->resulting_impact);
@@ -1639,21 +1714,23 @@ void ControllerEditor::processFluidStepping(){
                 //*/
 
                 //apply the forces and moments
-                if (!impact_drag.F.isZeroVector()){
-                    ode_world->applyForceTo(body, impact_drag.F, body->getLocalCoordinates(impact_drag.pt));
-                    if (!impact_drag.M.isZeroVector()){
-                        ode_world->applyTorqueTo(body,impact_drag.M);
-                    }
-                    //std::cout<<"drag force found: "<<body->name()<<std::endl;
-                }
-
-                if (!Globals::simulateFluid){
-                    if (!impact_boyancy.F.isZeroVector()){
-                        ode_world->applyForceTo(body, impact_boyancy.F, body->getLocalCoordinates(impact_boyancy.pt));
-                        if (!impact_boyancy.M.isZeroVector()){
-                            ode_world->applyTorqueTo(body,impact_boyancy.M);
+                if(Globals::simulateFluid||!Globals::estimatedFluidDirectSampleApplication){
+                    if (!impact_drag.F.isZeroVector()){
+                        ode_world->applyForceTo(body, impact_drag.F, body->getLocalCoordinates(impact_drag.pt));
+                        if (!impact_drag.M.isZeroVector()){
+                            ode_world->applyTorqueTo(body,impact_drag.M);
                         }
-                        //std::cout<<"boyancy force found "<<body->name()<<std::endl;
+                        //std::cout<<"drag force found: "<<body->name()<<std::endl;
+                    }
+
+                    if (!Globals::simulateFluid){
+                        if (!impact_boyancy.F.isZeroVector()){
+                            ode_world->applyForceTo(body, impact_boyancy.F, body->getLocalCoordinates(impact_boyancy.pt));
+                            if (!impact_boyancy.M.isZeroVector()){
+                                ode_world->applyTorqueTo(body,impact_boyancy.M);
+                            }
+                            //std::cout<<"boyancy force found "<<body->name()<<std::endl;
+                        }
                     }
                 }
             }
@@ -1662,7 +1739,7 @@ void ControllerEditor::processFluidStepping(){
             if (show_forces){
                 //*
                 //this can be used to show the forces
-                SimGlobals::vect_forces.push_back(impact_drag);
+                Globals::vect_forces.push_back(impact_drag);
                 //SimGlobals::vect_forces.push_back(impact_boyancy);
                 //*/
 
@@ -1876,7 +1953,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
         vect_joints= conF->getController()->get_character()->get_joints();
 
 
-        //*
+        /*
         //this version just sum the torques on the lower body
         if (Globals::evolution_type==0){
             double eval_buff_torque = 0;
@@ -1884,8 +1961,8 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 eval_buff_torque += conF->getController()->getTorque(vect_lower_body[i]->idx()).length();
             }
             eval_result += 3 * eval_buff_torque / (1.2*1E6);
-            //*/
         }
+        //*/
 
         //this one is the sum of the torques on the whole body
         if (Globals::evolution_type==0){
@@ -1899,8 +1976,8 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 //*
                 if (!Globals::close_after_evaluation){
                     std::ostringstream oss;
-                    oss<<"sum_torques: "<<sum_eval_whole_body_torques;
-                    std::cout<<oss.str();
+                    oss<<"sum_torques whole body: "<<sum_eval_whole_body_torques;
+                    std::cout<<oss.str()<<std::endl;
                 }
                 //*/
                 eval_result += sum_eval_whole_body_torques ;
@@ -1925,8 +2002,8 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 //*
                 if (!Globals::close_after_evaluation){
                     std::ostringstream oss;
-                    oss<<"sum_torques: "<<sum_eval_liquid_drag ;
-                    std::cout<<oss.str();
+                    oss<<"sum drag torques: "<<sum_eval_liquid_drag ;
+                    std::cout<<oss.str()<<std::endl;
                 }
                 //*/
                 eval_result += sum_eval_liquid_drag  ;
@@ -1934,12 +2011,8 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
             }
 
             double eval_buff_drag = 0;
-            throw("this need to be repaired because the water impact structure has been modified");
-            ///TODO adapt that loop for the new struture
-            /*
-            for (auto it = conF->resulting_impact.begin(); it != conF->resulting_impact.end(); ++it){
-                WaterImpact impact = it->second;
-                eval_buff_drag += impact.drag_torque.length();
+            for (int i=0; i<conF->resulting_impact.getNumBodies();++i){
+                eval_buff_drag +=conF->resulting_impact.getDragInOrder(i).F.length();
             }
             //*/
             sum_eval_liquid_drag  += eval_buff_drag ;
@@ -1974,7 +2047,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 if (!Globals::close_after_evaluation){
                     std::ostringstream oss;
                     oss<<"sum_acc_all: "<<sum_eval_weighted_acc;
-                    std::cout<<oss.str();
+                    std::cout<<oss.str()<<std::endl;
                 }
                 //*/
                 eval_result += sum_eval_weighted_acc;
@@ -2352,25 +2425,35 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
         //we stop if we have enougth
         if (cumul_time >SimGlobals::evaluation_length ){
 
+            if (!Globals::close_after_evaluation){
+                std::cout<<"eval_result before velocity error check: "<<eval_result<< "   eval_iter: "<<count_eval_iter<<std::endl;
+            }
 
 
             //we penalise this simulation if the speed ain't correct
             //the accepted error is 5%
 
             double accepted_error = std::fmax(std::abs(SimGlobals::velDSagittal / 20.0), 0.02);
+            if (Globals::evolution_type==0){
+                accepted_error==std::fmax(std::abs(SimGlobals::velDSagittal / 20.0), 0.05);
+            }
+
 
 
             for (int i=0; i<(int)vect_speed_z.size()-1;++i){
                 double z_speed = (vect_speed_z[i]+vect_speed_z[i+1])/2.0;
                 if (std::abs(z_speed - SimGlobals::velDSagittal) > accepted_error){
                     eval_result += (double)1E10*std::min(1.0,std::pow((std::abs(z_speed - SimGlobals::velDSagittal) - accepted_error)/accepted_error,4));
-                    //                    std::cout<<"vel error z: "<<z_speed- SimGlobals::velDSagittal<<std::endl;
+                                      //  std::cout<<"vel error z: "<<z_speed- SimGlobals::velDSagittal<<std::endl;
                 }
             }
             vect_speed_z.clear();
 
             //we do the same for the x axis
             accepted_error = std::fmax(std::abs(SimGlobals::velDCoronal / 20.0), 0.02);
+            if (Globals::evolution_type==0){
+               accepted_error== std::fmax(std::abs(SimGlobals::velDCoronal / 20.0), 0.05);
+            }
 
 
             //std::cout<<vect_speed_x.size()<<" "<<accepted_error<<std::endl;
@@ -2378,20 +2461,30 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 double x_speed = (vect_speed_x[i]+vect_speed_x[i+1])/2.0;
                 if (std::abs(x_speed - SimGlobals::velDCoronal) > accepted_error){
                     eval_result += (double)1E10*std::min(1.0,std::pow((std::abs(x_speed - SimGlobals::velDCoronal) - accepted_error)/accepted_error,4));
-                    //                                        std::cout<<"vel error x: "<<std::abs(x_speed - SimGlobals::velDCoronal)<<std::endl;
+                                          //                  std::cout<<"vel error x: "<<std::abs(x_speed - SimGlobals::velDCoronal)<<std::endl;
                 }
             }
             vect_speed_x.clear();
+
+
+
+            if (!Globals::close_after_evaluation){
+                std::cout<<"eval_result before phi check: "<<eval_result<< "   eval_iter: "<<count_eval_iter<<std::endl;
+            }
 
             //I penalize the simulation that use phi>0.90 and <0.70 to have a movement that will be able to handle
             //interferences without having to phi motion that are on the limit of what we can control
 
             if (Globals::evolution_type==0){
-                if (conF->getController()->phi_last_step > 0.95){
-                    eval_result += (double)10E10*std::abs(conF->getController()->phi_last_step - 0.95);
+                float min_phi=0.7;
+                float max_phi=0.9;
+
+                if (conF->getController()->phi_last_step > max_phi){
+                    eval_result += (double)10E10*std::abs(conF->getController()->phi_last_step - max_phi);
+
                 }
-                if (conF->getController()->phi_last_step - 0.85){
-                    eval_result += (double)10E10*std::abs(0.85 - conF->getController()->phi_last_step);
+                if (conF->getController()->phi_last_step < min_phi){
+                    eval_result += (double)10E10*std::abs(min_phi - conF->getController()->phi_last_step);
                 }
             }
 

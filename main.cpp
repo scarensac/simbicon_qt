@@ -91,27 +91,40 @@ int main(int argc, char *argv[]) {
     // _CrtSetBreakAlloc(157); // Use this line to break at the nth memory allocation
 
     //*
-    Globals::data_folder_path = get_folder_path("configuration_data", 5);
-//    Globals::drawDesiredPose=true;
-    SimGlobals::water_level=0.25;
-    SimGlobals::liquid_density=1000;
-//    SimGlobals::desiredHeading=3.14;
-//    SimGlobals::desiredHeading=1.570796;
-//    Globals::drawCollisionPrimitives=true;
-    std::cout<<"data_folder_path:"<<Globals::data_folder_path<<std::endl;
-    QApplication a(argc, argv);
-    MainWindow w(argc, argv);
-    w.show();
-    if (argc>5){
-        w.start_click();
+    try{
+        Globals::reset();
+        SimGlobals::reset_sim_globals();
+
+        Globals::data_folder_path = get_folder_path("configuration_data", 5);
+    //    Globals::drawDesiredPose=true;
+        SimGlobals::water_level=0.25;
+        SimGlobals::liquid_density=1000;
+    //    SimGlobals::desiredHeading=3.14;
+    //    SimGlobals::desiredHeading=1.570796;
+    //    Globals::drawCollisionPrimitives=true;
+        std::cout<<"data_folder_path:"<<Globals::data_folder_path<<std::endl;
+        QApplication a(argc, argv);
+        MainWindow w(argc, argv);
+        w.show();
+        if (argc>5){
+            w.start_click();
+        }
+        return_val= a.exec();
+        //*/
+        // Once the app has finished running and has been deleted,
+        // we run this command to view the memory leaks:
+    #ifdef MEMORY_CHECK
+        _CrtDumpMemoryLeaks();
+    #endif
+    }catch(const char * str){
+        std::cout<<str<<std::endl;
+    }catch(std::string s){
+        std::cout<<s<<std::endl;
+    }catch(...){
+        std::cout<<"main:: unidentified exception catched"<<std::endl;
     }
-    return_val= a.exec();
-    //*/
-    // Once the app has finished running and has been deleted,
-    // we run this command to view the memory leaks:
-#ifdef MEMORY_CHECK
-    _CrtDumpMemoryLeaks();
-#endif
+
+
     //return appError;
     return return_val;
 }

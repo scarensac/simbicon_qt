@@ -153,6 +153,10 @@ void Character::update_stance(int stance)
     }
 
 
+    ///PROTOCOL: activate those lines if you want color on stance foot
+    //character->stance_foot()->set_mesh_color(0, 0, 1, 1);
+    //character->swing_foot()->set_mesh_color(1, 1, 1, 1);
+
 }
 
 #include <fstream>

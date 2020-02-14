@@ -35,8 +35,9 @@ GLWindow::GLWindow(int x, int y, int w, int h){
 	oldFrameRate = 0;
 	nrFramesSinceUpdate = 0;
 	processingTime = 0;
-	oldPerformanceRate = 0;
-	timeSpentProcessing = 0;
+    oldPerformanceRate = 0;
+    timeSpentProcessing = 0;
+    timeSpentProcessing2 = 0;
 	this->camera.target = Point3d(0,1,0);
 	this->x = x;
 	this->y = y;

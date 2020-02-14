@@ -90,8 +90,6 @@ public:
     static double liquid_viscosity;
     static double left_stance_factor;//0 or 1
 
-    //I'll use the contact point structure but all I want is the position and the force
-    static std::vector<ForceStruct> vect_forces;
 
     //for the deplacement direction control
     static double velDSagittal;
@@ -127,8 +125,7 @@ public:
     static int nb_collisons_event;
     static int nb_active_objects;
 
-    SimGlobals(void){
-    }
+    SimGlobals(void);
     ~SimGlobals(void){
     }
 

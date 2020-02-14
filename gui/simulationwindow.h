@@ -79,6 +79,7 @@ protected slots:
     void check_box_show_target_pose_changed(bool val);
     void check_box_show_shadow_changed(bool val);
     void check_box_show_forces_changed(bool val);
+    void check_box_show_fluid_drag_changed(bool val);
     void check_box_show_ground_plane_changed(bool val);
     void check_box_show_collision_primitive_changed(bool val);
     void check_box_follow_character_changed(bool val);

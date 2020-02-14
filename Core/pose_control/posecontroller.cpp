@@ -1114,10 +1114,12 @@ void PoseController::control_desired_heading(double phase)
     if (std::abs(dist)<0.03){
         //std::cout<<"completed change"<< desired_heading_pelvis<<"  "<< target_heading<<std::endl;
         desired_heading_pelvis=target_heading;
+        desired_heading_swing_foot=target_heading;
+    }else{
+        //let's put the swing foot more in advance from the pelvis
+        desired_heading_swing_foot=old_heading+(angle_to_target_heading)*current_mult_pelvis;
     }
 
-
-    desired_heading_swing_foot=desired_heading_pelvis;
 
 /*
     if(SimGlobals::desiredHeading>3){
@@ -1991,9 +1993,6 @@ void PoseController::set_stance(int nstance){
 
     }
 
-    ///PROTOCOL: activate those lines if you want color on stance foot
-    character->stance_foot()->set_mesh_color(0, 0, 1, 1);
-    character->swing_foot()->set_mesh_color(1, 1, 1, 1);
 }
 
 bool PoseController::check_fsm_state()

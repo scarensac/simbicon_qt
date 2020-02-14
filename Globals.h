@@ -29,6 +29,7 @@
 #include <GL/freeglut.h>
 #include <string>
 #include "MathLib/Vector3d.h"
+#include "Core/ForcesUtilitary.h"
 
 //disable all the 'deprecated function' warnings
 #pragma warning( disable : 4996)
@@ -157,6 +158,8 @@ public:
     static bool use_fluid_heading;
 
 
+    static bool estimatedFluidDirectSampleApplication;
+    static bool estimatedFluidDrawDrag;
     static bool simulateFluid;
     static bool zeroFluidVelocities;
     static bool simulateOnlyFluid;
@@ -172,10 +175,18 @@ public:
 
     static bool gamepad;
 
+
+    //I'll use the contact point structure but all I want is the position and the force
+    static std::vector<ForceStruct> vect_forces;
+    static std::vector<ForceStruct> vect_forces_estimated_fluid;
+
     Globals(void);
     ~Globals(void);
 
     static void changeCurrControlShotStr( int currControlShot );
+
+
+    static void reset();
 };
 
 

@@ -49,8 +49,8 @@ struct ForceStruct
         Vector3d M_result=Vector3d(0,0,0);
 
         if (!F.isZeroVector()){
-            M_result+=Vector3d(pt-p).crossProductWith(F);
-            F_result+=F;
+            M_result=Vector3d(pt-p).crossProductWith(F);
+            F_result=F;
         }
 
         if (!M.isZeroVector()){

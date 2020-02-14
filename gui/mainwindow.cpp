@@ -178,57 +178,60 @@ void MainWindow::mode_changed(int){
     setFixedHeight(550);
 
     switch(ui->combo_box_mode->currentIndex()){
-        case 0:{
-            setFixedHeight(175);
-            //normal execution
-            break;
-        }
-        case 1:{
-            //optimisation mode
-            ui->widget_model_parameters->show();
-            ui->widget_opti->show();
-            ui->widget_others->show();
-            break;
-        }
-        case 2:{
-            //evaluation mode
-            ui->widget_model_parameters->show();
-            ui->widget_opti->show();
-            ui->widget_others->show();
-            break;
-        }
-        default:{
-            std::cerr<<"this mode is not handled yet"<<std::endl;
-            break;
-        }
+    case 0:{
+        setFixedHeight(175);
+        //normal execution
+        //ui->widget_model_parameters->show();
+        break;
+    }
+    case 1:{
+        //optimisation mode
+        ui->widget_model_parameters->show();
+        ui->widget_opti->show();
+        ui->widget_others->show();
+        break;
+    }
+    case 2:{
+        //evaluation mode
+        ui->widget_model_parameters->show();
+        ui->widget_opti->show();
+        ui->widget_others->show();
+        break;
+    }
+    default:{
+        std::cerr<<"this mode is not handled yet"<<std::endl;
+        break;
+    }
     }
 }
 
 #include "gui/ControllerEditor.h"
 void MainWindow::start_click()
 {
-    SimGlobals::nb_container_boxes=ui->spin_box_container_boxes->value();
-    SimGlobals::nb_filler=ui->spin_box_filler_objects->value();
-    Globals::use_fluid_heading=ui->check_box_fluid_heading->isChecked();
+    try{
 
-    Globals::evolution_type=1;
-    Globals::evolution_push_type=2;
-    Globals::look_for_min_gains=ui->check_box_look_for_min_gains->isChecked();
+        SimGlobals::nb_container_boxes=ui->spin_box_container_boxes->value();
+        SimGlobals::nb_filler=ui->spin_box_filler_objects->value();
+        Globals::use_fluid_heading=ui->check_box_fluid_heading->isChecked();
 
-    //read the values from the ui
-    SimGlobals::velDSagittal=ui->spin_box_velD->value();
-    SimGlobals::velDCoronal=0;
-    SimGlobals::water_level = ui->spin_box_level->value();
-    SimGlobals::dt=1.0/(ui->spin_box_control_frequency->value());
+        Globals::evolution_type=0;
+        Globals::evolution_push_type=0;
+        Globals::look_for_min_gains=ui->check_box_look_for_min_gains->isChecked();
 
-    Globals::motion_cycle_type=ui->spin_box_motion_type->value();
+        //read the values from the ui
+        SimGlobals::velDSagittal=ui->spin_box_velD->value();
+        SimGlobals::velDCoronal=0;
+        SimGlobals::water_level = ui->spin_box_level->value();
+        SimGlobals::dt=1.0/(ui->spin_box_control_frequency->value());
 
-    Globals::foot_contact_controller_config=ui->spin_box_foot_contact_control_config->value();
-    if (Globals::foot_contact_controller_config>=0){
-        Globals::use_contact_controller=true;
-    }
+        Globals::motion_cycle_type=ui->spin_box_motion_type->value();
 
-    switch(ui->combo_box_mode->currentIndex()){
+        Globals::foot_contact_controller_config=ui->spin_box_foot_contact_control_config->value();
+        if (Globals::foot_contact_controller_config>=0){
+            Globals::use_contact_controller=true;
+        }
+
+        switch(ui->combo_box_mode->currentIndex()){
         case 0:
         {
             Globals::use_hand_position_tracking=false;
@@ -279,16 +282,23 @@ void MainWindow::start_click()
             break;
         }
         case 1:{
-            Globals::use_hand_position_tracking=true;
-            Globals::evolution_mode = 1;
+
+
+            Globals::use_hand_position_tracking=false;
+            Globals::evolution_mode = true;
             //here Ill doo the optimisation/learning
             console_window->show();
 
             Globals::use_contact_controller=false;
 
             std::ostringstream oss_folder;
-            //oss_folder<<SimGlobals::velDSagittal;
-            oss_folder<<"results_opti_gains";
+
+            if (Globals::evolution_type==0){
+                oss_folder<<SimGlobals::velDSagittal;
+                oss_folder<<"results_opti_water";
+            }else if (Globals::evolution_type==1){
+                oss_folder<<"results_opti_gains";
+            }
             std::string evo_folder= oss_folder.str();
 
 
@@ -296,7 +306,9 @@ void MainWindow::start_click()
 
             Globals::use_normalized_sum=true;
 
-            if (true){
+
+
+            if (false){
                 int i=0;
                 for (;i<45;++i)
                 {
@@ -314,7 +326,7 @@ void MainWindow::start_click()
                     if (i>2){
                         nb_iter=50;
                     }
-                    double result=cma_program(evo_folder,result_folder,1,nb_iter,i);
+                    double result=cma_program(evo_folder,result_folder,Globals::evolution_type,nb_iter,i);
 
                     if (!Globals::look_for_min_gains){
                         if (result<=1.0){
@@ -328,7 +340,11 @@ void MainWindow::start_click()
                 }
             }else{
                 int nb_iter=ui->spin_box_iter->value();
-                double result=cma_program(evo_folder,result_folder,1,nb_iter,0);
+                double result=cma_program(evo_folder,result_folder,Globals::evolution_type,nb_iter,0);
+
+                std::ostringstream oss;
+                oss << "execution successfully finished "<<nb_iter<<" steps done ";
+                std::cout << oss.str()<<std::endl;
             }
 
             /*
@@ -342,7 +358,7 @@ void MainWindow::start_click()
         }
         case 2:
         {
-            Globals::use_hand_position_tracking=true;
+            Globals::use_hand_position_tracking=false;
             Globals::evolution_mode = 1;
             //the evaluation mode
             //Just start the simulation with standart values
@@ -378,7 +394,15 @@ void MainWindow::start_click()
             std::cerr<<"this mode is not handled yet"<<std::endl;
             break;
         }
+        }
+    }catch(const char * str){
+        std::cout<<str<<std::endl;
+    }catch(std::string s){
+        std::cout<<s<<std::endl;
+    }catch(...){
+        std::cout<<"main:: unidentified exception catched"<<std::endl;
     }
+
 }
 
 void MainWindow::end_simulation()
@@ -561,7 +585,7 @@ SimbiconOnjectiveFunctionGains::SimbiconOnjectiveFunctionGains(bool use_symetric
     std::ostringstream oss2;
     oss2 << solution_folder_path << a <<"_"<<cma_number-1<< ".sbc";
     if (boost::filesystem::exists(oss2.str()))
-    //if (std::exist(oss2.str()))
+        //if (std::exist(oss2.str()))
     {
         con->getController()->pose_controller->read_gains(oss2.str());
     }else{
@@ -723,7 +747,7 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
             eval_sup_value+=input[cur_pos]+input[cur_pos+1];
             if (asymetrics_legs){
-               cur_pos+=2;
+                cur_pos+=2;
             }
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
@@ -750,7 +774,7 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
             eval_sup_value+=input[cur_pos]+input[cur_pos+1];
             if (asymetrics_legs){
-               cur_pos+=2;
+                cur_pos+=2;
             }
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
@@ -771,7 +795,7 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
             eval_sup_value+=input[cur_pos]+input[cur_pos+1];
             if (asymetrics_legs){
-               cur_pos+=2;
+                cur_pos+=2;
             }
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
@@ -783,7 +807,7 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
             eval_sup_value+=input[cur_pos]+input[cur_pos+1];
             if (asymetrics_legs){
-               cur_pos+=2;
+                cur_pos+=2;
             }
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
@@ -872,7 +896,7 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
             if (asymetrics_legs){
-               cur_pos+=2;
+                cur_pos+=2;
             }
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
@@ -894,7 +918,7 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
             if (asymetrics_legs){
-               cur_pos+=2;
+                cur_pos+=2;
             }
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
@@ -911,7 +935,7 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
             if (asymetrics_legs){
-               cur_pos+=2;
+                cur_pos+=2;
             }
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
@@ -921,7 +945,7 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
             if (asymetrics_legs){
-               cur_pos+=2;
+                cur_pos+=2;
             }
             cp[cp_idx].kp=original_val[cur_pos]*input[cur_pos];
             cp[cp_idx++].kd=original_val[cur_pos+1]*input[cur_pos+1];
@@ -1006,6 +1030,8 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
     std::cout.setf(std::ios_base::scientific);
     std::cout.precision(10);
     //*
+
+
 
 
     std::string result_controller_path_and_name;
@@ -1104,7 +1130,7 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
     //generate the path to the folder for the result
 
 
-
+    std::cout<<"full cma init done"<<std::endl;
 
 
     double cur_val=10E40;
@@ -1239,7 +1265,7 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
                 cp[cp_idx].kp=original_val[cur_pos]*result[cur_pos];
                 cp[cp_idx++].kd=original_val[cur_pos+1]*result[cur_pos+1];
                 if (objective_func_local->use_symetry){
-                   cur_pos+=2;
+                    cur_pos+=2;
                 }
                 cp[cp_idx].kp=original_val[cur_pos]*result[cur_pos];
                 cp[cp_idx++].kd=original_val[cur_pos+1]*result[cur_pos+1];
@@ -1262,7 +1288,7 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
                 cp[cp_idx++].kd=original_val[cur_pos+1]*result[cur_pos+1];
                 if (objective_func_local->use_symetry){
                     cur_pos+=2;
-                 }
+                }
                 cp[cp_idx].kp=original_val[cur_pos]*result[cur_pos];
                 cp[cp_idx++].kd=original_val[cur_pos+1]*result[cur_pos+1];
                 cur_pos+=2;
@@ -1278,7 +1304,7 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
                 cp[cp_idx].kp=original_val[cur_pos]*result[cur_pos];
                 cp[cp_idx++].kd=original_val[cur_pos+1]*result[cur_pos+1];
                 if (objective_func_local->use_symetry){
-                   cur_pos+=2;
+                    cur_pos+=2;
                 }
                 cp[cp_idx].kp=original_val[cur_pos]*result[cur_pos];
                 cp[cp_idx++].kd=original_val[cur_pos+1]*result[cur_pos+1];
@@ -1288,7 +1314,7 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
                 cp[cp_idx].kp=original_val[cur_pos]*result[cur_pos];
                 cp[cp_idx++].kd=original_val[cur_pos+1]*result[cur_pos+1];
                 if (objective_func_local->use_symetry){
-                   cur_pos+=2;
+                    cur_pos+=2;
                 }
                 cp[cp_idx].kp=original_val[cur_pos]*result[cur_pos];
                 cp[cp_idx++].kd=original_val[cur_pos+1]*result[cur_pos+1];

@@ -90,6 +90,8 @@ void SwingFootController::init_new_character_step(bool is_recovery_step, double 
 
     ipm_active= false;
 
+    ArticulatedRigidBody* swing_foot=static_cast<ArticulatedRigidBody*>(character->swing_foot());
+    swing_foot_start_pos = swing_foot->getWorldCoordinates(swing_foot->parent_joint()->child_joint_position());
 
     compute_ipm_alteration(vel_control);
 }
@@ -170,6 +172,12 @@ void SwingFootController::simulation_step(Quaternion desired_heading_pelvis)
         use_specified_swing_foot_location(cur_phi, future_phi);
     }
 
+    //ArticulatedRigidBody* swing_foot=static_cast<ArticulatedRigidBody*>(character->swing_foot());
+    //Point3d swing_foot_pos=swing_foot->getWorldCoordinates(swing_foot->parent_joint()->child_joint_position())-character->getCOM();
+    //std::cout<<"swing foot z: "<< (swing_foot_start_pos-character->getCOM()).toString()<<std::endl;
+    //std::cout<<"swing foot z: "<< swing_foot_start_pos.toString()<<"  "<<character->getCOM().toString()<<std::endl;
+    //std::cout<<"swing foot z: "<< (swing_foot_start_pos-character->getCOM()).toString()<<std::endl;
+
 
     //    std::ostringstream oss;
     //    oss<<"sagital traj count";
@@ -222,9 +230,10 @@ bool SwingFootController::ipm_needed(){
 
     if (_is_recovery_step){ return true; }
 
+    if (is_early_step()){return false;}
+
     if (v.y < 0){ return true; }
 
-    if (is_early_step()){return false;}
 
     return false;
 }
@@ -275,7 +284,7 @@ Vector3d SwingFootController::ipm_compute_swing_foot_location(const Point3d &com
     //now interpolate between this position and initial foot position - but provide two estimates in order to provide some gradient information
     //double t = (phase - phase_start_pos);
     //t=1-t/(0.9-phase_start_pos);
-    double t=std::max(1.0-phase,0.0)/0.9;
+    double t=std::max((1.0-phase_start_pos)-phase,0.0)/(0.9-phase_start_pos);
     boundToRange(&t, 0, 1);
 
     //use a square law
@@ -718,8 +727,9 @@ void SwingFootController::compute_ipm_alteration(VelocityController* vel_control
     if (vel_control==NULL){
         return;
     }
-    std::cout<<"no imp alt"<<std::endl;
-    return;
+
+    //std::cout<<"no imp alt"<<std::endl;
+    //return;
 
     steps_left_sag--;
     if (steps_left_sag < 1){
@@ -847,13 +857,17 @@ void SwingFootController::compute_ipm_alteration(VelocityController* vel_control
         if (std::abs(d_v) > 0.3){
             d_v = 0.3*(d_v / std::abs(d_v));
         }
-        ipm_alt_sagittal -= (d_v)*0.1;
 
-        if (ipm_alt_sagittal > 0.045){
-            ipm_alt_sagittal = 0.045;
+        float evo_coef=0.01;
+        ipm_alt_sagittal -= (d_v)*evo_coef;
+
+        float limit_max=0.035;
+        float limit_min=-0.090;
+        if (ipm_alt_sagittal > limit_max){
+            ipm_alt_sagittal = limit_max;
         }
-        else if (ipm_alt_sagittal < -0.090){
-            ipm_alt_sagittal = -0.090;
+        else if (ipm_alt_sagittal < limit_min){
+            ipm_alt_sagittal = limit_min;
         }
 
         /*

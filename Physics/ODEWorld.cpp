@@ -1251,34 +1251,15 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
 
         //*
         //don't bother with the toes they are not large enougth to have any significative impact
-        if (bname=="rToes"){
+        if (bname.find("Toes")!=std::string::npos){
             //impact_drag = compute_liquid_drag_on_toes(body, water_level, drag_density);
             //impact_boyancy = compute_buoyancy(body, water_level);
         }
-        else if (bname=="lToes"){
-            //impact_drag = compute_liquid_drag_on_toes(body, water_level, drag_density);
-            //impact_boyancy = compute_buoyancy(body, water_level);
-        }else if (bname=="rFoot"){
+        else if (bname.find("Foot")!=std::string::npos){
             impact_drag = compute_liquid_drag_on_feet(body, water_level, drag_density, friction_factor);
             impact_boyancy = compute_buoyancy(body, water_level);
         }
-        else if (bname=="lFoot"){
-            impact_drag = compute_liquid_drag_on_feet(body, water_level, drag_density, friction_factor);
-            impact_boyancy = compute_buoyancy(body, water_level);
-        }
-        else if (bname=="lLowerleg"){
-            impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density, friction_factor);
-            impact_boyancy = compute_buoyancy(body, water_level);
-        }
-        else if (bname=="rLowerleg"){
-            impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density, friction_factor);
-            impact_boyancy = compute_buoyancy(body, water_level);
-        }
-        else if (bname=="lUpperleg"){
-            impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density, friction_factor);
-            impact_boyancy = compute_buoyancy(body, water_level);
-        }
-        else if (bname=="rUpperleg"){
+        else if (bname.find("leg")!=std::string::npos){
             impact_drag = compute_liquid_drag_on_legs(body, water_level, drag_density, friction_factor);
             impact_boyancy = compute_buoyancy(body, water_level);
         }
@@ -1291,8 +1272,8 @@ void ODEWorld::compute_water_impact(Character* character, float water_level, Wat
 
         if (!impact_boyancy.isZero()){
 
-            impact_drag.modifyApplicationPoint(body->getCMPosition());
-            impact_boyancy.modifyApplicationPoint(body->getCMPosition());
+            //impact_drag.modifyApplicationPoint(body->getCMPosition());
+            //impact_boyancy.modifyApplicationPoint(body->getCMPosition());
 
             /*
             applyForceTo(body, impact_drag.F, body->getLocalCoordinates(impact_drag.pt));
@@ -1518,7 +1499,6 @@ ForceStruct ODEWorld::compute_liquid_drag_on_feet(RigidBody *body, float water_l
     }
 
     //I want the lower points to find out if the box is in the water
-    //I call Z the vertical axis but in this world representation the vertical axis is actualy Y...
 
     Point3d center = box->center();
     Point3d corners[8];
@@ -1614,7 +1594,7 @@ ForceStruct ODEWorld::compute_liquid_drag_on_feet(RigidBody *body, float water_l
 
 
         //just a note since the larger faces are the top and bottom face (and that it's near impossible that none of them
-        //is facing the movement) I'll base miself on tham to compute the friction
+        //is facing the movement) I'll base myself on them to compute the friction
 
         //first let's handle the back face
         cur_pos = body->getWorldCoordinates(center + Point3d(-box->X_length() / 2 + d_x / 2,
@@ -1660,6 +1640,7 @@ ForceStruct ODEWorld::compute_liquid_drag_on_feet(RigidBody *body, float water_l
 
         //*/
     }
+
 
     return drag_impact;
 }
@@ -1902,18 +1883,25 @@ ForceStruct ODEWorld::compute_liquid_drag_on_planev2(RigidBody *body, Point3d po
                 elem_impact.F=F;
                 elem_impact.pt=pos;
 
+
+                if(Globals::estimatedFluidDirectSampleApplication){
+                    applyForceToWorldPos(body,F,pos);
+                }
+
                 //now tranfer it to the body COM
                 elem_impact.modifyApplicationPoint(body->getCMPosition());
 
                 //and add it
                 drag_impact+=elem_impact;
 
-                /*
+                //*
                 //this can be used to show the forces
-                ForceStruct cp;
-                cp.F = F;
-                cp.pt = pos;
-                SimGlobals::vect_forces.push_back(cp);
+                if (Globals::estimatedFluidDrawDrag){
+                    ForceStruct cp;
+                    cp.F = F;
+                    cp.pt = pos;
+                    Globals::vect_forces_estimated_fluid.push_back(cp);
+                }
                 //*/
 
             }
@@ -1926,6 +1914,8 @@ ForceStruct ODEWorld::compute_liquid_drag_on_planev2(RigidBody *body, Point3d po
         }
         pos = line_start + v1;
     }
+
+
     return drag_impact;
 }
 
@@ -2036,19 +2026,27 @@ ForceStruct ODEWorld::compute_liquid_drag_on_legs(RigidBody *body, float water_l
                     elem_impact.F=F;
                     elem_impact.pt=body->getWorldCoordinates(cur_pos);
 
+                    if(Globals::estimatedFluidDirectSampleApplication){
+                        applyForceTo(body,F,cur_pos);
+                    }
+
                     //now tranfer it to the body COM
                     elem_impact.modifyApplicationPoint(body->getCMPosition());
 
                     //and add it
                     drag_impact+=elem_impact;
 
-                    /*
+                    //*
                     //this can be used to show the forces
-                    ForceStruct cp;
-                    cp.F = F;
-                    cp.pt = body->getWorldCoordinates(cur_pos);
-                    SimGlobals::vect_forces.push_back(cp);
+                    if (Globals::estimatedFluidDrawDrag){
+                        ForceStruct cp;
+                        cp.F = F;
+                        cp.pt = body->getWorldCoordinates(cur_pos);
+                        Globals::vect_forces_estimated_fluid.push_back(cp);
+                    }
                     //*/
+
+
 
                     force_applied = true;
                 }
@@ -2085,6 +2083,10 @@ ForceStruct ODEWorld::compute_buoyancy(RigidBody *body, float water_level){
         result_force = compute_buoyancy_on_capsule(body, water_level, -SimGlobals::gravity, SimGlobals::liquid_density);// +SimGlobals::force_alpha);
     }else{
         throw("detected smth other than accepted primitive when computing boyancy");
+    }
+
+    if(Globals::estimatedFluidDirectSampleApplication){
+        applyForceToWorldPos(body,result_force.F,result_force.pt);
     }
 
     return result_force;

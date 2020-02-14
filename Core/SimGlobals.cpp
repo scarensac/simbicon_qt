@@ -71,7 +71,6 @@ double SimGlobals::water_level = 0;
 double SimGlobals::liquid_density = 1000;
 double SimGlobals::liquid_viscosity = 1;
 double SimGlobals::left_stance_factor = 0;
-std::vector<ForceStruct> SimGlobals::vect_forces = std::vector<ForceStruct>();
 
 //for the deplacement direction control
 double SimGlobals::velDSagittal = 0.7;//0.95;
@@ -106,24 +105,88 @@ int SimGlobals::nb_active_objects=0;
 
 
 
+SimGlobals::SimGlobals(){
+    reset_sim_globals();
+}
+
 void SimGlobals::reset_sim_globals()
 {
-    SimGlobals::velDSagittal = 0.7;//0.95;
-    SimGlobals::velDCoronal = 0;
+    gravity = -9.8;
+    up = Vector3d(0, 1, 0);
+    forceHeadingControl = 1;
+    desiredHeading = 0;
+    desiredHeading_active = 0;
+    dt = 1.0/(300.0);
+    activeRbEngine = NULL;
+    stanceFootWorld = NULL;
+    simu_time=0;
 
-    SimGlobals::desiredHeading = 0;
-    SimGlobals::force_ipm= false;
+    conInterpolationValue;
+    bipDesiredVelocity;
 
-    SimGlobals::force_alpha = 0;
-    SimGlobals::water_level = 0.0;
-    SimGlobals::liquid_density = 1000;
-    SimGlobals::liquid_viscosity = 1;
-    SimGlobals::left_stance_factor = 0;
 
-    SimGlobals::step_width = 0.1;
+    targetPos = 0;
 
-    SimGlobals::foot_flat_on_ground=false;
-    SimGlobals::stanceFootWorld=NULL;
+
+    targetPosX = 0;
+    targetPosZ = 0;
+
+    constraintSoftness = 1;
+    CGIterCount = 0;
+    linearizationCount = 1;
+
+
+    rootSagittal = 0;
+    rootLateral = 0;
+    swingHipSagittal = 0;
+    swingHipLateral = 0;
+    stanceAngleSagittal = 0;
+    stanceAngleLateral = 0;
+    stanceKnee = 0;
+
+    COMOffsetX = 0;
+    COMOffsetZ = 0;
+
+    time_factor = 1;
+
+    force_ipm= false;
+
+    force_alpha = 0;
+    water_level = 0;
+    liquid_density = 1000;
+    liquid_viscosity = 1;
+    left_stance_factor = 0;
+
+    //for the deplacement direction control
+    velDSagittal = 0.7;//0.95;
+    velDCoronal = 0;
+    velDSagittalOld = 0.7;//0.95;
+    velDCoronalOld = 0;
+
+
+    step_width = 0.1;
+
+
+
+    is_evaluation = false;
+    steps_before_evaluation = 2;
+    evaluation_length= 1;
+
+
+    ipm_alteration_effectiveness=1;
+    virtual_force_effectiveness=1;
+
+    foot_flat_on_ground=false;
+    foot_flat_on_ground_current=false;
+
+    requested_state_duration=-1;
+    state_duration_modified=false;
+
+
+    nb_container_boxes=1;
+    nb_filler=9;
+    nb_collisons_event=0;
+    nb_active_objects=0;
 }
 
 

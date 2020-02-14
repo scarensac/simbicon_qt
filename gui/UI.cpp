@@ -174,10 +174,12 @@ void appProcess(void){
     //we will check the tk/tcl messages as well...
     //CheckTCLTKEvents();
 
-    if (!Globals::window || !Globals::app)
+    GLWindow* window=Globals::window ;
+    Application* app=Globals::app ;
+    if (!window || !app)
         return;
 
-    Globals::window->onStartProcessing();
+    window->onStartProcessing();
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
 
@@ -190,29 +192,34 @@ void appProcess(void){
 
     //we will only process the task if the animation should be running
     if (Globals::animationRunning)
-        (Globals::app)->processTask();
+        (app)->processTask();
 
     std::chrono::time_point<std::chrono::high_resolution_clock> end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff=end-start;
-    Globals::window->timeSpentProcessing2+=diff.count();
+    window->timeSpentProcessing2+=diff.count();
 
-    Globals::window->onStopProcessing();
+    window->onStopProcessing();
 
-    if (Globals::followCharacter)
-        Globals::window->setCameraTarget(Globals::app->getCameraTarget());
+    if(Globals::use_gl_interface){
 
-	if (Globals::gamepad) {
-        if (gamepad==NULL) {
-            gamepad = new GamepadController();
-            Globals::window->setCameraTarget(Globals::app->getCameraTarget());
-            Globals::window->setCameraRotation(Vector3d(-0.2,M_PI+0.1,0.0));
+
+        if (Globals::followCharacter)
+            window->setCameraTarget(app->getCameraTarget());
+
+        if (Globals::gamepad) {
+            if (gamepad==NULL) {
+                gamepad = new GamepadController();
+                window->setCameraTarget(app->getCameraTarget());
+                window->setCameraRotation(Vector3d(-0.2,M_PI+0.1,0.0));
+            }
+            if (gamepad->updateState()) manageGamepadInput();
         }
-        if (gamepad->updateState()) manageGamepadInput();
-    }
-    else if (gamepad!=NULL) {delete gamepad; gamepad=NULL;}						
-    //check the tk/tcl messages again
-    //CheckTCLTKEvents();
+        else if (gamepad!=NULL) {delete gamepad; gamepad=NULL;}
+        //check the tk/tcl messages again
+        //CheckTCLTKEvents();
 
+
+    }
 
     //force a redraw now...
     glutPostRedisplay();
@@ -320,8 +327,8 @@ void manageGamepadInput() {
     // Right stick for camera orientation
     Vector3d rot = Globals::window->getCameraRotation();
     rot += Vector3d(0,0.1*gamepad->positionStick(GamepadController::RIGHT_STICK_X),0.0);
+    rot += Vector3d(-0.1*gamepad->positionStick(GamepadController::RIGHT_STICK_Y),0,0.0);
     Globals::window->setCameraRotation(rot);
-
     // Pause
     if (gamepad->isKeyPressed(GamepadController::START) && !startPressed) {
         Globals::animationRunning=!Globals::animationRunning;
@@ -483,8 +490,8 @@ void init_evaluate_solution( bool save, bool close_after_evaluation)
     Globals::animationRunning = 1;
     Globals::save_mode=false;
     Globals::close_after_saving=false;
-    SimGlobals::steps_before_evaluation = 15;
-    SimGlobals::evaluation_length = 5;
+    SimGlobals::steps_before_evaluation = 25;
+    SimGlobals::evaluation_length = 6;
     SimGlobals::liquid_density = 1000;
     SimGlobals::force_alpha = 0;
     Globals::use_contact_controller=false;
