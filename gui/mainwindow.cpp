@@ -285,8 +285,9 @@ void MainWindow::start_click()
 
 
             Globals::use_hand_position_tracking=false;
+            SimGlobals::block_ipm_alteration=true;
             Globals::evolution_mode = true;
-            //here Ill doo the optimisation/learning
+            //here Ill do the optimisation/learning
             console_window->show();
 
             Globals::use_contact_controller=false;
@@ -359,6 +360,7 @@ void MainWindow::start_click()
         case 2:
         {
             Globals::use_hand_position_tracking=false;
+            SimGlobals::block_ipm_alteration=true;
             Globals::evolution_mode = 1;
             //the evaluation mode
             //Just start the simulation with standart values
@@ -441,13 +443,26 @@ SimbiconOnjectiveFunction::SimbiconOnjectiveFunction(){
     //this should load all the concerned trajectories
     for (int k = 0; k < (int)vect_traj_name.size(); ++k){
         Trajectory* cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[k].c_str());
+        std::cout<<"test: "<<vect_traj_name[k]<<"   "<<cur_traj->components.size()<<std::endl;
         for (int j = 0; j < (int)cur_traj->components.size(); ++j){
             TrajectoryComponent* traj_comp = cur_traj->components[j];
+            std::cout<<"check: "<<vect_traj_name[k]<<"  "<<traj_comp->rotationAxis.toString()<<"  "<<traj_comp->baseTraj.getKnotCount()<<std::endl;
+            if(cur_traj->components[j]->is_implicit()){
+                continue;
+            }
+            std::cout<<"test"<<std::endl;
+            //for the pelvis we only want the x axis
+            if((k==5)&&traj_comp->rotationAxis.x==0){
+                continue;
+            }
+
+            std::cout<<"test: "<<vect_traj_name[k]<<"  "<<traj_comp->rotationAxis.toString()<<"  "<<traj_comp->baseTraj.getKnotCount()<<std::endl;
             for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
                 variable_vector.push_back(traj_comp->baseTraj.getKnotValue(i));
             }
         }
     }
+
 
     //then we add the step delta at the end
     //variable_vector.push_back(SimGlobals::ipm_alteration_effectiveness);
@@ -494,6 +509,16 @@ SimbiconOnjectiveFunction::ResultType SimbiconOnjectiveFunction::eval(const Sear
         Trajectory* cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[k].c_str());
         for (int j = 0; j < (int)cur_traj->components.size(); ++j){
             TrajectoryComponent* traj_comp = cur_traj->components[j];
+
+            if(cur_traj->components[j]->is_implicit()){
+                continue;
+            }
+            //for the pelvis we only want the x axis
+            if((k==5)&&traj_comp->rotationAxis.x==0){
+                continue;
+            }
+
+
             for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
                 traj_comp->baseTraj.setKnotValue(i, input[cur_pos]);
                 ++cur_pos;

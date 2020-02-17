@@ -103,6 +103,8 @@ int SimGlobals::nb_filler=9;
 int SimGlobals::nb_collisons_event=0;
 int SimGlobals::nb_active_objects=0;
 
+bool SimGlobals::block_ipm_alteration=false;
+
 
 
 SimGlobals::SimGlobals(){
@@ -187,6 +189,8 @@ void SimGlobals::reset_sim_globals()
     nb_filler=9;
     nb_collisons_event=0;
     nb_active_objects=0;
+
+    block_ipm_alteration=false;
 }
 
 

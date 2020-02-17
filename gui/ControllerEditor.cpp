@@ -829,7 +829,7 @@ void ControllerEditor::processTask(){
 
                 std::chrono::duration<double> diff=end-start;
                 delta_time+=diff.count();
-/*
+                /*
                 std::chrono::steady_clock::time_point end_f = std::chrono::steady_clock::now();
                 float time_iter = -std::chrono::duration_cast<std::chrono::nanoseconds> (start_f - end_f).count() / 1000000.0f;
                 float time_solid= -std::chrono::duration_cast<std::chrono::nanoseconds> (intermed2 - end).count() / 1000000.0f;
@@ -861,24 +861,61 @@ void ControllerEditor::processTask(){
                 std::cout<<"time iter: "<<time_iter<<"  with for control ; soli simu: "<<time_control<<"  "<<time_solid<<std::endl;
 //*/
             }catch(char* c){
-                std::string msg(c);
-                std::cout<<msg<<std::endl;
-                Globals::animationRunning=0;
 
-                return;
+                if(Globals::evolution_mode&&Globals::close_after_evaluation){
+                    Globals::simulation_eval=10E30;
+                    Globals::animationRunning=0;
+                    reset_members_for_evaluation();
+                    if (Globals::close_after_evaluation){
+                        stop_gl();
+                    }
+                }else{
+                    std::string msg(c);
+                    std::cout<<msg<<std::endl;
+                    Globals::animationRunning=0;
+                    return;
+                }
             }catch(const char* c){
-                std::string msg(c);
-                std::cout<<msg<<std::endl;
-                Globals::animationRunning=0;
-                return;
+
+                if(Globals::evolution_mode&&Globals::close_after_evaluation){
+                    Globals::simulation_eval=10E30;
+                    Globals::animationRunning=0;
+                    reset_members_for_evaluation();
+                    if (Globals::close_after_evaluation){
+                        stop_gl();
+                    }
+                }else{
+                    std::string msg(c);
+                    std::cout<<msg<<std::endl;
+                    Globals::animationRunning=0;
+                    return;
+                }
             }catch(std::string s){
-                std::cout<<s<<std::endl;
-                Globals::animationRunning=0;
-                return;
+                if(Globals::evolution_mode&&Globals::close_after_evaluation){
+                    Globals::simulation_eval=10E30;
+                    Globals::animationRunning=0;
+                    reset_members_for_evaluation();
+                    if (Globals::close_after_evaluation){
+                        stop_gl();
+                    }
+                }else{
+                    std::cout<<s<<std::endl;
+                    Globals::animationRunning=0;
+                    return;
+                }
             }catch(...){
-                std::cout<<"failed catching it"<<std::endl;
-                Globals::animationRunning=0;
-                return;
+                if(Globals::evolution_mode&&Globals::close_after_evaluation){
+                    Globals::simulation_eval=10E30;
+                    Globals::animationRunning=0;
+                    reset_members_for_evaluation();
+                    if (Globals::close_after_evaluation){
+                        stop_gl();
+                    }
+                }else{
+                    std::cout<<"failed catching it"<<std::endl;
+                    Globals::animationRunning=0;
+                    return;
+                }
             }
 
 
@@ -1953,7 +1990,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
         vect_joints= conF->getController()->get_character()->get_joints();
 
 
-        /*
+        //*
         //this version just sum the torques on the lower body
         if (Globals::evolution_type==0){
             double eval_buff_torque = 0;
@@ -1965,6 +2002,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
         //*/
 
         //this one is the sum of the torques on the whole body
+        /*
         if (Globals::evolution_type==0){
 
             //end of one step or end of the evaluation
@@ -1973,13 +2011,13 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 //dividing by the number of evaluation iteration will allow the use of the same weight on all configuration fo timestep
                 sum_eval_whole_body_torques *= 1.0 * (0.5 * 1E-2) / count_eval_iter;
 
-                //*
+
                 if (!Globals::close_after_evaluation){
                     std::ostringstream oss;
                     oss<<"sum_torques whole body: "<<sum_eval_whole_body_torques;
                     std::cout<<oss.str()<<std::endl;
                 }
-                //*/
+
                 eval_result += sum_eval_whole_body_torques ;
                 sum_eval_whole_body_torques=0;
             }
@@ -1988,6 +2026,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 sum_eval_whole_body_torques += conF->getController()->getTorque(i).length();
             }
         }
+        //*/
 
 
         //*
@@ -1997,7 +2036,8 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
             //end of one step or end of the evaluation
             if (cumul_time >SimGlobals::evaluation_length ){
                 //ponderation (le *1E? sert à normalizer)
-                sum_eval_liquid_drag *= 6 *1E4 / count_eval_iter;
+                sum_eval_liquid_drag *= 6 / 1E4 / count_eval_iter;
+
 
                 //*
                 if (!Globals::close_after_evaluation){
@@ -2043,13 +2083,13 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 //here we use the square of the count since this function use the square of the torques
                 sum_eval_weighted_acc *= 1.0 * (1E7) / (count_eval_iter*count_eval_iter);
 
-                //*
+
                 if (!Globals::close_after_evaluation){
                     std::ostringstream oss;
                     oss<<"sum_acc_all: "<<sum_eval_weighted_acc;
                     std::cout<<oss.str()<<std::endl;
                 }
-                //*/
+
                 eval_result += sum_eval_weighted_acc;
                 sum_eval_weighted_acc=0;
 
@@ -2444,7 +2484,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 double z_speed = (vect_speed_z[i]+vect_speed_z[i+1])/2.0;
                 if (std::abs(z_speed - SimGlobals::velDSagittal) > accepted_error){
                     eval_result += (double)1E10*std::min(1.0,std::pow((std::abs(z_speed - SimGlobals::velDSagittal) - accepted_error)/accepted_error,4));
-                                      //  std::cout<<"vel error z: "<<z_speed- SimGlobals::velDSagittal<<std::endl;
+                    //  std::cout<<"vel error z: "<<z_speed- SimGlobals::velDSagittal<<std::endl;
                 }
             }
             vect_speed_z.clear();
@@ -2452,7 +2492,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
             //we do the same for the x axis
             accepted_error = std::fmax(std::abs(SimGlobals::velDCoronal / 20.0), 0.02);
             if (Globals::evolution_type==0){
-               accepted_error== std::fmax(std::abs(SimGlobals::velDCoronal / 20.0), 0.05);
+                accepted_error== std::fmax(std::abs(SimGlobals::velDCoronal / 20.0), 0.05);
             }
 
 
@@ -2461,7 +2501,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 double x_speed = (vect_speed_x[i]+vect_speed_x[i+1])/2.0;
                 if (std::abs(x_speed - SimGlobals::velDCoronal) > accepted_error){
                     eval_result += (double)1E10*std::min(1.0,std::pow((std::abs(x_speed - SimGlobals::velDCoronal) - accepted_error)/accepted_error,4));
-                                          //                  std::cout<<"vel error x: "<<std::abs(x_speed - SimGlobals::velDCoronal)<<std::endl;
+                    //                  std::cout<<"vel error x: "<<std::abs(x_speed - SimGlobals::velDCoronal)<<std::endl;
                 }
             }
             vect_speed_x.clear();
@@ -2485,6 +2525,13 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
                 }
                 if (conF->getController()->phi_last_step < min_phi){
                     eval_result += (double)10E10*std::abs(min_phi - conF->getController()->phi_last_step);
+                }
+
+                //I'll also check the width of the step
+                Vector3d step= conF->getCharacter()->stance_foot()->getCMPosition()-conF->getCharacter()->swing_foot()->getCMPosition();
+                if (abs(step.x)<0.12){
+                    double error=(0.12-std::abs(step.x));
+                    eval_result += (double)10E15*error*error;
                 }
             }
 

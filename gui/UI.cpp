@@ -461,7 +461,9 @@ void launch_gl(){
 
 void stop_gl()
 {
-    std::cout<<"stoping opengl context"<<std::endl;
+    if(!Globals::evolution_mode){
+        std::cout<<"stoping opengl context"<<std::endl;
+    }
     core_close();
     //glutDestroyWindow(Globals::glut_window_id);
     glutLeaveMainLoop();
@@ -490,8 +492,8 @@ void init_evaluate_solution( bool save, bool close_after_evaluation)
     Globals::animationRunning = 1;
     Globals::save_mode=false;
     Globals::close_after_saving=false;
-    SimGlobals::steps_before_evaluation = 25;
-    SimGlobals::evaluation_length = 6;
+    SimGlobals::steps_before_evaluation = 10;
+    SimGlobals::evaluation_length = 5;
     SimGlobals::liquid_density = 1000;
     SimGlobals::force_alpha = 0;
     Globals::use_contact_controller=false;
