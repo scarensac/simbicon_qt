@@ -90,6 +90,8 @@ public:
 void Interface::loadFluid(){
     //for now I'll init it by loading from file
     SingletonDFSPHCUDA::getFluid()->handleSimulationLoad(true,false,true,false,true,false);
+    SingletonDFSPHCUDA::getFluid()->reset();
+
 
     //also init the shader
     std::cout<<"initialising shader start"<<std::endl;
@@ -107,15 +109,17 @@ void Interface::initFluid(double timeStep){
     //during those steps I'll start with a 1ms duration and go to the desired duration
     //*
      handleDynamicBodiesPause(true);
+     /*/
      int nb_iter_init=10;
-    double delta=(timeStep-0.001)/nb_iter_init;
+    double delta=(timeSrtep-0.001)/nb_iter_init;
     for (int i=0;i<10;++i){
         updateTimeStepDuration(0.001+delta*i);
         fluidSimulationStep();
         zeroFluidVelocities();
     }
     updateTimeStepDuration(timeStep);
-    fluidSimulationStep();
+    //fluidSimulationStep();
+    //*/
     //*/
 
      handleDynamicBodiesPause(false);
@@ -231,6 +235,7 @@ void Interface::getFluidBoyancyOnDynamicBodies(std::vector<Vector3d>& forces, st
 }
 
 void Interface::fluidSimulationStep(){
+    //std::cout<<"step fluid"<<std::endl;
     SingletonDFSPHCUDA::getFluid()->step();
 }
 
@@ -248,7 +253,6 @@ void Interface::zeroFluidVelocities(){
 }
 
 bool Interface::moveFluidSimulation(Point3d target_Position){
-
     //get the center
     SPH::Vector3d sim_center=SingletonDFSPHCUDA::getFluid()->getSimulationCenter();
 

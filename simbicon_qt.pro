@@ -6,7 +6,7 @@
 
 CONFIG += object_parallel_to_source
 CONFIG += no_batch
-#CONFIG += FLUID_COMPIL
+CONFIG += FLUID_COMPIL
 CONFIG += SHARK_UTILISATION
 CONFIG += BOOST_UTILISATION
 #CONFIG += MT
@@ -139,6 +139,7 @@ FLUID_COMPIL {
 #opengl libs
 INCLUDEPATH += .
 INCLUDEPATH += include
+INCLUDEPATH += SPlisHSPlasH/
 
 #glew
 Debug:LIBS += -L.\external_libs\GL\glew\msvc2015_MD\lib\Debug\x64
@@ -218,6 +219,14 @@ FLUID_COMPIL {
 
     #specify the cuda file to compile
     CUDA_SOURCES += SPlisHSPlasH/DFSPH/DFSPH_cuda_basic.cu
+    CUDA_SOURCES += SPlisHSPlasH/DFSPH/DFSPH_memory_management_cuda.cu
+    CUDA_SOURCES += SPlisHSPlasH/DFSPH/DFSPH_rendering_cuda.cu
+    CUDA_SOURCES += SPlisHSPlasH/DFSPH/DFSPH_static_variables_structure_cuda.cu
+    CUDA_SOURCES += SPlisHSPlasH/DFSPH/DFSPH_core_cuda.cu
+    CUDA_SOURCES += SPlisHSPlasH/DFSPH/basic_kernels_cuda.cu
+    CUDA_SOURCES += SPlisHSPlasH/DFSPH/SPH_other_systems_cuda.cu
+    CUDA_SOURCES += SPlisHSPlasH/DFSPH/SPH_dynamic_window_buffer.cu
+
     #so that the cuda fila are visible in editor
     OTHER_FILES +=  $$CUDA_SOURCES
 
@@ -248,6 +257,7 @@ FLUID_COMPIL {
     LIBS += -lcuda -lcudart
 
     INCLUDEPATH+= external_libs\cub-1.7.4\cub
+    INCLUDEPATH+= SPlisHSPlasH/
 
     # The following makes sure all path names (which often include spaces) are put between quotation marks
     CUDA_INC =
@@ -260,7 +270,7 @@ FLUID_COMPIL {
 
         #read as: --compiler-options options,... + ISO-standard C++ exception handling
         # + speed over size, + create debug symbols, + code generation multi-threaded debug
-        NVCC_OPTIONS += -Xcompiler /EHsc,/O2,/MTd,/Zi
+        NVCC_OPTIONS += -Xcompiler /EHsc,/O2,/MDd,/Zi
 
         cuda_d.input = CUDA_SOURCES
         cuda_d.output = $$CUDA_OBJECTS_DIR/${QMAKE_FILE_BASE}_cuda.o
@@ -273,7 +283,7 @@ FLUID_COMPIL {
 
         #read as: --compiler-options options,... + ISO-standard C++ exception handling
         # + speed over size, + code generation multi-threaded
-        NVCC_OPTIONS += -Xcompiler /EHsc,/O2,/MT
+        NVCC_OPTIONS += -Xcompiler /EHsc,/O2,/MD
 
         cuda.input = CUDA_SOURCES
         cuda.output = $$CUDA_OBJECTS_DIR/${QMAKE_FILE_BASE}_cuda.o

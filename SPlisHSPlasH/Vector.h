@@ -2,12 +2,15 @@
 #define __Vector_h__
 
 #include <cmath>
+#include <string>
 #include "SPlisHSPlasH\BasicTypes.h"
 
 #ifdef __NVCC__
 #define FUNCTION __host__ __device__
+#define SQRT_MACRO(x) SQRT_MACRO_CUDA(x)
 #else
 #define FUNCTION 
+#define SQRT_MACRO(x) std::sqrt(x)
 #endif
 
 
@@ -80,8 +83,10 @@ namespace SPH
 
 		FUNCTION inline T squaredNorm() { return x*x + y*y + z*z; }
 		FUNCTION inline T squaredNorm() const { return x*x + y*y + z*z; }
-		FUNCTION inline T norm() { return std::sqrt(squaredNorm()); }
-		FUNCTION inline T norm() const { return std::sqrt(squaredNorm()); }
+		FUNCTION inline T norm() { return SQRT_MACRO(squaredNorm()); }
+		FUNCTION inline T norm() const { return SQRT_MACRO(squaredNorm()); }
+
+		FUNCTION inline Vector3& toUnit() { (*this)/=norm(); return *this; }
 
 		template<typename T2>
 		FUNCTION inline T dot(const Vector3<T2> &o) const { return x * o.x + y * o.y + z * o.z; }
@@ -107,9 +112,12 @@ namespace SPH
         template<typename T2>
         FUNCTION inline Vector3& toMin(const Vector3<T2> &o) { if (x > o.x)x = o.x; if (y > o.y)y = o.y; if (z > o.z)z = o.z; return *this; }
 
-        template<typename T2>
-        FUNCTION inline Vector3& toMax(const Vector3<T2> &o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
+		template<typename T2>
+		FUNCTION inline Vector3& toMax(const Vector3<T2>& o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
 
+
+		//host only functions
+		inline std::string toString() { return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z); }
 
 	};
 

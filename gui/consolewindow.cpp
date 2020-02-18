@@ -26,9 +26,9 @@ ConsoleWindow::ConsoleWindow(QWidget *parent) :
     link_signals();
 
     //now we link cout to the console
-    debug_stream=new Q_DebugStream(std::cout, ui->txt_edit_console); //Redirect Console output to QTextEdit
+    //debug_stream=new Q_DebugStream(std::cout, ui->txt_edit_console); //Redirect Console output to QTextEdit
     //I don't use qDebug but i can still activate this
-    Q_DebugStream::registerQDebugMessageHandler(); //Redirect qDebug() output to QTextEdit
+    //Q_DebugStream::registerQDebugMessageHandler(); //Redirect qDebug() output to QTextEdit
 
 }
 

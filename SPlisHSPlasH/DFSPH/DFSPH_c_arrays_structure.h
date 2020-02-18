@@ -5,275 +5,17 @@
 #include <string>
 #include <vector>
 
-#ifndef M_PI
-#define M_PI       3.14159265358979323846   // pi
-#endif
 
 #include "SPlisHSPlasH\Vector.h"
 #include "SPlisHSPlasH\Quaternion.h"
 
-
-#define GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+#include "DFSPH_define_c.h"
+#include "SPH_kernels.h"
 
 class ParticleSetRenderingData;
 
 namespace SPH
 {
-//this is an eigen less cubic kernel
-/** \brief Cubic spline kernel.
-    */
-class CubicKernelPerso
-{
-protected:
-    RealCuda m_radius;
-    RealCuda m_k;
-    RealCuda m_l;
-    RealCuda m_W_zero;
-public:
-    FUNCTION RealCuda getRadius() { return m_radius; }
-    FUNCTION void setRadius(RealCuda val)
-    {
-        m_radius = val;
-        static const RealCuda pi = static_cast<RealCuda>(M_PI);
-
-        const RealCuda h3 = m_radius*m_radius*m_radius;
-        m_k = 8.0 / (pi*h3);
-        m_l = 48.0 / (pi*h3);
-        m_W_zero = W(Vector3d::Zero());
-    }
-
-public:
-    FUNCTION RealCuda W(const RealCuda r) const
-    {
-        RealCuda res = 0.0;
-        const RealCuda q = r / m_radius;
-        if (q <= 1.0)
-        {
-            if (q <= 0.5)
-            {
-                const RealCuda q2 = q*q;
-                const RealCuda q3 = q2*q;
-                res = m_k * (6.0*q3 - 6.0*q2 + 1.0);
-            }
-            else
-            {
-                const RealCuda factor = 1.0 - q;
-                //res = m_k * (2.0*pow(1.0 - q, 3));
-                res = m_k * (2.0*factor*factor*factor);
-            }
-        }
-        return res;
-    }
-
-    FUNCTION inline RealCuda W(const Vector3d &r) const
-    {
-        return W(r.norm());
-    }
-
-    FUNCTION Vector3d gradW(const Vector3d &r) const
-    {
-        Vector3d res;
-        const RealCuda rl = r.norm();
-        const RealCuda q = rl / m_radius;
-        if (q <= 1.0)
-        {
-            if (rl > 1.0e-6)
-            {
-                const Vector3d gradq = r * ((RealCuda) 1.0 / (rl*m_radius));
-                if (q <= 0.5)
-                {
-                    res = m_l*q*((RealCuda) 3.0*q - (RealCuda) 2.0)*gradq;
-                }
-                else
-                {
-                    const RealCuda factor = 1.0 - q;
-                    res = m_l*(-factor*factor)*gradq;
-                }
-            }
-        }
-        else
-            res.setZero();
-
-        return res;
-    }
-
-    FUNCTION inline RealCuda W_zero() const
-    {
-        return m_W_zero;
-    }
-};
-
-class PrecomputedCubicKernelPerso
-{
-public:
-    RealCuda* m_W;
-    RealCuda* m_gradW;
-    RealCuda m_radius;
-    RealCuda m_radius2;
-    RealCuda m_invStepSize;
-    RealCuda m_W_zero;
-    unsigned int m_resolution;
-public:
-
-    PrecomputedCubicKernelPerso(){
-        m_W=NULL;
-        m_gradW=NULL;
-    }
-
-    FUNCTION RealCuda getRadius() { return m_radius; }
-    void setRadius(RealCuda val);
-    void freeMemory();
-
-public:
-    FUNCTION RealCuda W(const Vector3d &r) const
-    {
-        RealCuda res = 0.0;
-        const RealCuda r2 = r.squaredNorm();
-        if (r2 <= m_radius2)
-        {
-            const RealCuda r = sqrt(r2);
-            const unsigned int pos = (unsigned int)(r * m_invStepSize);
-            res = m_W[pos];
-        }
-        return res;
-    }
-
-    FUNCTION RealCuda W(const RealCuda r) const
-    {
-        RealCuda res = 0.0;
-        if (r <= m_radius)
-        {
-            const unsigned int pos = (unsigned int)(r * m_invStepSize);
-            res = m_W[pos];
-        }
-        return res;
-    }
-
-    FUNCTION Vector3d gradW(const Vector3d &r) const
-    {
-        Vector3d res;
-        const RealCuda r2 = r.squaredNorm();
-        if (r2 <= m_radius2)
-        {
-            const RealCuda rl = sqrt(r2);
-            const unsigned int pos = (unsigned int)(rl * m_invStepSize);
-            res = m_gradW[pos] * r;
-        }
-        else
-            res.setZero();
-
-        return res;
-    }
-
-    FUNCTION inline RealCuda W_zero() const
-    {
-        return m_W_zero;
-    }
-};
-
-
-/** \brief Cohesion kernel used for the surface tension method of Akinci el al. \cite Akinci:2013.
-        */
-class CohesionKernelGPU
-{
-protected:
-    RealCuda m_radius;
-    RealCuda m_k;
-    RealCuda m_c;
-    RealCuda m_W_zero;
-public:
-    FUNCTION RealCuda getRadius() { return m_radius; }
-    FUNCTION void setRadius(const RealCuda val)
-    {
-        m_radius = val;
-        RealCuda pi = 3.14159265358979323846;
-        m_k = 32. / (pi*pow(m_radius, 9));
-        m_c = pow(m_radius, 6) / 64.0;
-        m_W_zero = W(0);
-    }
-
-public:
-
-    /**
-            * W(r,h) = (32/(pi h^9))(h-r)^3*r^3					if h/2 < r <= h
-            *          (32/(pi h^9))(2*(h-r)^3*r^3 - h^6/64		if 0 < r <= h/2
-            */
-    FUNCTION RealCuda W(const RealCuda r) const
-    {
-        RealCuda res = 0.0;
-        const RealCuda r2 = r*r;
-        const RealCuda radius2 = m_radius*m_radius;
-        if (r2 <= radius2)
-        {
-            const RealCuda r1 = sqrt(r2);
-            const RealCuda r3 = r2*r1;
-            RealCuda factor=m_radius - r1;
-            res=m_k*factor*factor*factor*r3;
-            if (r1 <= 0.5*m_radius){
-                res = 2.0*res - m_c;
-            }
-
-        }
-        return res;
-    }
-
-    FUNCTION RealCuda W(const Vector3d &r) const
-    {
-        return W(r.norm());
-    }
-
-    FUNCTION RealCuda W_zero() const
-    {
-        return m_W_zero;
-    }
-};
-
-/** \brief Adhesion kernel used for the surface tension method of Akinci el al. \cite Akinci:2013.
-            */
-class AdhesionKernelGPU
-{
-protected:
-    RealCuda m_radius;
-    RealCuda m_k;
-    RealCuda m_W_zero;
-public:
-    FUNCTION RealCuda getRadius() { return m_radius; }
-    FUNCTION void setRadius(RealCuda val)
-    {
-        m_radius = val;
-        m_k = 0.007 / powf(m_radius, 3.25);
-        m_W_zero = W(0);
-    }
-
-public:
-
-    /**
-                * W(r,h) = (0.007/h^3.25)(-4r^2/h + 6r -2h)^0.25					if h/2 < r <= h
-                */
-    FUNCTION RealCuda W(const RealCuda r) const
-    {
-        RealCuda res = 0.0;
-        const RealCuda r2 = r*r;
-        const RealCuda radius2 = m_radius*m_radius;
-        if (r2 <= radius2)
-        {
-            const RealCuda r = sqrt(r2);
-            if (r > 0.5*m_radius)
-                res = m_k*powf(-4.0*r2 / m_radius + 6.0*r - 2.0*m_radius, 0.25);
-        }
-        return res;
-    }
-
-    FUNCTION RealCuda W(const Vector3d &r) const
-    {
-        return W(r.norm());
-    }
-
-    FUNCTION RealCuda W_zero() const
-    {
-        return m_W_zero;
-    }
-};
 
 class DynamicBody {
 public:
@@ -292,6 +34,8 @@ class UnifiedParticleSet;
 
 class NeighborsSearchDataSet {
 public:
+	int set_id;
+
     unsigned int numParticles;
     unsigned int numParticlesMax;
     unsigned int* cell_id;
@@ -351,10 +95,7 @@ class UnifiedParticleSet {
 public:
 
 
-    //the size is 75 because I checked and the max neighbours I reached was 58
-    //so I put some more to be sure. In the end those buffers will stay on the GPU memory
-    //so there will be no transfers.
-#define MAX_NEIGHBOURS 90
+
     //this allow the control of the destructor call
     //especially it was create to be able to use temp variable sot copy to cuda
     //but I also need it for the initialisation because doing a=b(params) call the destructur at the end of the line ...
@@ -391,6 +132,11 @@ public:
     RealCuda* kappa;
     RealCuda* kappaV;
 
+	//that is for the boundaries handling with bender 2019 method
+	//for now I'll put them directly inside the fluid particles structure 
+	RealCuda* V_rigids;
+	Vector3d* X_rigids;
+
     //for dynamic object particles
     //the original particle position
     Vector3d* pos0;
@@ -405,6 +151,8 @@ public:
 
     //data for the rendering
     ParticleSetRenderingData* renderingData;
+	Vector3d* color;//not used all of the tme it's mostly a debug fonctionality
+	bool has_color_buffer;
 
     //pointer for the gpu storage (that should be a copy of this item but allocated on the gpu)
     UnifiedParticleSet* gpu_ptr;
@@ -423,7 +171,10 @@ public:
     UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
                        bool is_dynamic_object_i);
     void init(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
-              bool is_dynamic_object_i);
+              bool is_dynamic_object_i, bool need_color_buffer);
+
+    //copy contructor
+    UnifiedParticleSet(UnifiedParticleSet* other);
 
     //destructor
     ~UnifiedParticleSet();
@@ -443,6 +194,7 @@ public:
     //only do smth for the dynamic bodies
     void transferForcesToCPU();
 
+
     //this does the necessary calls to be able to run the neighbors search later
     void initNeighborsSearchData(DFSPHCData &data, bool sort_data, bool delete_computation_data=false);
 
@@ -455,14 +207,19 @@ public:
     //store a unified dataset to a file
     void write_to_file(std::string file_path);
     //load a unified dataset from a file
-    void load_from_file(std::string file_path, bool load_velocities, Vector3d* min_o=NULL, Vector3d* max_o=NULL);
+    void load_from_file(std::string file_path, bool load_velocities, Vector3d* min_o=NULL, Vector3d* max_o=NULL, bool positions_limitations=true);
 
     //store the forces to a file in case of a dynamic body
     void write_forces_to_file(std::string file_path);
 
     FUNCTION inline int* getNeighboursPtr(int particle_id) {
-        //	return neighbourgs + body_id*numFluidParticles*MAX_NEIGHBOURS + particle_id*MAX_NEIGHBOURS;
+#ifdef INTERLEAVE_NEIGHBORS
+		return neighbourgs + particle_id;
+#else
         return neighbourgs + particle_id*MAX_NEIGHBOURS;
+#endif
+
+
     }
 
     FUNCTION inline unsigned int getNumberOfNeighbourgs(int particle_id, int body_id = 0) {
@@ -477,6 +234,11 @@ public:
 
     void zeroVelocities();
 
+	void getMinMaxNaive(Vector3d& min, Vector3d& max);
+
+	void loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i);
+
+	void resetColor();
 };
 
 
@@ -498,10 +260,21 @@ public:
     const Vector3d gravitation = Vector3d(0.0f, -9.81, 0.0f);
 
     //static size and value all time
+
+#ifdef PRECOMPUTED_KERNELS
+	FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel_precomp.W(r); }
+	FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel_precomp.W(r); }
+	FUNCTION inline Vector3d gradW(const Vector3d &r) const { return m_kernel_precomp.gradW(r); }
+	FUNCTION inline RealCuda getKernelRadius() { return m_kernel_precomp.getRadius(); }
+	FUNCTION inline RealCuda getKernelRadius() const { return m_kernel_precomp.getRadius(); }
+#else
     FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel.W(r); }
     FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel.W(r); }
     FUNCTION inline Vector3d gradW(const Vector3d &r) const { return m_kernel.gradW(r); }
-    FUNCTION inline RealCuda getKernelRadius()  { return m_kernel.getRadius(); }
+	FUNCTION inline RealCuda getKernelRadius() { return m_kernel.getRadius(); }
+	FUNCTION inline RealCuda getKernelRadius() const { return m_kernel.getRadius(); } 
+#endif // PRECOMPUTED_KERNELS
+
 
     FUNCTION inline RealCuda WAdhesion(const Vector3d &r) const { return m_kernel_adhesion.W(r); }
     FUNCTION inline RealCuda WAdhesion(const RealCuda r) const { return m_kernel_adhesion.W(r); }
@@ -515,7 +288,8 @@ public:
     RealCuda particleRadius;
     RealCuda viscosity;
     RealCuda m_surfaceTension;
-    Vector3i gridOffset;
+	Vector3i gridOffset;
+	Vector3d dynamicWindowTotalDisplacement;
 
     RealCuda h;
     RealCuda h_future;
@@ -566,9 +340,15 @@ public:
     Vector3d* cancel_wave_planes;
     RealCuda cancel_wave_lowest_point;
 
+	std::string fluid_files_folder;
+
+
     DFSPHCData();
     DFSPHCData(FluidModel *model);
     ~DFSPHCData();
+
+	int getFluidParticlesCount() { return fluid_data->numParticles; };
+	int getFluidParticlesCountMax() { return fluid_data->numParticlesMax; };
 
     FUNCTION RealCuda getSurfaceTension(){return m_surfaceTension;}
 
@@ -578,23 +358,11 @@ public:
     void readDynamicObjectsData(FluidModel *model);
 
     void reset(FluidModel *model);
+	void initGridOffset();
 
-    inline void updateTimeStep(RealCuda h_fut) {
-        h_future = h_fut;
-        invH_future = 1.0 / h_future;
-        invH2_future = 1.0 / (h_future*h_future);
-        h_ratio_to_past = h / h_future;
-        h_ratio_to_past2 = (h*h) / (h_future*h_future);
-    }
+	void updateTimeStep(RealCuda h_fut); 
 
-    inline void onSimulationStepEnd() {
-        h_past = h;
-        invH_past = invH;
-        invH2_past = invH2;
-        h = h_future;
-        invH = invH_future;
-        invH2 = invH2_future;
-    }
+	void onSimulationStepEnd(); 
 
     inline RealCuda get_current_timestep(){return h;}
 
@@ -627,6 +395,14 @@ public:
     SPH::Vector3d getSimulationCenter();
 
     void computeRigidBodiesParticlesMass();
+
+
+	void loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i);
+
+    void setFluidFilesFolder(std::string root_folder, std::string local_folder);
+
+	//don't call that ...
+	void handleFluidBoundries(bool loading = false, Vector3d movement=Vector3d(0,0,0));
 };
 }
 

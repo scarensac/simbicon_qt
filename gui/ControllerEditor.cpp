@@ -49,7 +49,6 @@ ControllerEditor::ControllerEditor(void):InteractiveWorld(){
     }
 
 
-
     conF=NULL;
 
     /*
@@ -1525,7 +1524,7 @@ void ControllerEditor::processFluidStepping(){
 
 
         if (!Globals::fluidControlLevel){
-            signal_messenger.emit_fluid_level(Interface::getFluidLevel());
+            //signal_messenger.emit_fluid_level(Interface::getFluidLevel());
         }else{
             Interface::handleFLuidLevelControl(SimGlobals::water_level);
         }
@@ -1543,19 +1542,9 @@ void ControllerEditor::processFluidStepping(){
             WaterImpact current_impact;
 
             //if we only do the fluid it mean the rb are paused
-            ode_world->sendDataToParticleFluidEngine();
+            //ode_world->sendDataToParticleFluidEngine();
             Interface::handleDynamicBodiesPause(true);
             ode_world->advanceInTimeParticleFluidEngine(SimGlobals::dt);
-            //show the forces
-
-            ode_world->readDataFromParticleFluidEngine(current_impact,simbiconframework->getCharacter());
-
-
-            for (int i=0;i<current_impact.getNumBodies();++i){
-                //Globals::vect_forces.push_back(current_impact.getBoyancyInOrder(i));
-                //Globals::vect_forces.push_back(current_impact.getDragInOrder(i));
-            }
-
 
             //and since the sim of rb is paused the controler step is done :)
             return;
@@ -1694,7 +1683,7 @@ void ControllerEditor::processFluidStepping(){
 
     if (!Globals::simulateOnlyFluid){
 
-        bool apply_forces=true;
+        bool apply_forces=false;
         bool show_forces=false;
 
 

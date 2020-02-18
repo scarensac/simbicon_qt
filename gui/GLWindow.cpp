@@ -191,7 +191,7 @@ void GLWindow::setCameraTarget(const Point3d& newTarget){
 	this->camera.target = newTarget;
 }
 
-//#define FFMPEG_RENDER
+#define FFMPEG_RENDER
 #ifdef FFMPEG_RENDER
 #define USE_MULTIPLES_SHADER
 #endif
@@ -298,7 +298,7 @@ void GLWindow::draw(){
         if (Globals::simulateFluid){
             // Enable blending
 
-            Interface::drawParticles(true,true,false);
+            Interface::drawParticles(true,true,false,false);
 
 
 #ifdef FFMPEG_RENDER
@@ -392,6 +392,8 @@ void GLWindow::draw(){
              if (Globals::drawFPS){
                  currently_saving=false;
                  _pclose(ffmpeg);
+                 std::cout<<"finished saving"<<std::endl;
+                 exit(0);
              }
          }
 #endif

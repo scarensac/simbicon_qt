@@ -5,6 +5,8 @@
 #define USE_DOUBLE
 #endif
 
+//#define SPLISHSPLASH_FRAMEWORK
+
 #ifdef USE_DOUBLE
 typedef double Real;
 
@@ -37,6 +39,8 @@ typedef double RealCuda;
 #define MAX_MACRO_CUDA(x,y) fmax(x,y)
 #define MIN_MACRO_CUDA(x,y) fmin(x,y)
 
+#define SQRT_MACRO_CUDA(x) sqrt (x)
+
 #define GL_FORMAT GL_DOUBLE
 
 #pragma warning( disable : 4244 4305 )  
@@ -46,6 +50,8 @@ typedef float RealCuda;
 
 #define MAX_MACRO_CUDA(x,y) fmaxf(x,y)
 #define MIN_MACRO_CUDA(x,y) fminf(x,y)
+
+#define SQRT_MACRO_CUDA(x) sqrtf (x)
 
 #define GL_FORMAT GL_FLOAT
 

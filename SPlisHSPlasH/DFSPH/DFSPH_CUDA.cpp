@@ -5,15 +5,25 @@
 #endif //SPLISHSPLASH_FRAMEWORK
 #include "SPlisHSPlasH/SPHKernels.h"
 #include <iostream>
+#include "SPlisHSPlasH/Utilities/SegmentedTiming.h"
 #include "SPlisHSPlasH/Utilities/Timing.h"
 #include "DFSPH_cuda_basic.h"
 #include <fstream>
 #include <sstream>
 
+// BENDER2019_BOUNDARIES includes
+#ifdef BENDER2019_BOUNDARIES
+#include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
+#include "SPlisHSPlasH/StaticRigidBody.h"
+#include "SPlisHSPlasH/Utilities/GaussQuadrature.h"
+#endif
+
+/*
 #ifdef SPLISHSPLASH_FRAMEWORK
 throw("DFSPHCData::readDynamicData must not be used outside of the SPLISHSPLASH framework");
 #else
 #endif //SPLISHSPLASH_FRAMEWORK
+//*/
 
 using namespace SPH;
 using namespace std;
@@ -46,6 +56,36 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_enableDivergenceSolver = true;
     is_dynamic_bodies_paused = false;
     show_fluid_timings=false;
+
+#ifdef BENDER2019_BOUNDARIES
+	m_boundaryModelBender2019 = new BoundaryModel_Bender2019();
+	StaticRigidBody* rbo = dynamic_cast<StaticRigidBody*>(model->getRigidBodyParticleObject(0)->m_rigidBody);
+	m_boundaryModelBender2019->initModel(rbo, model);
+	SPH::TriangleMesh& mesh = rbo->getGeometry();
+	initVolumeMap(m_boundaryModelBender2019);
+
+	
+#endif
+
+    setFluidFilesFolder("configuration_data","fluid_data/dynamic_buffers/");
+    /*
+    std::ostringstream oss;
+#ifdef SPLISHSPLASH_FRAMEWORK
+    oss << FileSystem::get_folder_path("data", 5);
+    oss<<  "save_folder/";
+#else
+    oss << FileSystem::get_folder_path(, 5);
+    //oss << "fluid_data/cdp_char_reduced/";
+    //oss << "fluid_data/dynamic_buffers/";
+    oss << "fluid_data/cdp_char/";
+    //oss << "fluid_data/test_ball_object/";
+    //oss << "fluid_data/test_box_object/";
+    //oss << "fluid_data/test_objects/";
+#endif
+
+    fluid_files_folder = oss.str();
+    std::cout << "detected fluid file folder: " << fluid_files_folder << std::endl;
+    //*/
 }
 
 DFSPHCUDA::~DFSPHCUDA(void)
@@ -59,15 +99,37 @@ void DFSPHCUDA::step()
     static int count_steps = 0;
 
 #ifdef SPLISHSPLASH_FRAMEWORK
+	if (TimeManager::getCurrent()->getTime() > 0.5) {
+		if ((count_steps % 32) == 0) {
+			//handleSimulationMovement(Vector3d(1, 0, 0));
+		}
+	}
+
     m_data.viscosity = m_viscosity->getViscosity();
 #else
     m_data.viscosity = 0.02;
 #endif //SPLISHSPLASH_FRAMEWORK
 
 
+
     if (true) {
         m_data.destructor_activated = false;
 
+        bool moving_borders = false;
+        static int count_moving_steps = 0;
+#ifdef OCEAN_BOUNDARIES_PROTOTYPE
+	if (count_steps == 0) {
+        m_data.handleFluidBoundries(true,Vector3d(0,0,1));
+	}
+    /*
+    if ((count_steps > 5) && ((count_steps % 7) == 0))
+	{
+        handleSimulationMovement(Vector3d(0, 0, 1));
+		moving_borders = true;
+		count_moving_steps++;
+	}
+    //*/
+#endif
         /*
         if (count_steps == 0) {
             std::vector<Vector3d> additional_pos;
@@ -81,9 +143,9 @@ void DFSPHCUDA::step()
 
         static float time_avg = 0;
         static unsigned int time_count = 0;
-#define NB_TIME_POINTS 8
+#define NB_TIME_POINTS 9
         std::chrono::steady_clock::time_point tab_timepoint[NB_TIME_POINTS+1];
-        std::string tab_name[NB_TIME_POINTS] = { "read dynamic bodies data", "neighbors","divergence", "viscosity","cfl","update vel","density","update pos" };
+        std::string tab_name[NB_TIME_POINTS] = { "read dynamic bodies data", "neighbors","divergence", "viscosity","cfl","update vel","density","update pos","dynamic_borders" };
         static float tab_avg[NB_TIME_POINTS] = { 0 };
         int current_timepoint = 0;
 
@@ -96,9 +158,58 @@ void DFSPHCUDA::step()
 
 
 
+
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
         //*
         cuda_neighborsSearch(m_data);
+
+		///TODO change the code so that the boundaries volumes and distances are conputed directly on the GPU
+#ifdef BENDER2019_BOUNDARIES
+		{
+
+			RealCuda* V_rigids= new RealCuda[m_data.getFluidParticlesCount()];
+			Vector3d* X_rigids= new Vector3d[m_data.getFluidParticlesCount()];
+
+			//sadly I need to update the cpu storage positions as long as those calculations are done on cpu
+			//TODO replace that by a simple read of the positions no need to update the damn model
+			m_data.readDynamicData(m_model,m_simulationData);
+
+			std::cout << m_data.dynamicWindowTotalDisplacement.x << std::endl;
+			//do the actual conputation
+			int numParticles = m_data.getFluidParticlesCount();
+			#pragma omp parallel default(shared)
+			{
+				#pragma omp for schedule(static)  
+				for (int i = 0; i < (int)numParticles; i++)
+				{
+					computeVolumeAndBoundaryX(i);
+
+					X_rigids[i] = vector3rTo3d(m_boundaryModelBender2019->getBoundaryXj(0, i))+ m_data.dynamicWindowTotalDisplacement;
+					V_rigids[i] = m_boundaryModelBender2019->getBoundaryVolume(0, i);;
+				}
+			}
+			
+
+			//now send that info to the GPU
+			m_data.loadBender2019BoundariesFromCPU(V_rigids,X_rigids);
+
+
+			/*
+			for (int i = 0; i < (int)numParticles; i++)
+			{
+				std::cout << "particle " << i << 
+					"  v // x // density  " <<
+					V_rigids[i]<<"  //  "<< X_rigids[i].x << " " <<X_rigids[i].y << " "<< X_rigids[i].z << "  //  "<<
+					std::endl;
+			}
+			//*/
+
+			delete[](X_rigids);
+			delete[](V_rigids);
+
+			
+		}
+#endif
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
@@ -106,11 +217,14 @@ void DFSPHCUDA::step()
         if (m_enableDivergenceSolver)
         {
             m_iterationsV = cuda_divergenceSolve(m_data, m_maxIterationsV, m_maxErrorV);
+
+			
         }
         else
         {
             m_iterationsV = 0;
         }
+
 
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
@@ -142,19 +256,80 @@ void DFSPHCUDA::step()
 
         m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
 
+		if (false&&count_steps == 0) 	
+		{
+			/*
+			//a simple test showing all the first particle neighbors in order
+
+			{
+				int test_particle = 0;
+				std::cout << "particle id: " << test_particle << "  neighbors count: " << m_data.fluid_data->getNumberOfNeighbourgs(test_particle, 0) << "  " <<
+					m_data.fluid_data->getNumberOfNeighbourgs(test_particle, 1) << "  " <<
+					m_data.fluid_data->getNumberOfNeighbourgs(test_particle, 2) << std::endl;
+				int numParticles = m_data.fluid_data->numParticles;
+				int * end_ptr = m_data.fluid_data->getNeighboursPtr(test_particle);
+				int * cur_particle = end_ptr;
+				for (int k = 0; k < 3; ++k) {
+#ifdef INTERLEAVE_NEIGHBORS
+					end_ptr += m_data.fluid_data->getNumberOfNeighbourgs(test_particle, k)*numParticles;
+					while (cur_particle != end_ptr) {
+						std::cout << *cur_particle << std::endl;
+						cur_particle += numParticles;
+					}
+#else
+					end_ptr += m_data.fluid_data->getNumberOfNeighbourgs(test_particle, k);
+					while (cur_particle != end_ptr) {
+						std::cout << *cur_particle++ << std::endl;
+					}
+#endif
+				}
+			}
+
+			//*/
+
+			//this is only for debug purpose
+			std::string filename = "boundaries density adv.csv";
+				std::remove(filename.c_str());
+			ofstream myfile;
+			myfile.open(filename, std::ios_base::app);
+			if (myfile.is_open()) {
+				SPH::UnifiedParticleSet* set = m_data.fluid_data;
+				for (int i = 0; i < set->numParticles; ++i) {
+					myfile << i << ", " <<set->getNumberOfNeighbourgs(i,0) 
+						<< ", " << set->getNumberOfNeighbourgs(i,1) 
+						<< ", " << set->getNumberOfNeighbourgs(i,2)
+						<< ", " << set->density[i]
+						<< ", " << set->densityAdv[i] << std::endl;;
+
+				}
+				//myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+				myfile.close();
+			}
+			else {
+				std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+			}
+		}
+		
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
         cuda_update_pos(m_data);
 
+        tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
+
+        //test dynamic boundary 
+
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
 
+
         m_data.readDynamicObjectsData(m_model);
         m_data.onSimulationStepEnd();
+
+		m_data.fluid_data->resetColor();
 
         // Compute new time
 
@@ -165,12 +340,13 @@ void DFSPHCUDA::step()
         //*/
 
 
+
+		//code for timming informations
+
         if ((current_timepoint-1) != NB_TIME_POINTS) {
             std::cout << "the number of time points does not correspond: "<< current_timepoint<<std::endl;
             exit(325);
         }
-
-
 
         float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[NB_TIME_POINTS] - tab_timepoint[0]).count() / 1000000.0f;
         float time_between= std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[0] - end).count() / 1000000.0f;
@@ -192,12 +368,25 @@ void DFSPHCUDA::step()
             for (int i = 0; i < NB_TIME_POINTS; ++i) {
                 float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
                 tab_avg[i] += time;
-                std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
+                
+                if (i == 8) {
+                    std::cout << tab_name[i] << "  :" << ((count_moving_steps>0)?(tab_avg[i] / (count_moving_steps + 1)):0) << "  (" << time << ")" << std::endl;
+                } else {
+                    std::cout << tab_name[i] << "  :" << (tab_avg[i] / (count_steps + 1)) << "  (" << time << ")" << std::endl;
+                }
             }
         }
 
+		if (true) {
+			if ((count_steps % 50) == 0) {
+				std::cout << "time computation for "<< count_steps <<" steps: " << total_time << std::endl;
+			}
+		}
+
 
         if (false){
+			static float real_time = 0;
+			real_time += new_time_step;
             std::string filename = "timmings_detailled.csv";
             if (count_steps == 0) {
                 std::remove(filename.c_str());
@@ -205,8 +394,9 @@ void DFSPHCUDA::step()
             ofstream myfile;
             myfile.open(filename, std::ios_base::app);
             if (myfile.is_open()) {
-                myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
-                myfile.close();
+                //myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+				myfile << real_time << ", " << time_iter << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+				myfile.close();
             }
             else {
                 std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
@@ -214,17 +404,18 @@ void DFSPHCUDA::step()
         }
 
 
+		if (false) {
+			if (count_steps > 1500) {
+				count_steps = 0;
+				total_time = 0;
+				iter_pressure_avg = 0;
+				iter_divergence_avg = 0;
 
-        if (count_steps > 1500) {
-            count_steps = 0;
-            total_time = 0;
-            iter_pressure_avg = 0;
-            iter_divergence_avg = 0;
-
-            for (int i = 0; i < NB_TIME_POINTS; ++i) {
-                tab_avg[i] = 0;
-            }
-        }
+				for (int i = 0; i < NB_TIME_POINTS; ++i) {
+					tab_avg[i] = 0;
+				}
+			}
+		}
 
         end = std::chrono::steady_clock::now();
 
@@ -301,8 +492,10 @@ void DFSPHCUDA::step()
 
     if(show_fluid_timings){
         static int true_count_steps = 0;
-        std::cout << "step finished: " << true_count_steps++<<"  "<< count_steps++ << std::endl;
+        std::cout << "step finished: " << true_count_steps<<"  "<< count_steps << std::endl;
+		true_count_steps++;
     }
+	count_steps++;
 }
 
 void DFSPHCUDA::reset()
@@ -329,7 +522,7 @@ void DFSPHCUDA::reset()
 }
 
 
-#ifdef SPLISHSPLASH_FRAMEWORK#endif //SPLISHSPLASH_FRAMEWORK
+#ifdef SPLISHSPLASH_FRAMEWORK
 
 void DFSPHCUDA::computeDFSPHFactor()
 {
@@ -1088,6 +1281,243 @@ void DFSPHCUDA::surfaceTension_Akinci2013()
     throw("go look for the code but there are multiples funtion to copy so ...");
 }
 
+void DFSPHCUDA::computeVolumeAndBoundaryX(const unsigned int i)
+{
+	//I leave those just to make the transition easier to code
+	const unsigned int nFluids = 1;
+	const unsigned int nBoundaries = 1;
+	const bool sim2D = false;
+	const Real supportRadius = m_model->getSupportRadius();
+	const Real particleRadius = m_model->getParticleRadius();
+	const Real dt = TimeManager::getCurrent()->getTimeStepSize();
+	int fluidModelIndex = 0;
+	Vector3r xi = m_model->getPosition(0, i)-vector3dTo3r(m_data.dynamicWindowTotalDisplacement);
+	//*
+
+	for (unsigned int pid = 0; pid < nBoundaries; pid++)
+	{
+		BoundaryModel_Bender2019* bm = m_boundaryModelBender2019;
+
+		Vector3r& boundaryXj = bm->getBoundaryXj(fluidModelIndex, i);
+		boundaryXj.setZero();
+		Real& boundaryVolume = bm->getBoundaryVolume(fluidModelIndex, i);
+		boundaryVolume = 0.0;
+
+		const Vector3r& t = bm->getRigidBodyObject()->getPosition();
+		const Matrix3r& R = bm->getRigidBodyObject()->getRotation();
+
+		Eigen::Vector3d normal;
+		const Eigen::Vector3d localXi = (R.transpose() * (xi - t)).cast<double>();
+
+		std::array<unsigned int, 32> cell;
+		Eigen::Vector3d c0;
+		Eigen::Matrix<double, 32, 1> N;
+#ifdef USE_FD_NORMAL
+		bool chk = bm->getMap()->determineShapeFunctions(0, localXi, cell, c0, N);
+#else
+		Eigen::Matrix<double, 32, 3> dN;
+		bool chk = bm->getMap()->determineShapeFunctions(0, localXi, cell, c0, N, &dN);
+#endif
+		Real dist = numeric_limits<Real>::max();
+		if (chk)
+#ifdef USE_FD_NORMAL
+			dist = static_cast<Real>(bm->getMap()->interpolate(0, localXi, cell, c0, N));
+#else
+			dist = static_cast<Real>(bm->getMap()->interpolate(0, localXi, cell, c0, N, &normal, &dN));
+#endif
+		
+		if ((dist > 0.1 * particleRadius) && (dist < supportRadius))
+		{
+			const Real volume = static_cast<Real>(bm->getMap()->interpolate(1, localXi, cell, c0, N));
+			if ((volume > 1e-6) && (volume != numeric_limits<Real>::max()))
+			{
+				boundaryVolume = volume;
+
+#ifdef USE_FD_NORMAL
+				if (sim2D)
+					approximateNormal(bm->getMap(), localXi, normal, 2);
+				else
+					approximateNormal(bm->getMap(), localXi, normal, 3);
+#endif
+				normal = R.cast<double>() * normal;
+				const double nl = normal.norm();
+				if (nl > 1.0e-6)
+				{
+					normal /= nl;
+					boundaryXj = (xi - dist * normal.cast<Real>());
+				}
+				else
+				{
+					boundaryVolume = 0.0;
+				}
+			}
+			else
+			{
+				boundaryVolume = 0.0;
+			}
+		}
+		else if (dist <= 0.1 * particleRadius)
+		{
+			normal = R.cast<double>() * normal;
+			const double nl = normal.norm();
+			if (nl > 1.0e-6)
+			{
+				std::string msg = "If this is triggered it means a particle was too close to the border so you'll need to reactivate that code I'm not sure works";
+				std::cout<<msg<<std::endl;
+				throw(msg);
+				/*
+				normal /= nl;
+				// project to surface
+				Real d = -dist;
+				d = std::min(d, static_cast<Real>(0.25 / 0.005)* particleRadius* dt);		// get up in small steps
+				sim->getFluidModel(fluidModelIndex)->getPosition(i) = (xi + d * normal.cast<Real>());
+				// adapt velocity in normal direction
+				sim->getFluidModel(fluidModelIndex)->getVelocity(i) += (0.05 - sim->getFluidModel(fluidModelIndex)->getVelocity(i).dot(normal.cast<Real>())) * normal.cast<Real>();
+				//*/
+			}
+			boundaryVolume = 0.0;
+		}
+		else
+		{
+			boundaryVolume = 0.0;
+		}
+	}
+     //*/
+}
+
+
+void DFSPHCUDA::initVolumeMap(BoundaryModel_Bender2019* boundaryModel) {
+	StaticRigidBody* rbo = dynamic_cast<StaticRigidBody*>(boundaryModel->getRigidBodyObject());
+	SPH::TriangleMesh& mesh = rbo->getGeometry();
+	std::vector<Vector3r>& x= mesh.getVertices();
+	std::vector<unsigned int>& faces= mesh.getFaces();
+
+	const Real supportRadius = m_model->getSupportRadius();
+	Discregrid::CubicLagrangeDiscreteGrid* volumeMap;
+
+	
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Generate distance field of object using Discregrid
+	//////////////////////////////////////////////////////////////////////////
+#ifdef USE_DOUBLE_CUDA
+	Discregrid::TriangleMesh sdfMesh(&x[0][0], faces.data(), x.size(), faces.size() / 3);
+#else
+	// if type is float, copy vector to double vector
+	std::vector<double> doubleVec;
+	doubleVec.resize(3 * x.size());
+	for (unsigned int i = 0; i < x.size(); i++)
+		for (unsigned int j = 0; j < 3; j++)
+			doubleVec[3 * i + j] = x[i][j];
+	Discregrid::TriangleMesh sdfMesh(&doubleVec[0], faces.data(), x.size(), faces.size() / 3);
+#endif
+
+	Discregrid::MeshDistance md(sdfMesh);
+	Eigen::AlignedBox3d domain;
+	for (auto const& x_ : x)
+	{
+		domain.extend(x_.cast<double>());
+	}
+	const Real tolerance = 0.0;///TODO set that as a parameter the current valu is just the one I read from the current project github
+	domain.max() += (4.0 * supportRadius + tolerance) * Eigen::Vector3d::Ones();
+	domain.min() -= (4.0 * supportRadius + tolerance) * Eigen::Vector3d::Ones();
+
+	std::cout << "Domain - min: " << domain.min()[0] << ", " << domain.min()[1] << ", " << domain.min()[2] << std::endl;
+	std::cout << "Domain - max: " << domain.max()[0] << ", " << domain.max()[1] << ", " << domain.max()[2] << std::endl;
+
+	Eigen::Matrix<unsigned int, 3, 1> resolutionSDF = Eigen::Matrix<unsigned int, 3, 1>(40, 30, 15);///TODO set that as a parameter the current valu is just the one I read from the current project github
+	std::cout << "Set SDF resolution: " << resolutionSDF[0] << ", " << resolutionSDF[1] << ", " << resolutionSDF[2] << std::endl;
+	volumeMap = new Discregrid::CubicLagrangeDiscreteGrid(domain, std::array<unsigned int, 3>({ resolutionSDF[0], resolutionSDF[1], resolutionSDF[2] }));
+	auto func = Discregrid::DiscreteGrid::ContinuousFunction{};
+
+	//volumeMap->setErrorTolerance(0.001);
+	
+	Real sign = 1.0;
+	bool mapInvert = true; ///TODO set that as a parameter the current valu is just the one I read from the current project github
+	if (mapInvert)
+		sign = -1.0;
+	const Real particleRadius = m_model->getParticleRadius();
+	// subtract 0.5 * particle radius to prevent penetration of particles and the boundary
+	func = [&md, &sign, &tolerance, &particleRadius](Eigen::Vector3d const& xi) {return sign * (md.signedDistanceCached(xi) - tolerance - 0.5 * particleRadius); };
+
+	std::cout << "Generate SDF" << std::endl;
+	volumeMap->addFunction(func, false);
+
+	//////////////////////////////////////////////////////////////////////////
+	// Generate volume map of object using Discregrid
+	//////////////////////////////////////////////////////////////////////////
+	
+	const bool sim2D = false;
+
+	auto int_domain = Eigen::AlignedBox3d(Eigen::Vector3d::Constant(-supportRadius), Eigen::Vector3d::Constant(supportRadius));
+	Real factor = 1.0;
+	if (sim2D)
+		factor = 1.75;
+	auto volume_func = [&](Eigen::Vector3d const& x)
+	{
+		auto dist = volumeMap->interpolate(0u, x);
+		if (dist > (1.0 + 1.0 )* supportRadius)
+		{
+			return 0.0;
+		}
+
+		auto integrand = [&volumeMap, &x, &supportRadius, &factor](Eigen::Vector3d const& xi) -> double
+		{
+			if (xi.squaredNorm() > supportRadius* supportRadius)
+				return 0.0;
+
+			auto dist = volumeMap->interpolate(0u, x + xi);
+
+			if (dist <= 0.0)
+				return 1.0 - 0.1 * dist / supportRadius;
+			if (dist < 1.0 / factor * supportRadius)
+				return static_cast<double>(CubicKernel::W(factor * static_cast<Real>(dist)) / CubicKernel::W_zero());
+			return 0.0;
+		};
+
+		double res = 0.0;
+		res = 0.8 * GaussQuadrature::integrate(integrand, int_domain, 30);
+
+		return res;
+	};
+	
+	auto cell_diag = volumeMap->cellSize().norm();
+	std::cout << "Generate volume map..." << std::endl;
+	const bool no_reduction = true;
+	volumeMap->addFunction(volume_func, false, [&](Eigen::Vector3d const& x_)
+		{
+			if (no_reduction)
+			{
+				return true;
+			}
+			auto x = x_.cwiseMax(volumeMap->domain().min()).cwiseMin(volumeMap->domain().max());
+			auto dist = volumeMap->interpolate(0u, x);
+			if (dist == std::numeric_limits<double>::max())
+			{
+				return false;
+			}
+
+			return -6.0 * supportRadius < dist + cell_diag && dist - cell_diag < 2.0 * supportRadius;
+		});
+
+	// reduction
+	if (!no_reduction)
+	{
+		std::cout << "Reduce discrete fields...";
+		volumeMap->reduceField(0u, [&](Eigen::Vector3d const&, double v)->double
+			{
+				return 0.0 <= v && v <= 3.0;
+			});
+		std::cout << "DONE" << std::endl;
+	}
+
+	boundaryModel->setMap(volumeMap);
+
+	
+	//*/
+}
+
+
 #endif //SPLISHSPLASH_FRAMEWORK
 
 void DFSPHCUDA::checkReal(std::string txt, Real old_v, Real new_v) {
@@ -1124,11 +1554,11 @@ void DFSPHCUDA::checkVector3(std::string txt, Vector3d old_v, Vector3d new_v) {
 
 
 void DFSPHCUDA::renderFluid() {
-    cuda_renderFluid(m_data);
+    cuda_renderFluid(&m_data);
 }
 
 void DFSPHCUDA::renderBoundaries(bool renderWalls) {
-    cuda_renderBoundaries(m_data, renderWalls);
+    cuda_renderBoundaries(&m_data, renderWalls);
 }
 
 
@@ -1162,6 +1592,22 @@ void DFSPHCUDA::handleDynamicBodiesPause(bool pause) {
 void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool save_boundaries) {
     if (save_liquid) {
         m_data.write_fluid_to_file();
+		
+		//save the others fluid data
+		std::string file_name = m_data.fluid_files_folder + "general_data.txt";
+		std::remove(file_name.c_str());
+		std::cout << "saving general data to: " << file_name << std::endl;
+
+		ofstream myfile;
+		myfile.open(file_name, std::ios_base::app);
+		if (myfile.is_open()) {
+			//the timestep
+			myfile << m_data.h;
+			myfile.close();
+		}
+		else {
+			std::cout << "failed to open file: " << file_name << "   reason: " << std::strerror(errno) << std::endl;
+		}
     }
 
     if (save_boundaries) {
@@ -1171,6 +1617,7 @@ void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool sa
     if (save_solids) {
         m_data.write_solids_to_file();
     }
+
 }
 
 void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities, 
@@ -1188,13 +1635,40 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
     if (load_boundaries||load_solids){
         m_data.computeRigidBodiesParticlesMass();
 
-        handleSimulationSave(false, true, true);
+        //handleSimulationSave(false, true, true);
     }
 
     if (load_liquid) {
         m_data.read_fluid_from_file(load_liquid_velocities);
-    }
+		
+		//load the others fluid data
+		std::string file_name = m_data.fluid_files_folder + "general_data.txt";
+		std::cout << "loading general data start: " << file_name << std::endl;
 
+		ifstream myfile;
+		myfile.open(file_name);
+		if (!myfile.is_open()) {
+			std::cout << "trying to read from unexisting file: " << file_name << std::endl;
+			exit(256);
+		}
+
+		//read the first line
+		RealCuda sim_step;
+		myfile >> sim_step;
+		m_data.updateTimeStep(sim_step);
+		m_data.onSimulationStepEnd();
+		m_data.updateTimeStep(sim_step);
+		m_data.onSimulationStepEnd();
+
+	#ifdef SPLISHSPLASH_FRAMEWORK
+		TimeManager::getCurrent()->setTimeStepSize(sim_step);
+	#else
+		desired_time_step = sim_step;
+	#endif //SPLISHSPLASH_FRAMEWORK
+
+
+		std::cout << "loading general data end: " << std::endl;
+    }
 
 
 }
@@ -1202,8 +1676,10 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
 
 void DFSPHCUDA::handleSimulationMovement(Vector3d movement) {
     if (movement.norm() > 0.5) {
-
-        move_simulation_cuda(m_data, movement);
+        bool old_val=m_data.destructor_activated;
+        m_data.destructor_activated=false;
+		m_data.handleFluidBoundries(false, movement);
+        m_data.destructor_activated=old_val;
     }
 }
 
@@ -1239,9 +1715,11 @@ void DFSPHCUDA::zeroFluidVelocities() {
 }
 
 
+#ifndef SPLISHSPLASH_FRAMEWORK
 void DFSPHCUDA::updateTimeStepDuration(RealCuda duration){
     desired_time_step=duration;
 }
+#endif //SPLISHSPLASH_FRAMEWORK
 
 void DFSPHCUDA::forceUpdateRigidBodies(){
     m_data.loadDynamicObjectsData(m_model);
@@ -1259,3 +1737,9 @@ void DFSPHCUDA::getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& force
 SPH::Vector3d DFSPHCUDA::getSimulationCenter(){
     return m_data.getSimulationCenter();
 }
+
+void DFSPHCUDA::setFluidFilesFolder(string root_folder, string local_folder)
+{
+    m_data.setFluidFilesFolder(root_folder,local_folder);
+}
+

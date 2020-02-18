@@ -1009,7 +1009,7 @@ void ODEWorld::sendDataToParticleFluidEngine(){
 void ODEWorld::advanceInTimeParticleFluidEngine(double deltaT){
 
     //do the particle fluid simulation
-    Interface::updateTimeStepDuration(deltaT);
+    //Interface::updateTimeStepDuration(deltaT);
     Interface::fluidSimulationStep();
 
     //now Ill get other values that will represent the boyant force

@@ -256,8 +256,8 @@ void camera (int orientation){
                 break;
             case 2:
                 //side
-                //Globals::window->setCameraRotation(Vector3d(0,-PI/2,0.19));
-                                Globals::window->setCameraRotation(Vector3d(-0.4,-0.6,0));
+                Globals::window->setCameraRotation(Vector3d(0,-PI/2,0.19));
+                //                Globals::window->setCameraRotation(Vector3d(-0.4,-0.6,0));
                 //                Globals::window->setCameraRotation(Vector3d(0,-PI/2,0));
                 break;
             case 3:
@@ -267,8 +267,8 @@ void camera (int orientation){
                 break;
             case 4:
                 //n45
-//                Globals::window->setCameraRotation(Vector3d(-0.36,-3*PI/4,0));
-                Globals::window->setCameraRotation(Vector3d(-0.3,-0.8,0));
+                Globals::window->setCameraRotation(Vector3d(-0.13,-0.85*PI/2,0));
+                //Globals::window->setCameraRotation(Vector3d(-0.3,-0.8,0));
                 break;
         }
     }
