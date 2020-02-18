@@ -679,7 +679,7 @@ DFSPHCData::DFSPHCData() {
     neighborsDataSetGroupedDynamicBodies=NULL;
     neighborsDataSetGroupedDynamicBodies_cuda=NULL;
     posBufferGroupedDynamicBodies=NULL;
-    is_fluid_aggregated=false;
+    is_fluid_aggregated=true;
 
 
     damp_borders=false;

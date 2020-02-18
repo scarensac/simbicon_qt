@@ -206,7 +206,7 @@ void Globals::reset(){
 
     estimatedFluidDirectSampleApplication=true;
     estimatedFluidDrawDrag=false;
-    simulateFluid = false;
+    simulateFluid = true;
     zeroFluidVelocities = false;
     simulateOnlyFluid = false;
     fluidFollowCharacter = false;

@@ -1197,9 +1197,8 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 
         particleSet->acc[i] = m_data.gravitation + ai;
 
-    ///TODO WARNING THERE IS A PROLEM WIHT THAT, it make another buffer crahs at some poin in the simulation
-    /// meaning this might be writting in a random position inthe simulation
-    /*
+
+    //*
 	//I'm gona use the vector3D used for the agglomerated neigbor search to store the normals
 	ni *= m_data.getKernelRadius();
 	m_data.posBufferGroupedDynamicBodies[i] = ni;
@@ -1318,7 +1317,7 @@ void cuda_externalForces(SPH::DFSPHCData& data) {
 
 	//end the computations for the surface tension
 
-    //DFSPH_applySurfaceAkinci2013SurfaceTension_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+    DFSPH_applySurfaceAkinci2013SurfaceTension_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	gpuErrchk(cudaDeviceSynchronize());
 
 
@@ -1352,7 +1351,7 @@ __global__ void DFSPH_fill_aggregated_pos_buffer_kernel(SPH::DFSPHCData data, un
 	//find the current dynamic body
 	int count_particles_previous_bodies = (data.is_fluid_aggregated) ? data.fluid_data_cuda->numParticles : 0;
 	int body_id = 0;
-	while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<i) {
+    while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<=i) {
 		count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 		body_id++;
 	}
@@ -1915,7 +1914,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 				}
 				else {
 					int body_id = 0; int count_particles_previous_bodies = data.fluid_data_cuda->numParticles;
-					while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<j) {
+                    while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<=j) {
 						count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 						body_id++;
 					}
@@ -1971,7 +1970,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
 			{ int body_id = 0; int count_particles_previous_bodies = 0;
-			while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<j) {
+            while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<=j) {
 				count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 				body_id++;
 			}
@@ -2078,7 +2077,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 	}
 	//*/
 
-	bool need_sort = true;// ((time_count % 15) == 0);
+    bool need_sort =  ((time_count % 15) == 0);
 
 	if (need_sort) {
 		//std::cout<<"doing full neighbor search"<<std::endl;

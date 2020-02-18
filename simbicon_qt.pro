@@ -11,6 +11,8 @@ CONFIG += SHARK_UTILISATION
 CONFIG += BOOST_UTILISATION
 #CONFIG += MT
 CONFIG += MD
+CONFIG += CUDA8
+#CONFIG += CUDA10
 
 SHARK_UTILISATION{
     CONFIG += BOOST_UTILISATION
@@ -242,10 +244,18 @@ FLUID_COMPIL {
     Debug:MOC_DIR= debug/moc
 
     # CUDA settings <-- may change depending on your system
-    CUDA_DIR = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1"            # Path to cuda toolkit install
     SYSTEM_NAME = x64         # Depending on your system either 'Win32', 'x64', or 'Win64'
     SYSTEM_TYPE = 64            # '32' or '64', depending on your system
+
+CUDA8{
+    CUDA_DIR = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0"            # Path to cuda toolkit install
+    CUDA_ARCH = compute_30          # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
+}
+CUDA10{
+    CUDA_DIR = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1"            # Path to cuda toolkit install
     CUDA_ARCH = compute_61          # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
+}
+
     NVCC_OPTIONS =
     INCLUDEPATH += $$CUDA_DIR/include\
 

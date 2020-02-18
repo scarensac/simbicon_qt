@@ -14,14 +14,15 @@
 /////////        CUDA ERROR CHECK      /////////////
 ////////////////////////////////////////////////////
 
-
+//this might need to be changed depending on compiler
+#define FUNC_NAME __FUNCTION__
 //easy function to check errors
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true)
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__, FUNC_NAME); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, const char *functionName, bool abort = true)
 {
 	if (code != cudaSuccess)
 	{
-		fprintf(stderr, "GPUassert: error %d: %s %s %d\n", (int)code, cudaGetErrorString(code), file, line);
+        fprintf(stderr, "GPUassert: error %d: %s %s %d  in function %s\n", (int)code, cudaGetErrorString(code), file, line,functionName);
 		if (abort) exit(code);
 	}
 }
@@ -84,8 +85,8 @@ inline int calculateNumBlocks(int nbElems) {
     const unsigned int body_index = neighbors_idx & 0xFF;
 
 #define READ_DYNAMIC_BODIES_PARTICLES_INDEX_ADDITION(neighbors_idx, body_index,particle_index)   \
-    const unsigned int particle_index = neighbors_idx % (1000000);\
-    const unsigned int body_index=neighbors_idx / 1000000;
+    const unsigned int body_index=neighbors_idx / 1000000;\
+    const unsigned int particle_index = neighbors_idx - body_index*1000000;
 
 
 
