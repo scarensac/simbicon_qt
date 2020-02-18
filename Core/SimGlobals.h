@@ -125,6 +125,8 @@ public:
     static int nb_collisons_event;
     static int nb_active_objects;
 
+    static bool block_ipm_alteration;
+
     SimGlobals(void);
     ~SimGlobals(void){
     }

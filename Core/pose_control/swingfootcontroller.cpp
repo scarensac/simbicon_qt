@@ -728,6 +728,10 @@ void SwingFootController::compute_ipm_alteration(VelocityController* vel_control
         return;
     }
 
+    if(SimGlobals::block_ipm_alteration){
+        return;
+    }
+
     //std::cout<<"no imp alt"<<std::endl;
     //return;
 
