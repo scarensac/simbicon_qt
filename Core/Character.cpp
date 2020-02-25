@@ -1138,8 +1138,42 @@ void Character::readReducedStateFromFile(char* fName, DynamicArray<double> *stat
     int start = state->size();
 
     FILE* fp = fopen(fName, "r");
-    if (fp == NULL)
-        throwError("cannot open the file \'%s\' for reading... error: %i", fName, errno);
+    if (fp == NULL){
+        //a special handling in the case the cotroler was given with an absolute path
+        if (Globals::save_mode&&(!Globals::save_mode_controller.empty())){
+            if(((Globals::save_mode_controller.at(0)=='C')||(Globals::save_mode_controller.at(0)=='D'))&&(Globals::save_mode_controller.at(1)==':')){
+                //this mean we have an abolute path so we don't need to change anything
+
+                std::size_t found = Globals::save_mode_controller.rfind("/");
+                if (found!=std::string::npos){
+                    std::string path_to_local=Globals::save_mode_controller.substr(0,found);
+
+                    std::string state_file_rel_path(fName);
+                    found = state_file_rel_path.rfind("/");
+                    if (found!=std::string::npos){
+                        std::string state_file_name=state_file_rel_path.substr(found);
+
+                        std::ostringstream oss;
+                        oss<<path_to_local<<state_file_name;
+                        fp = fopen(oss.str().c_str(), "r");
+                        if (fp == NULL){
+                            throwError("Character::readReducedStateFromFile:  cannot open the file \'%s\' for reading... error: %i", oss.str().c_str(), errno);
+                        }
+                    }else{
+                        throw("Character::readReducedStateFromFile:  parsing failed type 1");
+                    }
+                }else{
+                    throw("Character::readReducedStateFromFile:  parsing failed type 2");
+                }
+            }else{
+                throwError("Character::readReducedStateFromFile:  cannot open the file \'%s\' for reading... error: %i", fName, errno);
+            }
+        }else{
+            throwError("Character::readReducedStateFromFile:  cannot open the file \'%s\' for reading... error: %i", fName, errno);
+        }
+
+    }
+
 
     double temp1, temp2, temp3, temp4;
 

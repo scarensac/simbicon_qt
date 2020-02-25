@@ -7,6 +7,8 @@
 #include <sstream>
 #include <fstream>
 #include <boost/filesystem.hpp>
+#include <QFileDialog>
+#include "Core/pose_control/posecontroller.h"
 //#include <filesystem>
 
 //#include <drvapi_error_string.h>
@@ -159,8 +161,7 @@ void MainWindow::link_signals()
 {
     connect(ui->btn_start, SIGNAL(clicked(bool)), this, SLOT(start_click()));
     connect(ui->combo_box_mode, SIGNAL(activated(int)), this, SLOT(mode_changed(int)));
-
-
+    connect(ui->btn_select_path_fusing_controlers, SIGNAL(clicked(bool)), this, SLOT(select_path_fusing_controlers_clicked()));
 
 }
 
@@ -175,6 +176,8 @@ void MainWindow::mode_changed(int){
     ui->widget_model_parameters->hide();
     ui->widget_opti->hide();
     ui->widget_others->hide();
+    ui->widget_fuse_controlers->hide();
+    ui->widget_basic_control->show();
     setFixedHeight(550);
 
     switch(ui->combo_box_mode->currentIndex()){
@@ -198,11 +201,26 @@ void MainWindow::mode_changed(int){
         ui->widget_others->show();
         break;
     }
+    case 3:{
+        //fuse mode
+        ui->widget_basic_control->hide();
+        ui->widget_fuse_controlers->show();
+        setFixedHeight(125);
+
+        break;
+    }
     default:{
         std::cerr<<"this mode is not handled yet"<<std::endl;
         break;
     }
     }
+}
+
+void MainWindow::select_path_fusing_controlers_clicked()
+{
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                                    tr("Open fusing controler recap file"), ".", tr("Recap files (*.txt)"));
+    ui->line_edit_path_fusing_controlers->setText(fileName);
 }
 
 #include "gui/ControllerEditor.h"
@@ -295,7 +313,6 @@ void MainWindow::start_click()
             std::ostringstream oss_folder;
 
             if (Globals::evolution_type==0){
-                oss_folder<<SimGlobals::velDSagittal;
                 oss_folder<<"results_opti_water";
             }else if (Globals::evolution_type==1){
                 oss_folder<<"results_opti_gains";
@@ -392,6 +409,127 @@ void MainWindow::start_click()
 
             break;
         }
+        case 3:{
+            //fuse mode
+            std::string recap_file_name=ui->line_edit_path_fusing_controlers->text().toStdString();
+
+            std::ifstream ifs (recap_file_name);
+
+            SimBiConState* target_state=NULL;
+            std::vector<std::string> vect_traj_name;
+            vect_traj_name.push_back("root");
+            vect_traj_name.push_back("STANCE_Knee");
+            vect_traj_name.push_back("SWING_Ankle");
+            vect_traj_name.push_back("STANCE_Ankle");
+            vect_traj_name.push_back("swing_foot");
+            vect_traj_name.push_back("pelvis_torso");
+
+
+            std::ostringstream oss;
+            oss<<Globals::data_folder_path<<"temp/"<<"temp_init.conF";
+            if (ifs.is_open()) {
+                while (!ifs.eof()){
+
+                    //in order the line should give us je met les unitées en parenthese
+                    //velocity(dm.s-1) liquid_height(dm) controler_file_name state_file_name
+                    float water_level;
+                    float velDSagittal;
+                    std::string controler_file_name;
+                    ifs>>velDSagittal;  velDSagittal/=10;
+                    ifs>>water_level; water_level/=10;
+                    ifs>>controler_file_name;
+
+                    //idk why but since the eof is not reached I have to do that manualy
+                    if(controler_file_name.empty()){
+                        break;
+                    }
+
+                    std::cout<<"after read:  "<<water_level<<" "<<velDSagittal<<" "<<controler_file_name<<" "<<std::endl;
+
+                    std::ofstream ofs(oss.str());
+                    if(ofs.is_open()){
+                        ofs<<"loadRBFile configuration_data/objects/flatGround.rbs"<<std::endl;
+                        ofs<<"loadRBFile configuration_data/objects/dodgeBall.rbs"<<std::endl;
+                        ofs<<"loadRBFile configuration_data/characters/bipV2.rbs"<<std::endl;
+
+
+                        ofs<<"loadController "<<controler_file_name<<std::endl;
+
+                        Globals::save_mode=true;
+                        Globals::save_mode_controller=controler_file_name;
+
+                        Globals::current_controller_file=controler_file_name;
+                        Globals::save_to_current_controller=true;
+
+                    }else {
+                        std::ostringstream oss2;
+                        oss2<<"fusing controler: cannont open the specified output_temp init file:  "<<oss.str();
+                        throw(oss2.str());
+                    }
+
+                    SimBiConFramework* con = new SimBiConFramework(oss.str().c_str(), NULL);
+
+                    //now we attribute some of the trajectories to their given velocity/liquid height
+                    SimBiConState* state =con->getController()->pose_controller->get_fsm_state(0);
+
+                    for (int i=0;i<vect_traj_name.size();++i){
+                        Trajectory* traj=state->getTrajectory(vect_traj_name[i].c_str());
+                        for(int j=0;j<traj->get_component_count();++j){
+                            if(traj->components[j]->is_implicit()){
+                                continue;
+                            }
+                            //for the pelvis we only want the x axis
+                            if((i==5)&&EQUAL_TO_WITHIN_EPSILON(traj->components[j]->rotationAxis.x,0)){
+                                continue;
+                            }
+
+                            traj->get_component(j)->affect_speed_and_liquid_height(velDSagittal,water_level);
+                        }
+                    }
+
+
+
+                    if (target_state==NULL){
+
+                        target_state=con->getController()->pose_controller->take_control_of_state(0);
+
+
+                    }else{
+                        //here I can do the fusing
+                        for (int i=0;i<vect_traj_name.size();++i){
+                            Trajectory* traj=state->getTrajectory(vect_traj_name[i].c_str());
+                            Trajectory* traj_target=target_state->getTrajectory(vect_traj_name[i].c_str());
+
+                            for(int j=0;j<traj->get_component_count();++j){
+                                if(traj->components[j]->is_implicit()){
+                                    continue;
+                                }
+                                //for the pelvis we only want the x axis
+                                if((i==5)&&EQUAL_TO_WITHIN_EPSILON(traj->components[j]->rotationAxis.x,0)){
+                                    continue;
+                                }
+
+                                traj_target->get_component(j)->fuse_with(traj->get_component(j));
+                            }
+                        }
+                    }
+                    delete con;
+                }
+
+                //reopen the llast controler to save the final result
+                SimBiConFramework* con = new SimBiConFramework(oss.str().c_str(), NULL);
+
+                con->getController()->pose_controller->replace_state(0,target_state);
+                con->save(true,false);
+                delete con;
+
+                std::cout<<"finished fusing controlers, see the following file to find the resulting controler: "<<oss.str()<<std::endl;
+            }
+            else {
+                throw("fusing controler: cannont open the specified recap file");
+            }
+            break;
+        }
         default:{
             std::cerr<<"this mode is not handled yet"<<std::endl;
             break;
@@ -443,16 +581,15 @@ SimbiconOnjectiveFunction::SimbiconOnjectiveFunction(){
     //this should load all the concerned trajectories
     for (int k = 0; k < (int)vect_traj_name.size(); ++k){
         Trajectory* cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[k].c_str());
-        std::cout<<"test: "<<vect_traj_name[k]<<"   "<<cur_traj->components.size()<<std::endl;
+        //std::cout<<"test: "<<vect_traj_name[k]<<"   "<<cur_traj->components.size()<<std::endl;
         for (int j = 0; j < (int)cur_traj->components.size(); ++j){
             TrajectoryComponent* traj_comp = cur_traj->components[j];
-            std::cout<<"check: "<<vect_traj_name[k]<<"  "<<traj_comp->rotationAxis.toString()<<"  "<<traj_comp->baseTraj.getKnotCount()<<std::endl;
+            //std::cout<<"check: "<<vect_traj_name[k]<<"  "<<traj_comp->rotationAxis.toString()<<"  "<<traj_comp->baseTraj.getKnotCount()<<std::endl;
             if(cur_traj->components[j]->is_implicit()){
                 continue;
             }
-            std::cout<<"test"<<std::endl;
             //for the pelvis we only want the x axis
-            if((k==5)&&traj_comp->rotationAxis.x==0){
+            if((k==5)&&EQUAL_TO_WITHIN_EPSILON(traj_comp->rotationAxis.x,0)){
                 continue;
             }
 
@@ -476,6 +613,66 @@ SimbiconOnjectiveFunction::SimbiconOnjectiveFunction(){
     setNumberOfVariables(variable_vector.size());
 
 }
+
+
+template<typename T>
+void SimbiconOnjectiveFunction::write_point_to_structure(SimBiConFramework *con, const T &input)
+{
+    int cur_pos = 0;
+    for (int k = 0; k < (int)vect_traj_name.size(); ++k){
+        Trajectory* cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[k].c_str());
+        for (int j = 0; j < (int)cur_traj->components.size(); ++j){
+            TrajectoryComponent* traj_comp = cur_traj->components[j];
+
+            if(cur_traj->components[j]->is_implicit()){
+                continue;
+            }
+            //for the pelvis we only want the x axis
+            if((k==5)&&EQUAL_TO_WITHIN_EPSILON(traj_comp->rotationAxis.x,0)){
+                continue;
+            }
+
+            for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
+                traj_comp->baseTraj.setKnotValue(i, input[cur_pos]);
+                ++cur_pos;
+            }
+        }
+    }
+
+    //also I'll prevent the system from doing the ondulations with the pelvis
+    Trajectory* cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[0].c_str());
+    for (int j = 0; j < (int)cur_traj->components.size(); ++j){
+        TrajectoryComponent* traj_comp = cur_traj->components[j];
+        for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
+            traj_comp->baseTraj.setKnotValue(i, std::fmin(0.1, traj_comp->baseTraj.getKnotValue(i)));
+        }
+    }
+
+    //*
+    //I only wanna learn the x component of the walk so I'l override the others with the value I had
+    // I don't need it anymore butt I'll leave it for the next optimisation so that the values get reseted
+    cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[5].c_str());
+    TrajectoryComponent* traj_comp = cur_traj->components[0];
+    traj_comp->baseTraj.setKnotValue(0, 0.000340);
+    traj_comp->baseTraj.setKnotValue(1, -0.100323);
+    traj_comp->baseTraj.setKnotValue(2, -0.001158);
+
+    traj_comp = cur_traj->components[2];
+    traj_comp->baseTraj.setKnotValue(0, 0.0);
+    traj_comp->baseTraj.setKnotValue(1, 0.015874);
+    traj_comp->baseTraj.setKnotValue(2, 0.0);
+    //*/
+}
+
+
+template void SimbiconOnjectiveFunction::write_point_to_structure<SimbiconOnjectiveFunction::SearchPointType>(SimBiConFramework* con,
+                    const SimbiconOnjectiveFunction::SearchPointType& input);
+
+template void SimbiconOnjectiveFunction::write_point_to_structure<shark::RealVector>(SimBiConFramework* con,
+                    const shark::RealVector& input);
+
+
+
 
 SimbiconOnjectiveFunction::ResultType SimbiconOnjectiveFunction::eval(const SearchPointType & input, int offspring_id) {
     SIZE_CHECK(input.size() == m_dimensions);
@@ -504,63 +701,7 @@ SimbiconOnjectiveFunction::ResultType SimbiconOnjectiveFunction::eval(const Sear
     SimBiConFramework* con = new SimBiConFramework(inputFile, NULL);
 
     //so we push the values in a structure
-    int cur_pos = 0;
-    for (int k = 0; k < (int)vect_traj_name.size(); ++k){
-        Trajectory* cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[k].c_str());
-        for (int j = 0; j < (int)cur_traj->components.size(); ++j){
-            TrajectoryComponent* traj_comp = cur_traj->components[j];
-
-            if(cur_traj->components[j]->is_implicit()){
-                continue;
-            }
-            //for the pelvis we only want the x axis
-            if((k==5)&&traj_comp->rotationAxis.x==0){
-                continue;
-            }
-
-
-            for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
-                traj_comp->baseTraj.setKnotValue(i, input[cur_pos]);
-                ++cur_pos;
-            }
-        }
-    }
-
-    //I I detect the ipm alte I add it
-    if (cur_pos < input.size()){
-        SimGlobals::ipm_alteration_effectiveness = input[cur_pos];
-        //limit it to 1 (since I want it to go down )
-        if (SimGlobals::ipm_alteration_effectiveness > 1){
-            SimGlobals::ipm_alteration_effectiveness = 1;
-        }
-        ++cur_pos;
-    }
-    else{
-        SimGlobals::ipm_alteration_effectiveness = 1;
-    }
-
-    //also I'll prevent the system from doing the ondulations with the pelvis
-    Trajectory* cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[0].c_str());
-    for (int j = 0; j < (int)cur_traj->components.size(); ++j){
-        TrajectoryComponent* traj_comp = cur_traj->components[j];
-        for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
-            traj_comp->baseTraj.setKnotValue(i, std::fmin(0.1, traj_comp->baseTraj.getKnotValue(i)));
-        }
-    }
-
-    //I only wanna learn the x component of the walk so I'l override the others with the value I had
-    cur_traj = con->getController()->getState()->getTrajectory(vect_traj_name[5].c_str());
-    for (int j = 0; j < (int)cur_traj->components.size(); ++j){
-        TrajectoryComponent* traj_comp = cur_traj->components[0];
-        traj_comp->baseTraj.setKnotValue(0, 0.000340);
-        traj_comp->baseTraj.setKnotValue(1, -0.100323);
-        traj_comp->baseTraj.setKnotValue(2, -0.001158);
-
-        traj_comp = cur_traj->components[2];
-        traj_comp->baseTraj.setKnotValue(0, 0.0);
-        traj_comp->baseTraj.setKnotValue(1, 0.015874);
-        traj_comp->baseTraj.setKnotValue(2, 0.0);
-    }
+    write_point_to_structure<SimbiconOnjectiveFunction::SearchPointType>(con,input);
 
 
 
@@ -1042,6 +1183,9 @@ SimbiconOnjectiveFunctionGains::ResultType SimbiconOnjectiveFunctionGains::eval(
 
 
 
+
+
+
 // Implementation of the CMA-ES
 #include <shark/Algorithms/DirectSearch/CMA.h>
 //acces to sphere
@@ -1114,6 +1258,11 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
         myfile1 << save_folder_name << "/learning_walk_waterlvl" << SimGlobals::water_level << "_state.rs" << std::endl;
         myfile1 << save_folder_name << "/learning_walk_waterlvl" << SimGlobals::water_level << ".sbc" << std::endl;
         //        }
+
+        std::cout<<"primary save config"<<std::endl;
+        std::cout << save_folder_name << "/learning_walk_waterlvl" << SimGlobals::water_level << "_state.rs" << std::endl;
+        std::cout << save_folder_name << "/learning_walk_waterlvl" << SimGlobals::water_level << ".sbc" << std::endl;
+
     }
     myfile1.close();
 
@@ -1217,52 +1366,7 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
             con = new SimBiConFramework(objective_func_local->inputFile, NULL);
 
             //so we push the values in a structure
-            int cur_pos = 0;
-            for (int k = 0; k < (int)objective_func_local->vect_traj_name.size(); ++k){
-                Trajectory* cur_traj = con->getController()->getState()->getTrajectory(objective_func_local->vect_traj_name[k].c_str());
-                for (int j = 0; j < (int)cur_traj->components.size(); ++j){
-                    TrajectoryComponent* traj_comp = cur_traj->components[j];
-                    for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
-                        traj_comp->baseTraj.setKnotValue(i, result[cur_pos]);
-                        ++cur_pos;
-                    }
-                }
-            }
-
-            //I I detect the ipm alte I add it
-            if (cur_pos < result.size()){
-                SimGlobals::ipm_alteration_effectiveness = result[cur_pos];
-                //limit it to 1 (since I want it to go down )
-                if (SimGlobals::ipm_alteration_effectiveness > 1){
-                    SimGlobals::ipm_alteration_effectiveness = 1;
-                }
-                ++cur_pos;
-            }
-
-            //*
-            //also I'll prevent the system from doing the ondulations with the pelvis
-            Trajectory* cur_traj = con->getController()->getState()->getTrajectory(objective_func_local->vect_traj_name[0].c_str());
-            for (int j = 0; j < (int)cur_traj->components.size(); ++j){
-                TrajectoryComponent* traj_comp = cur_traj->components[j];
-                for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
-                    traj_comp->baseTraj.setKnotValue(i, std::fmin(0.1, traj_comp->baseTraj.getKnotValue(i)));
-                }
-            }
-            //*/
-            //*
-            //I only wanna learn the x component of the walk so I'l override the others with the value I had
-            cur_traj = con->getController()->getState()->getTrajectory(objective_func_local->vect_traj_name[5].c_str());
-            for (int j = 0; j < (int)cur_traj->components.size(); ++j){
-                TrajectoryComponent* traj_comp = cur_traj->components[0];
-                traj_comp->baseTraj.setKnotValue(0, 0.000340);
-                traj_comp->baseTraj.setKnotValue(1, -0.100323);
-                traj_comp->baseTraj.setKnotValue(2, -0.001158);
-
-                traj_comp = cur_traj->components[2];
-                traj_comp->baseTraj.setKnotValue(0, 0.0);
-                traj_comp->baseTraj.setKnotValue(1, 0.015874);
-                traj_comp->baseTraj.setKnotValue(2, 0.0);
-            }
+            objective_func_local->write_point_to_structure<shark::RealVector>(con,result);
         }else if (optimisation_type==1){
             SimbiconOnjectiveFunctionGains* objective_func_local=dynamic_cast<SimbiconOnjectiveFunctionGains*>(objective_func);
 
@@ -1406,7 +1510,7 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
 
 
         //and we save the structure
-        con->save(true, false);
+        con->save(true, true);
 
         /*
         std::ostringstream oss30;
@@ -1448,3 +1552,4 @@ double cma_program(std::string save_folder_name, std::string solution_folder, in
 
     return cur_val;
 }
+

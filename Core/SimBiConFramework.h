@@ -70,7 +70,7 @@ public:
     WaterImpact resulting_impact;
 
 public:
-    SimBiConFramework(char* input, char* conFile = NULL);
+    SimBiConFramework(const char *input, char* conFile = NULL);
     virtual ~SimBiConFramework(void);
 
 

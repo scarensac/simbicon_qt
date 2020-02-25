@@ -32,6 +32,7 @@ protected:
 
 public slots:
     void mode_changed(int);
+    void select_path_fusing_controlers_clicked();
     void start_click();
 
 protected slots:
@@ -41,6 +42,8 @@ protected slots:
 #include <shark/ObjectiveFunctions/AbstractObjectiveFunction.h>
 #include <boost/scoped_ptr.hpp>
 double cma_program(std::string save_folder_name, std::string solution_folder , int optimisation_type, int nb_iter_max=60, int cma_number=-1);
+
+class SimBiConFramework;
 
 class SimbiconOnjectiveFunction : public shark::SingleObjectiveFunction
 {
@@ -67,6 +70,9 @@ public:
 
     ResultType eval(const SearchPointType & input, int offspring_id=-1);
 
+    template<typename T>
+    void write_point_to_structure(SimBiConFramework* con,const T& input);
+
 private:
     std::size_t m_dimensions;
 
@@ -83,6 +89,8 @@ public:
     //this is the line I execute with system
     std::string exe_line;
 };
+
+
 
 
 class SimbiconOnjectiveFunctionGains : public shark::SingleObjectiveFunction
@@ -110,6 +118,7 @@ public:
     }
 
     ResultType eval (const SearchPointType & input, int offspring_id=-1);
+
 
 private:
     std::size_t m_dimensions;

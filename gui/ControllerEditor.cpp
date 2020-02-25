@@ -2025,7 +2025,7 @@ double ControllerEditor::handle_evolution(double phi, int count_step , bool &sav
             //end of one step or end of the evaluation
             if (cumul_time >SimGlobals::evaluation_length ){
                 //ponderation (le *1E? sert à normalizer)
-                sum_eval_liquid_drag *= 6 / 1E4 / count_eval_iter;
+                sum_eval_liquid_drag *= 50*((1-SimGlobals::water_level)/0.2)*6 / 1E4 / count_eval_iter;
 
 
                 //*

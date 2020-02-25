@@ -93,8 +93,10 @@ PoseController::~PoseController()
     controlParams.clear();
 
     for (int i=0;i<(int)_states.size();++i){
-        delete _states[i];
-        _states[i]=NULL;
+        if(_states[i]!=NULL){
+            delete _states[i];
+            _states[i]=NULL;
+        }
     }
     _states.clear();
 

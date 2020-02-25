@@ -54,7 +54,7 @@ public:
     static inline void handleDynamicBodiesPause(bool pause){}
     static inline void zeroFluidVelocities(){}
     static inline bool moveFluidSimulation(Point3d target_Position){return false;}
-    static inline void drawParticles(bool drawFluid, bool drawBodies, bool drawBoundaries){}
+    static inline void drawParticles(bool drawFluid, bool drawBodies, bool drawBoundaries, bool transparent_fluid=false){}
     static void handleFLuidLevelControl(float level){}
     static float getFluidLevel(){return 0;}
 

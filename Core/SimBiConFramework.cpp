@@ -39,7 +39,7 @@
 #include "Core/pose_control/posecontrolglobals.h"
 #include "Core/pose_control/posecontroller.h"
 
-SimBiConFramework::SimBiConFramework(char* input, char* conFile){
+SimBiConFramework::SimBiConFramework(const char* input, char* conFile){
 
     _new_character_step=false;
 
@@ -96,16 +96,23 @@ SimBiConFramework::SimBiConFramework(char* input, char* conFile){
 
                 //if I am in save mode I'll simply
                 if (Globals::save_mode&&(!Globals::save_mode_controller.empty())){
-                    std::ostringstream oss;
-                    oss << Globals::data_folder_path;
-                    oss << "controllers/";
-                    oss << Globals::save_mode_controller;
-                    path=oss.str();
+                    if(((Globals::save_mode_controller.at(0)=='C')||(Globals::save_mode_controller.at(0)=='D'))
+                            &&(Globals::save_mode_controller.at(1)==':')){
+                        //this mean we have an abolute path so we don't need to change anything
+                        path=Globals::save_mode_controller;
+                    }else{
+                        std::ostringstream oss;
+                        oss << Globals::data_folder_path;
+                        oss << "controllers/";
+                        oss << Globals::save_mode_controller;
+                        path=oss.str();
+                    }
                 }
                 else{
                     //first i need to add the part of the path to go to the configutation_data folder
                     path = std::string((trim(line)));
                     path = interpret_path(path);
+
                 }
 
                 //and now we cna use it

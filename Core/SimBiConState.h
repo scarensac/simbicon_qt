@@ -171,6 +171,19 @@ public:
      */
     bool is_implicit();
 
+    /**
+     * @brief this function allow the convertion to the data sstruture cabale of handling numerous speed and liquid height
+     * @param vel
+     * @param liquid_level
+     */
+    void affect_speed_and_liquid_height(double vel, double liquid_level);
+
+    /**
+     * @brief this function fuse all the ref trajctory for the map of the trajectoryComponent given as parameter into the curetn one
+     * it wil return an error if a given trajectory (vel et liquid_height) already exists
+     * @param other
+     */
+    void fuse_with(TrajectoryComponent* other);
 };
 
 
@@ -352,6 +365,20 @@ public:
       * @return a poiter to the component for the given axis or null if there is none for that axis
       */
      TrajectoryComponent* get_component(Vector3d axis, bool allow_opposite=true);
+
+     /**
+       * @brief get_component
+       * @param axis
+       * @return a poiter to the component for the given axis or null if there is none for that axis
+       */
+     TrajectoryComponent* get_component(int i);
+
+     /**
+       * @brief get_component
+       * @param axis
+       * @return a poiter to the component for the given axis or null if there is none for that axis
+       */
+     inline int get_component_count(){return components.size();}
 };
 
 /**

@@ -8,6 +8,7 @@
 [Rr]elease/
 eval_estimate/
 standalone/
+temp/
 
 #user files
 *.user

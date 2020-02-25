@@ -204,6 +204,20 @@ public:
     */
     void read_gains(std::string input_file);
 
+    /// warning the two next function allow to steal the contrl of a state from the controler
+    /// the first one will leave a null value in it's place leaving the controler unusable
+    /// and the second one will simply replace a state possibly breaking some internal link
+    /// they are used for when I want to fuse states that are specific to simulation parameters for the motion combiner
+    SimBiConState* take_control_of_state(int id){
+        SimBiConState* temp=_states[id];
+        _states[id]=NULL;
+        return temp;
+    }
+
+    void replace_state(int id, SimBiConState* new_state){
+        _states[id]=new_state;
+    }
+
 protected:
     /**
       getters
