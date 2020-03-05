@@ -112,6 +112,7 @@ int Globals::video_index=0;
 
 bool Globals::gamepad=true;
 
+bool Globals::use_motion_combiner=false;
 
 std::vector<ForceStruct> Globals::vect_forces = std::vector<ForceStruct>();
 std::vector<ForceStruct> Globals::vect_forces_estimated_fluid = std::vector<ForceStruct>();
@@ -171,7 +172,7 @@ void Globals::reset(){
     limitfps= true;
     evolution_mode = false;
     evolution_type = 0;
-    evolution_push_type = 0;
+    evolution_push_type = 3;
     look_for_min_gains = true;
     max_gains_limit_sum= 25000;
     use_normalized_sum= false;
@@ -223,6 +224,7 @@ void Globals::reset(){
     gamepad=true;
 
 
+    use_motion_combiner=false;
 
     vect_forces = std::vector<ForceStruct>();
     vect_forces_estimated_fluid = std::vector<ForceStruct>();

@@ -9,6 +9,9 @@
 #include <boost/filesystem.hpp>
 #include <QFileDialog>
 #include "Core/pose_control/posecontroller.h"
+#include "gui/ControllerEditor.h"
+#include "stdlib.h"
+
 //#include <filesystem>
 
 //#include <drvapi_error_string.h>
@@ -100,56 +103,37 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     ui->combo_box_mode->removeItem(1);
     ui->combo_box_mode->removeItem(1);
     //*/
-    if (argc>1){
-        try {
-            int number = std::stoi(argv[1]);
-            ui->spin_box_control_frequency->setValue(number);
-        } catch (std::exception const &e) {
-            // This could not be parsed into a number so an exception is thrown.
-            // atoi() would return 0, which is less helpful if it could be a valid value.
-            std::cout<<argc<<std::endl;
-            exit(6589);
-        }
-    }
-
-    if (argc>2){
-        try {
-            int number = std::stoi(argv[2]);
-            ui->check_box_look_for_min_gains->setChecked(number==0);
-        } catch (std::exception const &e) {
-            // This could not be parsed into a number so an exception is thrown.
-            // atoi() would return 0, which is less helpful if it could be a valid value.
-            std::cout<<argc<<std::endl;
-            exit(6589);
-        }
-    }
-
-    if (argc>3){
-        try {
-            int number = std::stoi(argv[3]);
-            ui->combo_box_mode->setCurrentIndex(number);
-        } catch (std::exception const &e) {
-            // This could not be parsed into a number so an exception is thrown.
-            // atoi() would return 0, which is less helpful if it could be a valid value.
-            std::cout<<argc<<std::endl;
-            exit(6589);
-        }
-    }
-
-    if (argc>4){
-        try {
-            int number = std::stoi(argv[4]);
-            ui->spin_box_motion_type->setValue(number);
-        } catch (std::exception const &e) {
-            // This could not be parsed into a number so an exception is thrown.
-            // atoi() would return 0, which is less helpful if it could be a valid value.
-            std::cout<<argc<<std::endl;
-            exit(6589);
-        }
-    }
 
     console_window= new ConsoleWindow();
     console_window->show();
+
+
+    if (argc>1){
+        try {
+            int number = std::stoi(argv[1]);
+            Globals::evolution_type=number;
+
+            //force optimisation mode
+            ui->combo_box_mode->setCurrentIndex(1);
+
+            if ((Globals::evolution_type==0)&&(argc==5)){
+                ui->spin_box_control_frequency->setValue(std::stod(argv[2]));
+                ui->spin_box_level->setValue(std::stod(argv[3]));
+                ui->spin_box_velD->setValue(std::stod(argv[4]));
+            }else{
+                throw("there is no existing execution plan for the given arguments");
+            }
+        } catch (std::exception const &e) {
+            // This could not be parsed into a number so an exception is thrown.
+            // atoi() would return 0, which is less helpful if it could be a valid value.
+            std::cout<<argc<<std::endl;
+            exit(6589);
+        }
+    }
+
+
+
+
 }
 
 MainWindow::~MainWindow()
@@ -171,6 +155,82 @@ void MainWindow::closeEvent(QCloseEvent *event)
     exit(0);
 }
 
+void MainWindow::run_optimisation()
+{
+
+
+    Globals::use_hand_position_tracking=false;
+    SimGlobals::block_ipm_alteration=true;
+    Globals::evolution_mode = true;
+    //here Ill do the optimisation/learning
+    console_window->show();
+
+    Globals::use_contact_controller=false;
+
+    std::ostringstream oss_folder;
+
+    if (Globals::evolution_type==0){
+        oss_folder<<"results_opti_water";
+    }else if (Globals::evolution_type==1){
+        oss_folder<<"results_opti_gains";
+    }
+    std::string evo_folder= oss_folder.str();
+
+
+    std::string result_folder = "optimisation_solution";
+
+    Globals::use_normalized_sum=true;
+
+
+
+    if (false){
+        int i=0;
+        for (;i<45;++i)
+        {
+            std::ostringstream oss;
+            //            oss <<"starting evolution for water_lvl:" << SimGlobals::water_level;
+            oss <<"starting evolution for time step_lvl:" << 1.0f/SimGlobals::dt;
+            if (Globals::look_for_min_gains){
+                oss<< "    target min gains ";
+            }else{
+                oss<< "    target max gains ";
+            }
+
+            std::cout << oss.str();
+            int nb_iter=ui->spin_box_iter->value();
+            if (i>2){
+                nb_iter=50;
+            }
+            double result=cma_program(evo_folder,result_folder,Globals::evolution_type,nb_iter,i);
+
+            if (!Globals::look_for_min_gains){
+                if (result<=1.0){
+                    Globals::max_gains_limit_sum*=2;
+                }
+            }
+
+            std::ostringstream oss2;
+            oss2 << "execution successfully finished "<<i<<" times";
+            std::cout << oss2.str();
+        }
+    }else{
+        int nb_iter=ui->spin_box_iter->value();
+        double result=cma_program(evo_folder,result_folder,Globals::evolution_type,nb_iter,0);
+
+        std::ostringstream oss;
+        oss << "execution successfully finished "<<nb_iter<<" steps done ";
+        std::cout << oss.str()<<std::endl;
+    }
+
+    /*
+    //save test
+    double result=evaluate_solution(false);
+    std::ostringstream oss;
+    oss<<result;
+    std::cout<<"result: "<<oss.str();
+    //*/
+}
+
 
 void MainWindow::mode_changed(int){
     ui->widget_model_parameters->hide();
@@ -182,7 +242,7 @@ void MainWindow::mode_changed(int){
 
     switch(ui->combo_box_mode->currentIndex()){
     case 0:{
-        setFixedHeight(175);
+        setFixedHeight(200);
         //normal execution
         //ui->widget_model_parameters->show();
         break;
@@ -223,7 +283,6 @@ void MainWindow::select_path_fusing_controlers_clicked()
     ui->line_edit_path_fusing_controlers->setText(fileName);
 }
 
-#include "gui/ControllerEditor.h"
 void MainWindow::start_click()
 {
     try{
@@ -232,13 +291,10 @@ void MainWindow::start_click()
         SimGlobals::nb_filler=ui->spin_box_filler_objects->value();
         Globals::use_fluid_heading=ui->check_box_fluid_heading->isChecked();
 
-        Globals::evolution_type=0;
-        Globals::evolution_push_type=0;
         Globals::look_for_min_gains=ui->check_box_look_for_min_gains->isChecked();
 
         //read the values from the ui
         SimGlobals::velDSagittal=ui->spin_box_velD->value();
-        SimGlobals::velDCoronal=0;
         SimGlobals::water_level = ui->spin_box_level->value();
         SimGlobals::dt=1.0/(ui->spin_box_control_frequency->value());
 
@@ -252,6 +308,7 @@ void MainWindow::start_click()
         switch(ui->combo_box_mode->currentIndex()){
         case 0:
         {
+            Globals::use_motion_combiner=ui->check_box_use_motion_combiner->isChecked();
             Globals::use_hand_position_tracking=false;
             Globals::evolution_mode = 0;
             Globals::animationRunning = 0;
@@ -263,6 +320,7 @@ void MainWindow::start_click()
             console_window->show();
             core_init();
             sim_window=new SimulationWindow();
+            SimGlobals::force_ipm=!Globals::use_motion_combiner;
             connect(this->sim_window, SIGNAL(show_console()), this->console_window, SLOT(show()));
             ControllerEditor* editor=static_cast<ControllerEditor*>(Globals::app);
             connect(&editor->signal_messenger, SIGNAL(step_ended(double,double)),
@@ -300,78 +358,7 @@ void MainWindow::start_click()
             break;
         }
         case 1:{
-
-
-            Globals::use_hand_position_tracking=false;
-            SimGlobals::block_ipm_alteration=true;
-            Globals::evolution_mode = true;
-            //here Ill do the optimisation/learning
-            console_window->show();
-
-            Globals::use_contact_controller=false;
-
-            std::ostringstream oss_folder;
-
-            if (Globals::evolution_type==0){
-                oss_folder<<"results_opti_water";
-            }else if (Globals::evolution_type==1){
-                oss_folder<<"results_opti_gains";
-            }
-            std::string evo_folder= oss_folder.str();
-
-
-            std::string result_folder = "optimisation_solution";
-
-            Globals::use_normalized_sum=true;
-
-
-
-            if (false){
-                int i=0;
-                for (;i<45;++i)
-                {
-                    std::ostringstream oss;
-                    //            oss <<"starting evolution for water_lvl:" << SimGlobals::water_level;
-                    oss <<"starting evolution for time step_lvl:" << 1.0f/SimGlobals::dt;
-                    if (Globals::look_for_min_gains){
-                        oss<< "    target min gains ";
-                    }else{
-                        oss<< "    target max gains ";
-                    }
-
-                    std::cout << oss.str();
-                    int nb_iter=ui->spin_box_iter->value();
-                    if (i>2){
-                        nb_iter=50;
-                    }
-                    double result=cma_program(evo_folder,result_folder,Globals::evolution_type,nb_iter,i);
-
-                    if (!Globals::look_for_min_gains){
-                        if (result<=1.0){
-                            Globals::max_gains_limit_sum*=2;
-                        }
-                    }
-
-                    std::ostringstream oss2;
-                    oss2 << "execution successfully finished "<<i<<" times";
-                    std::cout << oss2.str();
-                }
-            }else{
-                int nb_iter=ui->spin_box_iter->value();
-                double result=cma_program(evo_folder,result_folder,Globals::evolution_type,nb_iter,0);
-
-                std::ostringstream oss;
-                oss << "execution successfully finished "<<nb_iter<<" steps done ";
-                std::cout << oss.str()<<std::endl;
-            }
-
-            /*
-            //save test
-            double result=evaluate_solution(false);
-            std::ostringstream oss;
-            oss<<result;
-            std::cout<<"result: "<<oss.str();
-            //*/
+            run_optimisation();
             break;
         }
         case 2:
@@ -644,7 +631,11 @@ void SimbiconOnjectiveFunction::write_point_to_structure(SimBiConFramework *con,
     for (int j = 0; j < (int)cur_traj->components.size(); ++j){
         TrajectoryComponent* traj_comp = cur_traj->components[j];
         for (int i = 0; i < (int)traj_comp->baseTraj.getKnotCount(); ++i){
-            traj_comp->baseTraj.setKnotValue(i, std::fmin(0.1, traj_comp->baseTraj.getKnotValue(i)));
+            double val=traj_comp->baseTraj.getKnotValue(i);
+            if (abs(val)>0.1){
+                val*=0.1/abs(val);
+            }
+            traj_comp->baseTraj.setKnotValue(i, val);
         }
     }
 

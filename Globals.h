@@ -175,6 +175,8 @@ public:
 
     static bool gamepad;
 
+    static bool use_motion_combiner;
+
 
     //I'll use the contact point structure but all I want is the position and the force
     static std::vector<ForceStruct> vect_forces;

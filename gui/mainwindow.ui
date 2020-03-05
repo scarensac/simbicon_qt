@@ -148,6 +148,13 @@
             </item>
            </layout>
           </item>
+          <item>
+           <widget class="QCheckBox" name="check_box_use_motion_combiner">
+            <property name="text">
+             <string>use motion combiner</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

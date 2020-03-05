@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
         QApplication a(argc, argv);
         MainWindow w(argc, argv);
         w.show();
-        if (argc>5){
+        if (argc>1){
             w.start_click();
         }
         return_val= a.exec();

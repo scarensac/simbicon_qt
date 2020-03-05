@@ -492,7 +492,7 @@ void init_evaluate_solution( bool save, bool close_after_evaluation)
     Globals::animationRunning = 1;
     Globals::save_mode=false;
     Globals::close_after_saving=false;
-    SimGlobals::steps_before_evaluation = 5;
+    SimGlobals::steps_before_evaluation = 8;
     SimGlobals::evaluation_length = 5;
     SimGlobals::liquid_density = 1000;
     SimGlobals::force_alpha = 0;

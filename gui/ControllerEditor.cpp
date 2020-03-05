@@ -65,7 +65,11 @@ ControllerEditor::ControllerEditor(void):InteractiveWorld(){
     if (Globals::evolution_mode&&(Globals::close_after_evaluation)){
         oss << "input_optimisation.conF";
     }else{
-        oss << "input.conF";
+        if(Globals::use_motion_combiner){
+            oss << "inputMotionCombiner.conF";
+        }else{
+            oss << "input.conF";
+        }
     }
 
     strcpy(inputFile,  oss.str().c_str());
@@ -1410,6 +1414,20 @@ void ControllerEditor::processTask(){
                         evaluation_end=false;
                     }else if (eval_push_phase==3){
                         Globals::simulation_eval+=old_eval;
+                    }
+                    eval_push_phase++;
+                }else if (Globals::evolution_push_type==3){
+
+                    if (eval_push_phase==0){
+                        Vector3d f(1,0,0);
+                        f*=35;
+                        apply_perturbation(f,true);
+                        evaluation_end=false;
+                    } else if (eval_push_phase==1){
+                        Vector3d f(1,0,0);
+                        f*=-35;
+                        apply_perturbation(f,true);
+                        evaluation_end=false;
                     }
                     eval_push_phase++;
                 }

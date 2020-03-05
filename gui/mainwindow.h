@@ -29,6 +29,7 @@ protected:
 
     void closeEvent(QCloseEvent *event);
 
+    void run_optimisation();
 
 public slots:
     void mode_changed(int);
